@@ -1,2 +1,2 @@
-# ECG-behavior-analysis
+# ECG-behavior-neural-analysis
 Analysis of ECG and behavior
