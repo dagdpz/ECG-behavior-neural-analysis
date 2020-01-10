@@ -69,8 +69,8 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
         
         % initialize number of site pairs for each handspace
         % label
-        for st = 1:size(Rpeak_state_onset.session(end).condition(cn).Rpeak_evoked, 1)
-            for hs = 1:size(Rpeak_state_onset.session(end).condition(cn).Rpeak_evoked, 2)
+        for st = 1:size(Rpeak_state_onset.session(1).condition(cn).Rpeak_evoked, 1)
+            for hs = 1:size(Rpeak_state_onset.session(1).condition(cn).Rpeak_evoked, 2)
                 sessions_avg(t).condition(cn).Rpeak_evoked(st, hs).nsessions = 0;
                 sessions_avg(t).condition(cn).Rpeak_evoked(st, hs).abs_timefromRpeak = {}; 
                 sessions_avg(t).condition(cn).Rpeak_evoked(st, hs).rel_timefromRpeak = {}; 

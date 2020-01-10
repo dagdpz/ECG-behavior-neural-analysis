@@ -20,7 +20,9 @@ function [ diff_cond_avg ] = ecg_bna_compute_diff_condition_average( analysis, c
 %		diff_cond_avg    - structure containing results of comparison of
 %		given conditions 
 %
+% REQUIRES: ecg_bna_get_condition_label
 %
+% See also 
 
 
     conditions = [cond_avg.cfg_condition];
@@ -131,17 +133,19 @@ function [ diff_cond_avg ] = ecg_bna_compute_diff_condition_average( analysis, c
                         plot_legend{1} = lfp_tfa_get_condition_label(cfg_condition1, 'long');
                         plot_legend{2} = lfp_tfa_get_condition_label(cfg_condition2, 'long');
                     elseif strcmp(compare.field, 'perturbation')
+                        diff_cond_avg.difference(dcn).cfg_condition.perturbation = ['diff' num2str(i)];
                         cfg_condition1.perturbation = cond2_avg.cfg_condition.perturbation;
                         cfg_condition2.perturbation = cond1_avg.cfg_condition.perturbation;
                         plot_legend{1} = lfp_tfa_get_condition_label(cfg_condition1, 'long');
                         plot_legend{2} = lfp_tfa_get_condition_label(cfg_condition2, 'long');
                     elseif strcmp(compare.field, 'success')
+                        diff_cond_avg.difference(dcn).cfg_condition.success = ['diff' num2str(i)];
                         cfg_condition1.success = cond2_avg.cfg_condition.success;
                         cfg_condition2.success = cond1_avg.cfg_condition.success;
                         plot_legend{1} = lfp_tfa_get_condition_label(cfg_condition1, 'long');
                         plot_legend{2} = lfp_tfa_get_condition_label(cfg_condition2, 'long');
                     elseif strcmp(compare.field, 'type_eff')
-                        diff_cond_avg.difference(dcn).cfg_condition.type_eff = nan;
+                        diff_cond_avg.difference(dcn).cfg_condition.type_eff = ['diff' num2str(i)];
                         cfg_condition1.type = cond2_avg.cfg_condition.type;
                         cfg_condition1.effector = cond2_avg.cfg_condition.effector;
                         cfg_condition2.type = cond1_avg.cfg_condition.type;
@@ -151,16 +155,6 @@ function [ diff_cond_avg ] = ecg_bna_compute_diff_condition_average( analysis, c
                     end
                     
                     % change the condition label
-                    switch (compare.field)
-                        case ('choice')
-                            diff_cond_avg.difference(dcn).cfg_condition.choice = -1;
-                        case ('perturbation')
-                            diff_cond_avg.difference(dcn).cfg_condition.perturbation = -1;
-                        case ('success')
-                            diff_cond_avg.difference(dcn).cfg_condition.success = -1;
-                        case ('type_eff')
-                            diff_cond_avg.difference(dcn).cfg_condition.type_eff = -1;
-                    end                    
                     diff_cond_avg.difference(dcn).label = ecg_bna_get_condition_label(...
                         diff_cond_avg.difference(dcn).cfg_condition, 'long'); 
                     

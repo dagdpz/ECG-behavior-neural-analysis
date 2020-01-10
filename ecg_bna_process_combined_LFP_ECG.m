@@ -29,7 +29,9 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
     close all; 
 
     if isfield(session_info, 'Input_LFP')
-        session_info.Input_LFP = {session_info.Input_LFP};
+        if ~iscell(session_info.Input_LFP)
+            session_info.Input_LFP = {session_info.Input_LFP};
+        end
         combined_sites = cell(1, length(session_info.Input_LFP));
         for s = 1:length(combined_sites)
             % Read input LFP file

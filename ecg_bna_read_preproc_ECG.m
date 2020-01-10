@@ -37,24 +37,24 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     end
     
     % struct to save data for a site
-    session_ecg = struct();
-        
-    % functionality to read multiple by_block files
-    session_info.Input_ECG_preproc = {session_info.Input_ECG_preproc};
-    combined_Blocks = cell(1, length(session_info.Input_ECG_preproc));
-    for s = 1:length(combined_Blocks)
-        % Read input ECG file
-        if ~exist(session_info.Input_ECG_preproc{s}, 'file')
-            fprintf('No file found: %s\n', ...
-                session_info.Input_ECG_preproc);
-            return;
-        else
+    if ~iscell(session_info.Input_ECG_preproc)
+        session_info.Input_ECG_preproc = {session_info.Input_ECG_preproc};
+    end
+    if ~exist(session_info.Input_ECG_preproc{1}, 'file')
+        fprintf('No file found: %s\n', ...
+            session_info.Input_ECG_preproc);
+        return;
+    else
+        combined_Blocks = cell(1, length(session_info.Input_ECG_preproc));
+        for s = 1:length(combined_Blocks)
+            % Read input LFP file
             load(session_info.Input_ECG_preproc{s}, 'by_block');
             combined_Blocks{s} = by_block;
         end
         
     end
     
+
     
     % prepare results folder
     results_fldr = fullfile(session_info.proc_ecg_fldr);
@@ -65,7 +65,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     if isfield(session_info, 'Input_ECG')
         if ~exist(session_info.Input_ECG, 'file')
             fprintf('No file found \n%s\n', ...
-                session_info.Input_ECG);
+                session_info.Input_ECG_raw);
             return;
         end
         load(session_info.Input_ECG);
@@ -83,9 +83,10 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     comp_trial = 0; % iterator for completed trials 
     
     % save data inside struct 
-    % first loop through each site
-    for b = 1:length(by_block)
-        
+    % first loop through each file
+    for i_Files = 1:length(combined_Blocks)
+       by_block_ECG = combined_Blocks{i_Files};
+    for b = 1:length(by_block_ECG)
         % get info about site
         % for future use
             % find if this site's entry is available in usable_sites_table
@@ -115,7 +116,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
 %             strcmp(usable_sites_table.Site_ID, sites(i).site_ID), :).Set(1);
         session_ecg.session = session_info.session;
 
-        trial = by_block(b).trial;
+        trial = by_block_ECG(b).trial;
         if isempty(trial)
             fprintf('No trials found for block, %g\n', b); 
             continue;
@@ -159,10 +160,8 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
 %                 ~isempty(trial(t).perturbation)
 %                 perturbation = trial(t).perturbation;
             elseif exist('ses', 'var') && ...
-                    isfield(ses, 'first_inj_block') && ...
-                    ~isempty(ses.first_inj_block) && ...
-                    block < ses.first_inj_block
-                perturbation = 0;  
+                block < ses.first_inj_block
+                perturbation = 0;
             end
             
             if isnan(perturbation)
@@ -171,13 +170,11 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
                     ismember(block, session_info.Postinj_blocks)
                     perturbation = 1;
                 elseif exist('ses', 'var') && ...
-                    isfield(ses, 'first_inj_block') && ...
-                    ~isempty(ses.first_inj_block) && ...
-                    block >= ses.first_inj_block
+                        block >= ses.first_inj_block
                     perturbation = 1;
                 elseif isfield(trial, 'perturbation') && ...
-                    isempty(trial(t).perturbation)
-                    perturbation = trial(t).perturbation;
+                        ~isempty(trial(t).perturbation)
+                    perturbation = sign(trial(t).perturbation);
                 end
             end
             
@@ -257,7 +254,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     
     results_mat = fullfile(results_fldr, ['session_ecg_' session_info.session '.mat']);
     save(results_mat, 'session_ecg', '-v7.3');
-    
+    end
     
 end
 

@@ -94,6 +94,11 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                         subplottitle = [subplottitle, sprintf(' (%g)', ...
                             Rpeak_evoked_states(st, hs).ntrials)];
                     end
+                    if isfield(Rpeak_evoked_states, 'nsessions') && ...
+                            ~isempty(Rpeak_evoked_states(st, hs).nsessions)
+                        subplottitle = [subplottitle, ' (nsessions = ' ...
+                            num2str(Rpeak_evoked_states(st, hs).nsessions) ')'];
+                    end
                     title(subplottitle); %box on;
                     %xlabel('Rel. Time from Rpeak')
                     ylabel('Rpeak phase[°]');
@@ -131,11 +136,6 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                         'Color', colors(cn, :), 'LineWidth', 2);
                 end
                 
-                if isfield(Rpeak_evoked_states(st, hs), 'ntrials') && ...
-                        ~isempty(Rpeak_evoked_states(st, hs).ntrials)
-                    subplottitle = [subplottitle, sprintf(' (%g)', ...
-                        Rpeak_evoked_states(st, hs).ntrials)];
-                end
                 if isfield(Rpeak_evoked_states(st, hs), 'legend')
                     legend(Rpeak_evoked_states(st, hs).legend);
                 end
@@ -146,6 +146,15 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                 %set(gca, 'XTick', timebinedges);
                 %grid on;
                 subplottitle = Rpeak_evoked_states(st, hs).state_name;
+                if isfield(Rpeak_evoked_states(st, hs), 'ntrials') && ...
+                        ~isempty(Rpeak_evoked_states(st, hs).ntrials)
+                    subplottitle = [subplottitle, sprintf(' (%g)', ...
+                        Rpeak_evoked_states(st, hs).ntrials)];
+                elseif isfield(Rpeak_evoked_states, 'nsessions') && ...
+                        ~isempty(Rpeak_evoked_states(st, hs).nsessions)
+                    subplottitle = [subplottitle, ' (nsessions = ' ...
+                        num2str(Rpeak_evoked_states(st, hs).nsessions) ')'];
+                end
                 title(subplottitle); box on;
                 xlabel('Time from Rpeak (s)')
                 ylabel('P(onset)');
@@ -171,9 +180,7 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
             
         end
     end
-    if isfield(Rpeak_evoked_states, 'nsessions')
-        plottitle = [plottitle, ' (nsessions = ' num2str(Rpeak_evoked_states(1, hs).nsessions) ')'];
-    end
+    
     ann = annotation('textbox', [0 0.9 1 0.1], 'String', strrep(plottitle, '_', '\_')...
         , 'EdgeColor', 'none', 'HorizontalAlignment', 'center');
     export_fig(h, [results_file '.png']);
