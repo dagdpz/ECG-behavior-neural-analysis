@@ -13,15 +13,22 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     end
     
     % struct to save data for a site
-    session_ecg = struct();
-        
-    if ~exist(session_info.Input_ECG_preproc, 'file')
+   
+    if ~exist(session_info.Input_ECG_preproc{1}, 'file')
         fprintf('No file found: %s\n', ...
             session_info.Input_ECG_preproc);
         return;
     else
-        load(session_info.Input_ECG_preproc, 'by_block');
+        combined_Blocks = cell(1, length(session_info.Input_ECG_preproc));
+        for s = 1:length(combined_Blocks)
+            % Read input LFP file
+            load(session_info.Input_ECG_preproc{s}, 'by_block');
+            combined_Blocks{s} = by_block;
+        end
+        
     end
+    
+
     
     % prepare results folder
     results_fldr = fullfile(session_info.proc_results_fldr);
@@ -51,8 +58,9 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     
     % save data inside struct 
     % first loop through each site
+    for i_Files = 1:length(combined_Blocks)
+       by_block = combined_Blocks{i_Files};
     for b = 1:length(by_block)
-        
         % get info about site
         % for future use
             % find if this site's entry is available in usable_sites_table
@@ -217,7 +225,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     
     results_mat = fullfile(results_fldr, ['session_ecg_' session_info.session '.mat']);
     save(results_mat, 'session_ecg', '-v7.3');
-    
+    end
     
 end
 

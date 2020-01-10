@@ -8,7 +8,7 @@ ecg_bna_cfg = [];
 % the results produced using this settings file would be saved under 
 % the folder [lfp_tfa_cfg.results_folder, '\', date, '\ver_' lfp_tfa_cfg.version]
 % eg: 'C:\Data\MIP_timefreq_analysis\LFP_timefrequency_analysis\Data\LFP_TFA_Results\20190506\ver_SN_0.2'
-ecg_bna_cfg.version = 'Magnus_dPul_ECG_LFP';
+ecg_bna_cfg.version = 'Magnus_Reach_InakdPul_ECG';
 
 % sorted neurons excel file, from which information about sessions and
 % individual sites can be obtained
@@ -20,7 +20,7 @@ ecg_bna_cfg.info_filepath = 'Y:\Projects\PPC_pulv_body_signals\ephys\MIP_inactiv
 ecg_bna_cfg.use_datasets = [31];
 
 % absolute path to the folder where the results of analysis should be stored
-ecg_bna_cfg.results_folder = 'Y:\Personal\Sarath\Results\LFP_TFA_Results';
+ecg_bna_cfg.results_folder = 'Y:\Projects\PhysiologicalRecording\Figures\Magnus\reaching_ECG_InakdPul';
 
 % info about sessions to be analysed
 % should be a 1 x N struct, N = number of sessions to analyse
@@ -35,25 +35,36 @@ ecg_bna_cfg.results_folder = 'Y:\Personal\Sarath\Results\LFP_TFA_Results';
 %       specified, all post-injection blocks will be combined; if
 %       'allbutfirst', all blocks from the second post-injection block will
 %       be combined)
-
-ecg_bna_cfg.session_info(1) = ...
+%   'Input_ECG_combined', 'Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20191213', ...
+% 
+ecg_bna_cfg.session_info(4) = ...
     struct('Monkey',        'Magnus', ...
-           'Date',          '20190131', ...
-           'Input_LFP',         {{'Y:\Projects\PPC_pulv_body_signals\ephys\dPul_control_20190131\sites_Magnus_20190131.mat', ...
-                                'Y:\Projects\PPC_pulv_body_signals\ephys\dPul_control_20190131_rest\sites_Magnus_20190131.mat'}}, ...
-           'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20190131\20190131_ecg.mat', ...
-           'Input_ECG_preproc', 'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20190131.mat', ...
-           'Preinj_blocks',  [1 3], ...
-           'Postinj_blocks', []);  
+           'Date',          '20191213', ...
+           'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20191213\20191213_ecg.mat', ...
+           'Input_ECG_preproc',  {{'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20191213.mat', ...
+                               'Y:\Projects\PhysiologicalRecording\ephys\ECG_rest\by_block_Magnus_20191213.mat'}}); 
        
-% ecg_bna_cfg.session_info(2) = ...
-%     struct('Monkey',        'Magnus', ...
-%            'Date',          '20190213', ...
-%            'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20190213\20190213_ecg.mat', ...
-%            'Input_ECG_preproc', 'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20190213.mat', ...
-%            'Preinj_blocks',  [1 3 5], ...
-%            'Postinj_blocks', []); 
-%        
+ecg_bna_cfg.session_info(3) = ...
+    struct('Monkey',        'Magnus', ...
+           'Date',          '20191211', ...
+           'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20191211\20191211_ecg.mat', ...
+           'Input_ECG_preproc',  {{'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20191211.mat', ...
+                               'Y:\Projects\PhysiologicalRecording\ephys\ECG_rest\by_block_Magnus_20191211.mat'}}); 
+       
+ecg_bna_cfg.session_info(2) = ...
+ struct('Monkey',        'Magnus', ...
+           'Date',          '20191120', ...
+           'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20191120\20191120_ecg.mat', ...
+           'Input_ECG_preproc',  {{'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20191120.mat', ...
+                               'Y:\Projects\PhysiologicalRecording\ephys\ECG_rest\by_block_Magnus_20191120.mat'}}); 
+       
+       ecg_bna_cfg.session_info(1) = ...
+    struct('Monkey',        'Magnus', ...
+           'Date',          '20191113', ...
+           'Input_ECG',         'Y:\Projects\PhysiologicalRecording\Data\Magnus\20191113\20191113_ecg.mat', ...
+           'Input_ECG_preproc',  {{'Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_Magnus_20191113.mat', ...
+                               'Y:\Projects\PhysiologicalRecording\ephys\ECG_rest\by_block_Magnus_20191113.mat'}}); 
+% %        
 % ecg_bna_cfg.session_info(3) = ...
 %     struct('Monkey',        'Magnus', ...
 %            'Date',          '20190404', ...
@@ -131,8 +142,7 @@ ecg_bna_cfg.session_info(1) = ...
 %       'pow'       - LFP power spectrum average for given conditions and epochs
 %       'sync'      - LFP-LFP phase synchronization measure for given conditions and
 %           time windows
-ecg_bna_cfg.analyses = {'Rpeak_evoked_ECG', 'Rpeak_evoked_onset', 'Event_trig_R2Rt', ...
-    'Rpeak_evoked_LFP', 'Rpeak_evoked_TFS'}; % , 'Rpeak_evoked_LFP', 'Rpeak_evoked_TFS'
+ecg_bna_cfg.analyses = {'Rpeak_evoked_ECG', 'Rpeak_evoked_onset', 'Event_trig_R2Rt'}; % , 'Rpeak_evoked_LFP', 'Rpeak_evoked_TFS'
 
 % targets to be included in the analysis
 % should be a cell array of strings which indicate the target names
@@ -181,7 +191,8 @@ ecg_bna_cfg.plottrials = 0;
 % and type = 2 separately
 % 2. lfp_tfa_cfg.compare.types = nan; Ignore trial type (trials with any
 % type value are combined)
-ecg_bna_cfg.compare.types = [4, 1];
+% [task rest]
+ecg_bna_cfg.compare.types = [2, 1];
 
 % effectors to be included in the analysis
 % should be a vector of integers specifying the effectors
@@ -192,7 +203,7 @@ ecg_bna_cfg.compare.types = [4, 1];
 % and effector = 6 separately
 % 2. lfp_tfa_cfg.compare.types = nan; Ignore effector (trials with any
 % effector value are combined)
-ecg_bna_cfg.compare.effectors = [6, 0];
+ecg_bna_cfg.compare.effectors = [1, 0];
 
 % which trials are to be included in the analysis based on success
 % Examples:
@@ -254,7 +265,10 @@ ecg_bna_cfg.compare.reach_spaces = {'any'};
 ecg_bna_cfg.compare.exclude_handspace = {};
 
 % perturbations to be included in the analysis
-% should be nan, 0, 1 or [0, 1]
+%  1) priotrity for manual definition in the; 2) based on ECG ses structure
+% setting file and finally it will take the pertu.variable from Luka's
+% preprocessing files
+% should be inf, 0, 1 or [0, 1]
 % Examples:
 % lfp_tfa_cfg.compare.perturbations = 0; consider only those trials with
 % perturbation value = lfp_tfa_cfg.compare.perturbation_groups(0)
@@ -265,7 +279,7 @@ ecg_bna_cfg.compare.exclude_handspace = {};
 % lfp_tfa_cfg.compare.perturbation_groups(1) separately
 % lfp_tfa_cfg.compare.perturbations = nan; combine the trials with
 % any perturbation value 
-ecg_bna_cfg.compare.perturbations = inf; 
+ecg_bna_cfg.compare.perturbations = [0, 1]; 
 
 % differences in conditions to be analysed
 % add new entries for further difference calculations
@@ -287,7 +301,7 @@ ecg_bna_cfg.compare.perturbations = inf;
 ecg_bna_cfg.diff_condition = {};
 %lfp_tfa_cfg.diff_condition(1) = {{'perturbation', {0, 1}}};
 % lfp_tfa_cfg.diff_condition(2) = {{'choice', {0, 1}}};
-ecg_bna_cfg.diff_condition(1) = {{'type_eff', {[4 6], [1 0]}}};%, 'perturbation', {0, 1}}};
+ecg_bna_cfg.diff_condition(1) = {{'type_eff', {[2 1], [1 0]}}};%, 'perturbation', {0, 1}}};
 % lfp_tfa_cfg.diff_condition(3) = {{'perturbation', {0, 1}, ...
 %     'choice', {0, 1}}};
 
@@ -556,7 +570,7 @@ if ecg_bna_cfg.random_permute_triggers
     ecg_bna_cfg.n_shuffles = 100;
 end
 
-% define the time windows to analyse event triggered R2Rt
+%define the time windows to analyse event triggered R2Rt
 % Must be a Nx4 cell array, N = number of windows to analyse
 % Each row corresponds to one epoch and contain following elements
 % 1. Identifier of state to which the epoch is referred, see lfp_tfa_global_states, Example:  lfp_tfa_states.CUE_ON
