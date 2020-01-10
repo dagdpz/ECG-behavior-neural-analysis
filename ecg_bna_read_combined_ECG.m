@@ -1,10 +1,22 @@
 function session_ecg = ecg_bna_read_combined_ECG( session_info, plottrials  )
-
-% ecg_bna_read_combined_ECG - function to read in the ECG data 
+% ecg_bna_read_combined_ECG - function to read the ECG raw data and
+% timestamps and trial information for all trials in a session from
+% combined files (For example, files stored inside
+% Y:\Data\[Monkey]\[Date])
 %
 % USAGE:
 %	session_ecg = ecg_bna_read_combined_ECG( session_info, plottrials  )
 %
+% INPUTS: 
+%   session_info        - struct containing information about all sessions
+%   to be processed
+%   plottrials          - whether to plot ECG data for individual trials
+% OUTPUTS: 
+%   session_info        - a copy of input struct session_info
+%
+% REQUIRES: ecg_bna_get_block_Rpeak_times
+%
+% See also lfp_tfa_process_LFP, ecg_bna_read_preproc_ECG, ecg_bna_read_combined_ECG
 
     
     close all; 
@@ -25,7 +37,7 @@ function session_ecg = ecg_bna_read_combined_ECG( session_info, plottrials  )
     block_files = dir(fullfile(session_info.Input_ECG_combined, '*.mat'));
     
     % prepare results folder
-    results_fldr = fullfile(session_info.proc_results_fldr);
+    results_fldr = fullfile(session_info.proc_ecg_fldr);
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -33,7 +45,7 @@ function session_ecg = ecg_bna_read_combined_ECG( session_info, plottrials  )
     if isfield(session_info, 'Input_ECG')
         if ~exist(session_info.Input_ECG, 'file')
             fprintf('No file found \n%s\n', ...
-                session_info.Input_ECG_raw);
+                session_info.Input_ECG);
             return;
         end
         load(session_info.Input_ECG);
@@ -135,6 +147,12 @@ function session_ecg = ecg_bna_read_combined_ECG( session_info, plottrials  )
                                 ~isempty(ses.first_inj_block) && ...
                                 nrblock_combinedFile >= ses.first_inj_block
                             perturbation = 1;
+                        end
+                        
+                        if isnan(perturbation) && ...
+                                isfield(trial, 'perturbation') && ...
+                                isempty(trial(t).perturbation)
+                            perturbation = trial(t).perturbation;
                         end
                                       
                         

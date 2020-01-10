@@ -1,8 +1,31 @@
 function shuffled_ecg_evoked = ecg_bna_get_shuffled_Rpeak_evoked_ECG( trials_ecg, cfg_ecg, nshuffles )
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+% ecg_bna_get_shuffled_Rpeak_evoked_ECG - computes the evoked ECG for
+% a specified  time window around randomly shuffled triggers for given
+% trials (usually trials belonging to a condition) in a session. The random 
+% triggers are obtained by randomly shuffling the Rpeaks based on their 
+% peak-to-peak intervals 
+%
+% USAGE:
+%	shuffled_ecg_evoked = ecg_bna_get_shuffled_Rpeak_evoked_ECG(
+%	trials_ecg, cfg_ecg, nshuffles ) 
+%
+% INPUTS:
+%       trials_ecg      - 1xN struct containing ECG and Rpeak data of N
+%       trials
+%       cfg_ecg         - a cell array specifying time window around the
+%       trigger during which evoked response should be obtained
+%       nshuffles       - number of times the Rpeak triggers should be 
+%       randomly shuffled
+% OUTPUTS:
+%		shuffled_ecg_evoked   - struct containing shuffled Rpeak triggered
+%		evoked ECG from the given trials (mean and standard deviation
+%		across shuffles)
+%
+% REQUIRES:	ft_spiketriggeredaverage (FieldTrip toolbox)
+%
+% See also ecg_bna_compute_session_evoked_ECG, ecg_bna_get_Rpeak_based_STA, ecg_bna_get_shuffled_Rpeak_evoked_LFP
 
-%nshuffles = 100;
+% whether to plot the distribution of ECG peak-to-peak interval
 distplot = false;
 
 shuffled_ecg_evoked.lfp = {};
@@ -89,33 +112,6 @@ for i = 1:nshuffles
     
     Rpeak_evoked_ECG(i).ecg_time = ecg_based_sta.time;
     Rpeak_evoked_ECG(i).mean = ecg_based_sta.avg;    
-    
-%     for s = 1:length(ECG_raw)
-%         shuffled_ecg_peaks = false(size(ecg_peaks{s}));
-%         npeaks = sum(ecg_peaks{s});
-%         shuffled_ecg_peak_times = cumsum(shuffled_ecg_p2pt...
-%             (peak_idx:peak_idx + npeaks - 2));
-%         shuffled_ecg_peak_times = shuffled_ecg_peak_times(...
-%             shuffled_ecg_peak_times < timestamps{s}(end));
-%         shuffled_ECG_peak_samples = round(shuffled_ecg_peak_times / ts);
-%         % randomly shift shuffled ECG peaks
-%         shuffled_ECG_peak_samples = ...
-%             shuffled_ECG_peak_samples + ...
-%             round((2*rand(size(shuffled_ECG_peak_samples)) - 1) * (mean_ecg_p2pt/ts));  
-%         shuffled_ECG_peak_samples(shuffled_ECG_peak_samples > ...
-%             length(ecg_peaks{s}) | shuffled_ECG_peak_samples < 1) = [];
-%         shuffled_ecg_peaks(shuffled_ECG_peak_samples) = 1;
-%         peak_idx = peak_idx + npeaks - 1;
-%         ft_data_all.trial{s} = [ECG_raw{s}; shuffled_ecg_peaks];
-%         ft_data_all.time{s} = timestamps{s};
-%     end
-%     % ECG peaks
-%     shuffled_ecg_peaks = false(size(ecg_peaks));
-%     % shuffled beat to beat interval
-%     shuffled_ecg_p2pt = ecg_p2pt(randperm(length(ecg_p2pt)));
-%     shuffled_ecg_peak_times = cumsum(shuffled_ecg_p2pt);
-%     shuffled_ECG_peak_samples = round(shuffled_ecg_peak_times / ts);
-%     shuffled_ecg_peaks(shuffled_ECG_peak_samples) = 1;
 
 end
 
@@ -126,12 +122,6 @@ shuffled_ecg_evoked.dimord = 'nshuffles_time';
 shuffled_ecg_evoked.time = Rpeak_evoked_ECG(1).ecg_time;
 shuffled_ecg_evoked.mean = nanmean(cat(1, Rpeak_evoked_ECG.mean), 1);
 shuffled_ecg_evoked.std = nanstd(cat(1, Rpeak_evoked_ECG.mean), 0, 1);
-
-% mean of all shuffles
-% shuffled_ecg_evoked.lfp = cat(1, shuffled_Rpeak_evoked_ECG.mean);
-% shuffled_ecg_evoked.lfp_time = shuffled_Rpeak_evoked_ECG(1).lfp_time;
-% shuffled_ecg_evoked.mean = nanmean(cat(1, shuffled_Rpeak_evoked_ECG.mean), 1);
-% shuffled_ecg_evoked.std = nanstd(cat(1, shuffled_Rpeak_evoked_ECG.mean), 0, 1);
 
 clear ecg_evoked_lfp;
 

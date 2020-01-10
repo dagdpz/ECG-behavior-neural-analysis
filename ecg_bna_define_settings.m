@@ -1,33 +1,26 @@
 function ecg_bna_cfg = ecg_bna_define_settings(settings_filepath)
-%lfp_tfa_define_settings - Function to define LFP time frequency analysis settings 
+%ecg_bna_define_settings - Function to define ECG related bahvior and
+%neural analysis settings  
 %
 % USAGE:
-%	lfp_tfa_cfg = lfp_tfa_define_settings(settings_filepath, maxsites)
+%	ecg_bna_cfg = ecg_bna_define_settings(settings_filepath)
 %
 % INPUTS:
 %       settings_filepath         - absolute path to the matlab script file
-%       where LFP TFA settings are defined, see settings/lfp_tfa_settings
-%       maxsites                  - maximum number of sites to be analysed per session,
-%       set to infinity to analyse all sites
+%       where LFP TFA settings are defined, for example,
+%       [path_to_pipeline]\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m
 %
 % OUTPUTS:
-%		lfp_tfa_cfg               - structure containing all settings
+%		ecg_bna_cfg               - structure containing all settings
 %
-% REQUIRES:	lfp_tfa_read_info_file, lfp_tfa_compare_conditions,
-% lfp_tfa_define_states, lfp_tfa_define_epochs
+% REQUIRES:	lfp_tfa_global_define_states, lfp_tfa_read_info_file,
+% lfp_tfa_compare_conditions
 %
-% See also settings/lfp_tfa_settings, lfp_tfa_read_info_file, lfp_tfa_compare_conditions,
-% lfp_tfa_define_states, lfp_tfa_define_epochs
+% See also lfp_tfa_define_settings
 %
 % Author(s):	S.Nair, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
 %
-% Change log:
-% 2019-02-15:	Created function (Sarath Nair)
-% 2019-03-05:	First Revision
-% ...
-% $Revision: 1.0 $  $Date: 2019-03-05 17:18:00 $
-
 % ADDITIONAL INFO:
 % ...
 %%%%%%%%%%%%%%%%%%%%%%%%%[DAG mfile header version 1]%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,17 +58,39 @@ function ecg_bna_cfg = ecg_bna_define_settings(settings_filepath)
     ecg_bna_cfg.results_folder = ecg_bna_cfg.root_results_fldr;
     
     % folder to save ecg processing results
-    ecg_bna_cfg.proc_ecg_folder = [ecg_bna_cfg.root_results_fldr filesep 'Processed ECG'];
+    ecg_bna_cfg.proc_ecg_folder = ...
+        [ecg_bna_cfg.root_results_fldr filesep 'Processed ECG'];
     % folder to save ecg analysis results
-    ecg_bna_cfg.analyse_ecg_folder = [ecg_bna_cfg.root_results_fldr filesep 'ECG Analysis'];
+    ecg_bna_cfg.analyse_ecg_folder = ...
+        [ecg_bna_cfg.root_results_fldr filesep 'ECG Analysis'];    
+    % Folder to save results of LFP processing
+    if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || ...
+            any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
+        if ecg_bna_cfg.process_LFP || ~exist(ecg_bna_cfg.proc_lfp_folder, 'dir')
+            ecg_bna_cfg.process_LFP = true;
+            ecg_bna_cfg.proc_lfp_folder = ...
+                [ecg_bna_cfg.root_results_fldr filesep 'Processed LFP'];
+        end
+        % folder to save ecg analysis results
+        ecg_bna_cfg.analyse_lfp_folder = ...
+            [ecg_bna_cfg.root_results_fldr filesep 'LFP Analysis'];    
+    end
     % folder to store session-wise analysis results
     for i = 1:length(ecg_bna_cfg.session_info)
         ecg_bna_cfg.session_info(i).session = ...
             [ecg_bna_cfg.session_info(i).Monkey, '_', ecg_bna_cfg.session_info(i).Date];
-        ecg_bna_cfg.session_info(i).proc_results_fldr = ...
+        ecg_bna_cfg.session_info(i).proc_ecg_fldr = ...
                 fullfile(ecg_bna_cfg.proc_ecg_folder, ecg_bna_cfg.session_info(i).session);
+        ecg_bna_cfg.session_info(i).analyse_ecg_fldr = ...
+                fullfile(ecg_bna_cfg.analyse_ecg_folder, ecg_bna_cfg.session_info(i).session);
+        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || ...
+                any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
+            ecg_bna_cfg.session_info(i).analyse_lfp_fldr = ...
+                fullfile(ecg_bna_cfg.analyse_lfp_folder, ecg_bna_cfg.session_info(i).session);
+            ecg_bna_cfg.session_info(i).proc_lfp_fldr = ...
+                fullfile(ecg_bna_cfg.proc_lfp_folder, ecg_bna_cfg.session_info(i).session);
+        end
     end
-
     % save settings struct
     save(fullfile(ecg_bna_cfg.root_results_fldr, ['ecg_bna_settings_' num2str(ecg_bna_cfg.version) '.mat']), ...
         'ecg_bna_cfg');

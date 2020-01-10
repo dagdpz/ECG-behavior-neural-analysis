@@ -1,6 +1,23 @@
 function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, plottitle, results_file, varargin )
-%ecg_bna_plot_evoked_lfp  - Plots the LFP evoked response
-%averages for different hand-space conditions to be compared
+%ecg_bna_plot_evoked_lfp  - Plots the Rpeak onset probability for given
+%time windows and different conditions to be compared
+%
+% USAGE:
+%   ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg,
+%   plottitle)
+%
+% INPUTS:
+%       evoked_lfp       - average LFP power spectrum for different
+%       hand-space conditions to be compared
+%		ecg_bna_cfg      - struct containing the required settings
+%           Required Fields: see ecg_bna_settings
+%               compare.reach_hands     - reach hands
+%               compare.reach_spaces    - reach spaces               
+%       plottitle        - title for the plot
+%       results_file     - path to filename to store the resulting image
+%
+% See also ecg_bna_compute_session_Rpeak_evoked_state_onsets,
+% ecg_bna_avg_sessions_Rpeak_evoked_state_onsets
 
     h = figure;
     set(h, 'position', [100, 100,900, 675]);

@@ -1,18 +1,64 @@
 function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, analyse_states, ecg_bna_cfg ) 
-
-% ecg_bna_compute_session_Rpeak_evoked_LFP  - plots average evoked LFP for
-% different hand-space tuning conditions for each site and across all sites
-% of a session
+% ecg_bna_compute_session_Rpeak_evoked_LFP  - compute average Rpeak evoked 
+% ECG for different conditions for each site of a session. 
+% A condition is a combination of
+% possibly hand-space tuning (for consitency with LFP analysis),
+% control/inactivation, choice/instructed, type-effector values. 
 %
 % USAGE:
-%	[ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, analyse_states, ecg_bna_cfg )
+%	[ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP(
+%	session_proc_lfp, analyse_states, ecg_bna_cfg )  
 %
+% INPUTS:
+%		session_proc_lfp  	- 1xN struct containing raw LFP data for a
+%		session,  output from ecg_bna_process_combined_LFP_ECG 
+%       analyse_states  - cell array containing states to be
+%       analysed and corresponding time windows
+%       ecg_bna_cfg     - struct containing configuration settings
+%           Required fields:
+%               random_seed                 - random seed for
+%               reproducibility of random shuffling of Rpeaks
+%               session_results_fldr        - folder to which the
+%               results of the session should be saved
+%               mintrials_percondition          - minimum number of trials
+%               required per condition for considering the site for
+%               averaging
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%               ref_hemisphere      - reference hemisphere for ipsi- and
+%               contra- hand and space labeling
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
+%               random_permute_triggers     - flag indicating whether to
+%               randomly permute the Rpeak triggers
+%               n_shuffles                  - integer which specifies how
+%               many times the Rpeaks need to be randomly shuffled to
+%               compute statistics
+%               
+%
+% OUTPUTS:
+%		session_evoked	- output structure which saves the average 
+%       evoked LFP in a time window around Rpeak for trials of given 
+%       conditions
+% 
+% REQUIRES:	lfp_tfa_compare_conditions, lfp_tfa_get_condition_trials,
+% ecg_bna_get_Rpeak_evoked_LFP, ecg_bna_get_shuffled_Rpeak_evoked_LFP,
+% ecg_bna_plot_evoked_lfp, ecg_bna_compute_diff_condition_average
+%
+% See also ecg_bna_compute_session_evoked_ECG,
+% ecg_bna_compute_session_Rpeak_evoked_TFS,
+% ecg_bna_compute_session_evoked_ECG_R2Rt,
+% ecg_bna_compute_session_Rpeak_evoked_state_onsets 
 
     % suppress warning for xticklabel
     warning ('off', 'MATLAB:hg:willberemoved');
 
     % make a folder to save figures
-    results_folder_evoked = fullfile(ecg_bna_cfg.session_results_fldr, 'Rpeak_evoked_LFP');
+    results_folder_evoked = fullfile(ecg_bna_cfg.session_lfp_fldr, 'Rpeak_evoked_LFP');
     if ~exist(results_folder_evoked, 'dir')
         mkdir(results_folder_evoked);
     end
@@ -116,11 +162,6 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
                             shuffled_Rpeak_evoked = ecg_bna_get_shuffled_Rpeak_evoked_LFP(cond_trials_lfp, ...
                                 analyse_states(st, :), nshuffles);
                         end
-                        
-%                         state_evoked = ecg_bna_get_ECG_based_STA(cond_trials_lfp, ...
-%                             site_lfp(i).site_ID, analyse_states(st, :), 'lfp');
-%                         state_evoked_ecg = ecg_bna_get_ECG_based_STA(cond_trials_lfp, ...
-%                             site_lfp(i).site_ID, analyse_states(st, :), 'ecg');
                     
                     end                        
 
@@ -160,7 +201,7 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
             
             % plots
             % Evoked LFP
-            if ~isempty(fieldnames(sites_evoked(i).condition(cn).hs_tuned_evoked))
+            if ~isempty([sites_evoked(i).condition(cn).hs_tuned_evoked.lfp])
                 plottitle = ['Site ID: ', sites_evoked(i).site_ID ', Target = ' ...
                     sites_evoked(i).target '(ref_' ecg_bna_cfg.ref_hemisphere '), '  ...
                     site_conditions(cn).label '), '];
@@ -262,8 +303,6 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp = ...
                                             [session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp; ...
                                             sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).mean] ;
-%                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).std = ...
-%                                             sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).std ;
                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).time = ...
                                             sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).time;
 
@@ -275,9 +314,6 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp = ...
                                             [session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp(:,1:nsamples); ...
                                             sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).mean(1:nsamples)] ;
-%                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).std = ...
-%                                             session_avg(t).condition(cn).hs_tuned_evoked(st, hs).std(1:nsamples) + ...
-%                                             sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).std(1:nsamples) ;
                                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).time = ...
                                             session_avg(t).condition(cn).hs_tuned_evoked(st, hs).time(1:nsamples) ;
 
@@ -296,7 +332,6 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
                                     session_avg(t).condition(cn).label = site_conditions(cn).label;
                                     session_avg(t).condition(cn).session = session_proc_lfp(i).session;
                                     session_avg(t).condition(cn).target = session_proc_lfp(i).target;
-                                    %session_avg(t).condition(cn).nsites = nsites;
                                 end
 
                             end
@@ -315,7 +350,6 @@ function [ session_evoked ] = ecg_bna_compute_session_Rpeak_evoked_LFP( session_
                             nanmean(session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp, 1);
                         session_avg(t).condition(cn).hs_tuned_evoked(st, hs).std = ...
                             nanstd(session_avg(t).condition(cn).hs_tuned_evoked(st, hs).lfp, 0, 1);
-                        %session_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites = isite;
                         end
                     end
                 end

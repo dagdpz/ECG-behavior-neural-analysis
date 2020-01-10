@@ -1,15 +1,35 @@
 function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_cfg )
-
-% ecg_bna_process_combined_LFP_ECG - function to read in the processed lfp and
+% ecg_bna_process_combined_LFP_ECG - function which performs the follwing
+% tasks for each site recorded in a session
+% 1. read in the processed lfp data
+% 2. store the trials information and lfp raw data
+% 3. call to compute LFP time frequency spectrograms
+% 4. call to detect noisy trials
+% 5. call to get Rpeak data for each trial
+% 6. call to get ECG raw data for each trial
+% 7. store the trial info, LFP data and tfs, ECG raw data and Rpeaks
 % compute the time frequency spectrogram for each trial
 %
 % USAGE:
 %	session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_cfg )
 %
+% INPUTS: 
+%   session_info        - struct containing information about all sessions
+%   to be processed
+%   ecg_bna_cfg         - struct containing settings for analysis
+% OUTPUTS: 
+%   session_info        - a copy of input struct session_info
+%
+% REQUIRES: ecg_bna_get_ECG_raw, ecg_bna_get_ECG_peaks,
+% lfp_tfa_compute_site_tfr, lfp_tfa_reject_noisy_lfp_trials,
+% lfp_tfa_compute_site_baseline,
+%
+% See also lfp_tfa_process_LFP, ecg_bna_read_preproc_ECG, ecg_bna_read_combined_ECG
     
     close all; 
 
     if isfield(session_info, 'Input_LFP')
+        session_info.Input_LFP = {session_info.Input_LFP};
         combined_sites = cell(1, length(session_info.Input_LFP));
         for s = 1:length(combined_sites)
             % Read input LFP file
@@ -27,7 +47,7 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
     end
     
     % prepare results folder
-    results_fldr = fullfile(session_info.proc_results_fldr);
+    results_fldr = fullfile(session_info.proc_lfp_fldr);
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -54,20 +74,20 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
     %                 sites(i).site_ID),:))
     %             continue;
     %         end
-            fprintf('=============================================================\n');
-            fprintf('Processing site, %s\n', sites(i).site_ID);
-            % for future use
-            % get 'Set' entry from usable_sites_table
-    %         site_lfp.dataset = usable_sites_table(...
-    %             strcmp(usable_sites_table.Site_ID, sites(i).site_ID), :).Set(1);
-            site_lfp.site_ID = sites(i).site_ID;
-            site_lfp.target = sites(i).target;
-            site_lfp.recorded_hemisphere = upper(sites(i).target(end));            
-            site_lfp.xpos = sites(i).grid_x;
-            site_lfp.ypos = sites(i).grid_y;
-            site_lfp.zpos = sites(i).electrode_depth;
-            site_lfp.session = sites(i).site_ID(1:12);
-            site_lfp.ref_hemisphere = ecg_bna_cfg.ref_hemisphere; 
+        fprintf('=============================================================\n');
+        fprintf('Processing site, %s\n', sites(i).site_ID);
+        % for future use
+        % get 'Set' entry from usable_sites_table
+%         site_lfp.dataset = usable_sites_table(...
+%             strcmp(usable_sites_table.Site_ID, sites(i).site_ID), :).Set(1);
+        site_lfp.site_ID = sites(i).site_ID;
+        site_lfp.target = sites(i).target;
+        site_lfp.recorded_hemisphere = upper(sites(i).target(end));            
+        site_lfp.xpos = sites(i).grid_x;
+        site_lfp.ypos = sites(i).grid_y;
+        site_lfp.zpos = sites(i).electrode_depth;
+        site_lfp.session = sites(i).site_ID(1:12);
+        site_lfp.ref_hemisphere = ecg_bna_cfg.ref_hemisphere; 
               
         % loop through each input LFP file
         for s = 1:length(combined_sites)
@@ -209,7 +229,7 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
                                 site_lfp.trials(comp_trial).states(st).onset_s  = state_onset_sample;
                             end
                         %end
-                        if site_lfp.trials(comp_trial).completed
+                        if true %site_lfp.trials(comp_trial).completed
                             trial_start_t = site_lfp.trials(comp_trial).states(...
                                 [site_lfp.trials(comp_trial).states.id] == ...
                                 ecg_bna_cfg.trialinfo.start_state).onset_t + ...

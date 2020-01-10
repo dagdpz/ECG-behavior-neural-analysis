@@ -1,24 +1,29 @@
 function ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_file, varargin )
-%ecg_bna_plot_evoked_lfp  - Plots the LFP evoked response
-%averages for different hand-space conditions to be compared
+%ecg_bna_plot_evoked_lfp  - Plots the LFP/ECG evoked response
+%averages for different conditions to be compared
 %
 % USAGE:
 %   ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_file )
+%   ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle,
+%   results_file, 'ylabel', 'ECG amplitude' ) 
 %
 % INPUTS:
 %       evoked_lfp       - average LFP power spectrum for different
 %       hand-space conditions to be compared
 %		ecg_bna_cfg      - struct containing the required settings
 %           Required Fields: see ecg_bna_settings
-%               1. 
+%               compare.reach_hands     - reach hands
+%               compare.reach_spaces    - reach spaces               
 %       plottitle        - title for the plot
 %       results_file     - path to filename to store the resulting image
+%       varargin         - other settings for plotting given as name-value
+%       pairs. Currently only supports name 'ylabel' (if a user specified
+%       label has to be assigned for y axis, by default y axis label is
+%       'LFP amplitude')
 %
-% REQUIRES:	
-%
-% See also ecg_bna_settings, ecg_bna_plot_site_evoked_LFP, 
-% ecg_bna_avg_evoked_LFP_across_sites, 
-% ecg_bna_avg_evoked_LFP_across_sessions
+% See also ecg_bna_compute_session_Rpeak_evoked_LFP,
+% ecg_bna_avg_sessions_Rpeak_evoked_LFP, ecg_bna_compute_session_evoked_ECG, 
+% ecg_bna_avg_sessions_Rpeak_evoked_ECG
 %
 % Author(s):	S.Nair, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
@@ -49,8 +54,13 @@ function ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_fi
     % noffset = 100;
     
     % number of subplots required
-    nhandlabels = length(ecg_bna_cfg.compare.reach_hands);
-    nspacelabels = length(ecg_bna_cfg.compare.reach_spaces);
+    nhandlabels = 1; nspacelabels = 1;
+    if isfield(ecg_bna_cfg.compare, 'reach_hands')
+        nhandlabels = length(ecg_bna_cfg.compare.reach_hands);
+    end
+    if isfield(ecg_bna_cfg.compare, 'reach_spaces')
+        nspacelabels = length(ecg_bna_cfg.compare.reach_spaces);
+    end
     
     % loop through handspace
     for hs = 1:size(evoked_lfp, 2)
@@ -97,19 +107,7 @@ function ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_fi
             %if isfield(evoked_lfp, 'state_name')
             %set(gca,'xtick', unique(state_samples))
             line([0 0], ylim, 'color', 'k'); 
-%             for so = state_onsets
-%                 line([so so], ylim, 'color', 'k'); 
-%                 if isfield(evoked_lfp(state_onsets == so, hs), 'state_name') && ...
-%                         ~isempty(evoked_lfp(state_onsets == so, hs).state_name)
-%                     state_name = evoked_lfp(state_onsets == so, hs).state_name;
-%                     ypos = ylim;
-%                     ypos = ypos(1) + (ypos(2) - ypos(1))*0.2;
-%                     text(so+1, ypos, state_name, 'fontsize', 10);
-%                 end
-%             end
-%             %end
-%             set(gca,'xticklabels', round(concat_states_lfp.time(unique(state_samples)), 2), 'fontsize', 10)
-%             set(gca, 'xticklabelrotation', 45);
+
             xlabel('Time(s)');
             ylabel(yaxislabel);
             

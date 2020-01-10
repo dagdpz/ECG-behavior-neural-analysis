@@ -104,54 +104,26 @@ ecg_bna_cfg.session_info(6) = ...
 %            'Preinj_blocks',  0, ...
 %            'Postinj_blocks', 'allbutfirst');
 
-% what kind of analyses should be done on LFP
+% what kind of behavior and neural analyses should be done on ECG
 % should be a cell array of strings which indicate which kind of analyses
-% should be performed on LFP
-% Currently supported analyses are 'tfs', 'evoked', 'pow', and 'sync'
-%       'tfs'       - LFP time frequency spectrogram average for given conditions and time windows
-%       'evoked'    - LFP evoked response average for given conditions and time windows
-%       'pow'       - LFP power spectrum average for given conditions and epochs
-%       'sync'      - LFP-LFP phase synchronization measure for given conditions and
-%           time windows
-ecg_bna_cfg.analyses = {'tfs', 'evoked'};
+% should be performed on ECG data
+% Can be
+%       'Rpeak_evoked_ECG'          - Rpeak evoked ECG response average
+%       'Rpeak_evoked_onset'        - Event onset probability vs. Rpeak
+%       phase and Event onset probability vs. time elapsed from Rpeak
+%       'Event_trig_R2Rt'       	- ECG R2R interval in a window around
+%       an event onset
+%       'Rpeak_evoked_LFP'          - Rpeak evoked LFP response average in
+%       a window around Rpeak onset
+%       'Rpeak_evoked_TFS'          - LFP time freq response average in
+%       a window around Rpeak onset
+ecg_bna_cfg.analyses = {'Rpeak_evoked_ECG', 'Rpeak_evoked_onset', 'Event_trig_R2Rt'}; % , 'Rpeak_evoked_LFP', 'Rpeak_evoked_TFS'
 
-% targets to be included in the analysis
-% should be a cell array of strings which indicate the target names
-% the target names should be same as the target field in the LFP data
-% structure
-% Those targets which are not in the analysed sessions will be ignored
-% Example:
-% 1. lfp_tfa_cfg.compare.targets = {'MIPa_R', 'MIPa_L', 'dPul_R', 'dPul_L'}; 
-ecg_bna_cfg.compare.targets = {'dPul_R'}; 
-
-% reference hemisphere for hand-space labelling
-% can be 'R' (for right hemisphere) or 'L' (for left hemisphere)
-% ref_hemisphere is used for labelling contra and ipsi hand and space
-% set ref_hemisphere to lesioned hemishere for ipsi lesional and contra
-% lesional labeling
-% set ref_hemisphere to recorded hemishere for ipsi lateral and contra
-% lateral labeling
-ecg_bna_cfg.ref_hemisphere = 'R'; 
-
-% maximum no:of sites to analyse from each session
-% If maxsites < total number of sites in a session, only maxsite number of
-% sites will be analysed
-% Examples:
-% 1. lfp_tfa_cfg.maxsites = 2; only first two sites will be analysed from 
-% each session
-% 1. lfp_tfa_cfg.maxsites = inf; all the sites will be analysed from 
-% each session
-ecg_bna_cfg.maxsites = inf; % inf = analyse all sites
+%% Settings common for neural and behavior analysis  %%
 
 % random seed for random number generator for reproducibility
 % set to a non negative integer below 2^32
 ecg_bna_cfg.random_seed = rng;
-
-% whether to plot ECG data for individual trials
-% Set to 1 for plotting individual trials, zero otherwise
-ecg_bna_cfg.plottrials = 0;
-
-%% Settings for averaging TFR and evoked LFP based on conditions
 
 % trial types to be included in the analysis
 % should be a vector of integers specifying the types
@@ -285,7 +257,7 @@ ecg_bna_cfg.diff_legend{1} = {
     'Post-injection Unsuccessful', ...
     'Pre-injection Unsuccessful'};
 
-%% Time information
+% Time information
 
 % Specify events which mark trial start and end
 ecg_bna_cfg.trialinfo = struct();
@@ -322,6 +294,93 @@ ecg_bna_cfg.trialinfo.end_state = lfp_tfa_states.TRI_END;
 % trial start time = onset time of lfp_tfa_cfg.trialinfo.end_state - 0.5;
 ecg_bna_cfg.trialinfo.ref_tend = 0;
 
+% define the time windows to analyse for LFP TFR and evoked LFP response
+% Must be a Nx4 cell array, N = number of windows to analyse
+% Each row corresponds to one state and contain following elements
+% 1. Identifier of state around which the window is referenced, 
+% see lfp_tfa_global_states, Example:  lfp_tfa_states.CUE_ON
+% 2. Name of the reference state (window) - string (used for labeling 
+% purposes in plots) eg: 'Cue'
+% 3. Start time offset - offset in seconds from reference state onset for 
+% the start of time window
+% start time = Reference state onset time + Start time offset
+% 4. End time offset - offset in seconds from ref. state onset for end of
+% time window
+% end time = Ref. state onset time + end time offset
+% 
+% Example row: 
+%   lfp_tfa_states.CUE_ON,     'Cue',    -1.0 ,    0.5
+%   lfp_tfa_cfg.analyse_states = {'combined', [lfp_tfa_states.INI_TRI, ...
+%         lfp_tfa_states.TRI_END], 0.8, 100, 'random'};
+% lfp_tfa_cfg.analyse_states = {lfp_tfa_states.FIX_HOL,   'Fix hold',      -0.5,   0.9;...
+%                              lfp_tfa_states.TAR_HOL,    'Tar hold',    -0.3,   0.5};
+ecg_bna_cfg.analyse_states = {'ecg', 'ECG peak', -0.5, 0.5};
+
+
+% minimum number of trials per condition to be satisfied to consider a site
+% for averaging, if for a site, for any condition, the  number of valid 
+% (non-noisy) trials is less than mintrials_percondition, the site is not considered for averaging
+% Set lfp_tfa_cfg.mintrials_percondition = 1 to consider a site if atleast
+% one valid trial is obtained (keep minimum value of 1)
+% Example:
+% consider those sites with atleast 5 trials for each condition
+% lfp_tfa_cfg.mintrials_percondition = 5; 
+% By condition, we mean a combination of choice/instr, pre/post-injection, type and effector, hand-space
+ecg_bna_cfg.mintrials_percondition = 0;
+
+%% Settings relevant only for ECG related behavior analysis
+
+% Settings for event triggered ECG R2R interval
+ecg_bna_cfg.event_triggers = {lfp_tfa_states.SAC_INI,   'Sac ini',    -1,   1;...
+                              lfp_tfa_states.REWARD,    'Rwd',    -0.5,   0.5; ...
+                              lfp_tfa_states.ITI,       'ITI',    -0.5,   0.5};
+                          
+% options for normalizing evoked ECG R2R interval 
+% Whether or not to normalize the R2R interval for plotting
+% Set to true for normalizing, otherwise set to false
+% If set to true, the R2R interval for each trial is normalized by the mean
+% R2R interval for that trial period, see lfp_tfa_cfg.trialinfo for the
+% definition of trial period
+ecg_bna_cfg.normalize_R2Rt = true;
+
+
+ecg_bna_cfg.analyse_Rpeak_states = {lfp_tfa_states.SAC_INI,   'Sacc Ini', [-0.25 0.25], 'afterRpeak'; ...
+                                    lfp_tfa_states.REWARD,    'Reward', [-0.25 0.25], 'afterRpeak'; ...
+                                    lfp_tfa_states.ITI,       'ITI', [-0.25 0.25], 'afterRpeak'};
+
+% whether to plot ECG data for individual trials
+% Set to 1 for plotting individual trials, zero otherwise
+ecg_bna_cfg.plottrials = 0;
+
+%% Settings relevant only for ECG related neural analysis
+
+% targets to be included in the analysis
+% should be a cell array of strings which indicate the target names
+% the target names should be same as the target field in the LFP data
+% structure
+% Those targets which are not in the analysed sessions will be ignored
+% Example:
+% 1. lfp_tfa_cfg.compare.targets = {'MIPa_R', 'MIPa_L', 'dPul_R', 'dPul_L'}; 
+ecg_bna_cfg.compare.targets = {'dPul_R'}; 
+
+% reference hemisphere for hand-space labelling
+% can be 'R' (for right hemisphere) or 'L' (for left hemisphere)
+% ref_hemisphere is used for labelling contra and ipsi hand and space
+% set ref_hemisphere to lesioned hemishere for ipsi lesional and contra
+% lesional labeling
+% set ref_hemisphere to recorded hemishere for ipsi lateral and contra
+% lateral labeling
+ecg_bna_cfg.ref_hemisphere = 'R'; 
+
+% maximum no:of sites to analyse from each session
+% If maxsites < total number of sites in a session, only maxsite number of
+% sites will be analysed
+% Examples:
+% 1. lfp_tfa_cfg.maxsites = 2; only first two sites will be analysed from 
+% each session
+% 1. lfp_tfa_cfg.maxsites = inf; all the sites will be analysed from 
+% each session
+ecg_bna_cfg.maxsites = inf; % inf = analyse all sites
 
 %% Settings for ft_freqanalysis in FieldTrip
 % Configuration for calculating LFP time frequency spectrogram using
@@ -390,14 +449,7 @@ ecg_bna_cfg.tfr.tapsmofrq       = [];
 % window length decreases with frequency
 ecg_bna_cfg.tfr.t_ftimwin       = [];
 
-%% settings for LFP-LFP sync analysis
-% measure of LFP-LFP phase synchronization
-% can be only 'ppc' currently
-% 'ppc' calculates pairwise phase consistency
-% entry will be used as cfg.method for performing ft_connectivityanalysis
-ecg_bna_cfg.sync.measure = 'ppc';
-
-%% Settings to detect noisy trials
+% Settings to detect noisy trials
 % configuration for lfp noise rejection
 ecg_bna_cfg.noise = [];
 % whether or not to apply noise rejection 
@@ -424,7 +476,7 @@ ecg_bna_cfg.noise.pow_thr = 4;
 % whether single trials should be plotted
 ecg_bna_cfg.noise.plottrials = 0;
 
-%% Settings to compute baseline power
+% Settings to compute baseline power
 
 % ID of the reference state around which baseline should be considered, see
 % lfp_tfa_global_define_states
@@ -517,77 +569,6 @@ else
     ecg_bna_cfg.baseline_use_effector = 0; 
 end
 
-% define the time windows to analyse for LFP TFR and evoked LFP response
-% Must be a Nx4 cell array, N = number of windows to analyse
-% Each row corresponds to one state and contain following elements
-% 1. Identifier of state around which the window is referenced, 
-% see lfp_tfa_global_states, Example:  lfp_tfa_states.CUE_ON
-% 2. Name of the reference state (window) - string (used for labeling 
-% purposes in plots) eg: 'Cue'
-% 3. Start time offset - offset in seconds from reference state onset for 
-% the start of time window
-% start time = Reference state onset time + Start time offset
-% 4. End time offset - offset in seconds from ref. state onset for end of
-% time window
-% end time = Ref. state onset time + end time offset
-% 
-% Example row: 
-%   lfp_tfa_states.CUE_ON,     'Cue',    -1.0 ,    0.5
-%   lfp_tfa_cfg.analyse_states = {'combined', [lfp_tfa_states.INI_TRI, ...
-%         lfp_tfa_states.TRI_END], 0.8, 100, 'random'};
-% lfp_tfa_cfg.analyse_states = {lfp_tfa_states.FIX_HOL,   'Fix hold',      -0.5,   0.9;...
-%                              lfp_tfa_states.TAR_HOL,    'Tar hold',    -0.3,   0.5};
-ecg_bna_cfg.analyse_states = {'ecg', 'ECG peak', -0.5, 0.5};
-
-%% Settings for event triggered ECG R2R interval
-ecg_bna_cfg.event_triggers = {lfp_tfa_states.SAC_INI,   'Sac ini',    -1,   1;...
-                              lfp_tfa_states.REWARD,    'Rwd',    -0.5,   0.5; ...
-                              lfp_tfa_states.ITI,       'ITI',    -0.5,   0.5};
-                          
-% options for normalizing evoked ECG R2R interval 
-% Whether or not to normalize the R2R interval for plotting
-% Set to true for normalizing, otherwise set to false
-% If set to true, the R2R interval for each trial is normalized by the mean
-% R2R interval for that trial period, see lfp_tfa_cfg.trialinfo for the
-% definition of trial period
-ecg_bna_cfg.normalize_R2Rt = true;
-
-
-% define the epochs to analyse for LFP power spectrum
-% Must be a Nx4 cell array, N = number of epochs to analyse
-% Each row corresponds to one epoch and contain following elements
-% 1. Identifier of state to which the epoch is referred, see lfp_tfa_global_states, Example:  lfp_tfa_states.CUE_ON
-% 2. Name of the epoch - string (used for labeling purposes in plots) eg: 'FHol'
-% 3. Start time offset - offset in seconds from reference state onset for 
-% the epoch start
-% Epoch start time = Reference state onset time + Start time offset
-% 4. End time offset - offset in seconds from ref. state onset for epoch
-% end
-% Epoch end time = Ref. state onset time + end time offset
-% Example row: 
-%   lfp_tfa_states.CUE_ON,     'FHol',    -0.3 ,    0
-ecg_bna_cfg.analyse_epochs = {lfp_tfa_states.CUE_ON,     'FHol',    -0.3 ,    0  ;...
-                              lfp_tfa_states.CUE_ON,     'Cue' ,    0.05 ,    0.2 ; ...
-                              lfp_tfa_states.DEL_PER,    'EDel',    0.3 ,     0.6 ; ...
-                              lfp_tfa_states.TAR_ACQ,    'Del',     -0.3 ,    0  ; ...
-                              lfp_tfa_states.REA_INI,    'PreR',    -0.3 ,    -0.05 ; ...
-                              lfp_tfa_states.REA_END,    'PeriR',   -0.2 ,    0.2 ; ...
-                              lfp_tfa_states.SUCCESS,    'THol',    -0.3 ,    0    };
-                          
-ecg_bna_cfg.analyse_Rpeak_states = {lfp_tfa_states.SAC_INI,   'Sacc Ini', [-0.25 0.25], 'afterRpeak'; ...
-                                    lfp_tfa_states.REWARD,    'Reward', [-0.25 0.25], 'afterRpeak'; ...
-                                    lfp_tfa_states.ITI,       'ITI', [-0.25 0.25], 'afterRpeak'};
-
-% minimum number of trials per condition to be satisfied to consider a site
-% for averaging, if for a site, for any condition, the  number of valid 
-% (non-noisy) trials is less than mintrials_percondition, the site is not considered for averaging
-% Set lfp_tfa_cfg.mintrials_percondition = 1 to consider a site if atleast
-% one valid trial is obtained (keep minimum value of 1)
-% Example:
-% consider those sites with atleast 5 trials for each condition
-% lfp_tfa_cfg.mintrials_percondition = 5; 
-% By condition, we mean a combination of choice/instr, pre/post-injection, type and effector, hand-space
- ecg_bna_cfg.mintrials_percondition = 0;
 
 % method to be used for baseline normalization
 % can be 'zscore', 'relchange', 'subtraction', 'division'
@@ -616,7 +597,7 @@ ecg_bna_cfg.baseline_method = 'none';
 % lfp_tfa_cfg.compute_pow = 1;
 
     
-%% Settings for averaging across sessions or sites
+% Settings for averaging across sessions or sites
 
 % how to average data across multiple sessions/sites
 % 'sessions' - average the session averages (a session average is the

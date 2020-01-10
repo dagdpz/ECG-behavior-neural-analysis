@@ -1,4 +1,36 @@
 function state_evoked_R2Rt = ecg_bna_get_state_evoked_ECG_R2Rt(trials_ecg, state, ecg_bna_cfg)
+% ecg_bna_get_state_evoked_ECG_R2Rt - computes the normalized average peak-to-peak 
+% interval within a specified time window around an event onset for given
+% trials (usually trials belonging to a condition) in a session.
+% Normalization is done by dividing by the mean peak-to-peak interval of
+% each trial
+%
+% USAGE:
+%	state_evoked_R2Rt = ecg_bna_get_state_evoked_ECG_R2Rt(trials_ecg,
+%	state, ecg_bna_cfg) 
+%
+% INPUTS:
+%       trials_ecg      - 1xN struct containing Rpeak data of N trials
+%       state           - a cell array specifying time window around an
+%       event/state during which evoked response should be obtained
+%       ecg_bna_cfg     - struct containing settings
+%           Required fields:
+%               trialinfo.start_state - ID of an event/state which marks
+%               beginning of a trial
+%               trialinfo.ref_tstart  - time rleative to onset of event
+%               trialinfo.start_state to be considered as beginning of
+%               trial
+%               trialinfo.end_state   - ID of an event/state which marks
+%               end of a trial
+%               trialinfo.ref_tend    - time rleative to onset of event
+%               trialinfo.start_state to be considered as end of
+%               trial
+% OUTPUTS:
+%		state_evoked_R2Rt  - struct containing normalized average
+%		peak-to-peak interval in a given time window around an event onset
+%		for the given trials 
+%
+% See also ecg_bna_compute_session_Rpeak_evoked_state_onsets
 
 state_id = state{1};
 state_name = state{2};
@@ -96,7 +128,7 @@ end
 
 if ~isempty(ft_data_R2Rt.trial)
     
-    % evoked R2Rt average
+    % evoked R2Rt average using ft_spiketriggeredaverage
 %     cfg                 = [];
 %     cfg.keeptrials      = 'yes';
 %     cfg.timwin          = [state_reftstart state_reftend];
@@ -111,6 +143,7 @@ if ~isempty(ft_data_R2Rt.trial)
 %     state_evoked.std            = permute(nanstd(state_trig_R2Rt.trial, 0, 1), [2 3 1]);
 %     
     %state_evoked.mean_ecg_b2bt = mean_ECG_b2btime;
+    
     state_evoked_R2Rt.dimord = 'ntrials_time';
     
     % remove nans

@@ -5,6 +5,30 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
 %
 % USAGE:
 %	session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
+% INPUTS: 
+%   session_info    - struct containing relevant information about the
+%   session to be analysed
+%       Required fields:
+%           Input_ECG_preproc   - path to the file containing preprocessed
+%           ECG data containing trial information, ECG timeseries data and
+%           timestamps for all trials in a session. For example,
+%           Y:\Projects\PhysiologicalRecording\ephys\ECG_reaching\by_block_*.mat
+%           Input_ECG           - path to the file containing ECG Rpeak data for a session. For example,
+%           Y:\Projects\PhysiologicalRecording\Data\[Mpnkey]\[Date]\[Date]_ecg.mat
+%           proc_ecg_fldr       - path to store the resulting variables
+%           session             - name of the session
+%       Optionl fields:
+%           Preinj_blocks       - blocks to be considered as pre injection
+%           Postinj_blocks      - blocks to be considred as post-injection
+%
+% OUTPUTS: 
+%   session_ecg     - struct which stores the trial information, ECG data
+%   and timestmps, and ECG Rpeak information for all available trials of a
+%   session
+%
+% REQUIRES: ecg_bna_get_block_Rpeak_times
+%
+% See also ecg_bna_read_combined_ECG
     
     close all; 
     
@@ -15,16 +39,25 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     % struct to save data for a site
     session_ecg = struct();
         
-    if ~exist(session_info.Input_ECG_preproc, 'file')
-        fprintf('No file found: %s\n', ...
-            session_info.Input_ECG_preproc);
-        return;
-    else
-        load(session_info.Input_ECG_preproc, 'by_block');
+    % functionality to read multiple by_block files
+    session_info.Input_ECG_preproc = {session_info.Input_ECG_preproc};
+    combined_Blocks = cell(1, length(session_info.Input_ECG_preproc));
+    for s = 1:length(combined_Blocks)
+        % Read input ECG file
+        if ~exist(session_info.Input_ECG_preproc{s}, 'file')
+            fprintf('No file found: %s\n', ...
+                session_info.Input_ECG_preproc);
+            return;
+        else
+            load(session_info.Input_ECG_preproc{s}, 'by_block');
+            combined_Blocks{s} = by_block;
+        end
+        
     end
     
+    
     % prepare results folder
-    results_fldr = fullfile(session_info.proc_results_fldr);
+    results_fldr = fullfile(session_info.proc_ecg_fldr);
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -32,7 +65,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     if isfield(session_info, 'Input_ECG')
         if ~exist(session_info.Input_ECG, 'file')
             fprintf('No file found \n%s\n', ...
-                session_info.Input_ECG_raw);
+                session_info.Input_ECG);
             return;
         end
         load(session_info.Input_ECG);
@@ -126,8 +159,10 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
 %                 ~isempty(trial(t).perturbation)
 %                 perturbation = trial(t).perturbation;
             elseif exist('ses', 'var') && ...
-                block < ses.first_inj_block
-                perturbation = 0;
+                    isfield(ses, 'first_inj_block') && ...
+                    ~isempty(ses.first_inj_block) && ...
+                    block < ses.first_inj_block
+                perturbation = 0;  
             end
             
             if isnan(perturbation)
@@ -136,8 +171,13 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
                     ismember(block, session_info.Postinj_blocks)
                     perturbation = 1;
                 elseif exist('ses', 'var') && ...
-                        block >= ses.first_inj_block
+                    isfield(ses, 'first_inj_block') && ...
+                    ~isempty(ses.first_inj_block) && ...
+                    block >= ses.first_inj_block
                     perturbation = 1;
+                elseif isfield(trial, 'perturbation') && ...
+                    isempty(trial(t).perturbation)
+                    perturbation = trial(t).perturbation;
                 end
             end
             

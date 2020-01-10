@@ -1,28 +1,37 @@
 function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bna_cfg)
-%lfp_tfa_avg_evoked_LFP_across_sessions  - Condition-based evoked LFP response
-% average across many session averages
+%ecg_bna_avg_sites_Rpeak_evoked_LFP  - Condition-based evoked LFP response
+% average across many sites from a single session or multiple sessions
 %
 % USAGE:
-%	sessions_avg = lfp_tfa_avg_sessions_ECG_evoked(evoked_ecg, lfp_tfa_cfg)
+%	sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP,
+%	ecg_bna_cfg) 
 %
 % INPUTS:
-%		lfp_evoked		- struct containing the condition-based evoked LFP response for
-%		indiviual sites, output of lfp_tfa_plot_site_evoked_LFP.m
+%		Rpeak_evoked_LFP	- struct containing the condition-based evoked
+%		LFP response for indiviual sites, output of
+%		ecg_bna_compute_session_Rpeak_evoked_LFP.m 
 %           Required Fields:
-%               1. session.session_avg - 1xN struct containing condition-based
-%               average evoked LFP response for N sessions (session_avg =
-%               Average of site averages for one session)
-%		lfp_tfa_cfg     - struct containing the required settings
+%               session.sites - 1xM struct containing condition-based
+%               average evoked LFP response for M sites 
+%		ecg_bna_cfg         - struct containing the required settings
 %           Required Fields:
-%               1. conditions          - trial conditions to compare, see
+%               conditions          - trial conditions to compare, see
 %               lfp_tfa_settings.m and lfp_tfa_compare_conditions.m
-%               2. root_results_fldr   - root folder where results are saved
-%               3. compare.targets     - targets to compare, see lfp_tfa_settings.m
-%               4. ref_hemisphere      - reference hemisphere for ipsi and
+%               root_results_fldr   - root folder where results are saved
+%               compare.targets     - targets to compare, see lfp_tfa_settings.m
+%               ref_hemisphere      - reference hemisphere for ipsi and
 %               contra labeling
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
 % OUTPUTS:
-%		sessions_avg    - structure containing condition-based evoked LFP
-%		response averaged across multiple sessions
+%		sites_avg           - structure containing condition-based evoked
+%		LFP response averaged across multiple sites
 %
 % REQUIRES:	lfp_tfa_plot_evoked_lfp
 %
@@ -44,7 +53,8 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.root_results_fldr, 'ECG analysis');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sites', ...
+        'LFP evoked');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -176,7 +186,7 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
     end
     
     % save session average tfs
-    save(fullfile(results_fldr, 'sites_Rpeak_evoked_LFP.mat'), 'sites_avg');
+    save(fullfile(results_fldr, 'sites_avg_Rpeak_evoked_LFP.mat'), 'sites_avg');
         
     close all;
 end

@@ -1,6 +1,22 @@
 function [ site_lfp ] = ecg_bna_get_ECG_raw( site_lfp, Input_ECG_folder )
-%lfp_tfa_compute_site_tfr Summary of this function goes here
-%   Detailed explanation goes here
+% ecg_bna_get_ECG_raw - gets the raw ECG data for all trials of a
+% session and combines it with LFP information in the incoming struct
+%
+% USAGE:
+%	[ site_lfp ] = ecg_bna_get_ECG_raw( site_lfp, Input_ECG_folder ) 
+%
+% INPUTS:
+%		site_lfp            - struct containing LFP data for all trials of 
+%		a session from a single site
+%       Input_ECG_folder    - path to the folder containing mat files which
+%       store the combined LFP-ECG information for a session. 
+%       This is usually of the form Y:\Data\[Monkey]\[Date]
+%
+% OUTPUTS:
+%		site_lfp            - same as input structure but with additional
+%		fields to store the ECG raw data for all trials in a block
+% 
+% See also ecg_bna_process_combined_LFP_ECG, ecg_bna_get_ECG_peaks 
 
 % list mat files inside the given directory
 block_ECG_files = dir(fullfile(Input_ECG_folder, '*.mat'));

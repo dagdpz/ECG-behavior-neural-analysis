@@ -1,17 +1,53 @@
 function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_lfp, analyse_states, ecg_bna_cfg ) 
-% ecg_bna_compute_session_Rpeak_evoked_TFS  - compute and plot average lfp time freq
-% response for different hand-space tuning conditions for each site and
-% across all sites of a session
+% ecg_bna_compute_session_Rpeak_evoked_LFP  - compute average LFP time
+% frequency spectrograms for specified time windows around Rpeak from
+% trials of  given different conditions for each site of a session.  
+% A condition is a combination of possibly hand-space tuning (for
+% consitency with LFP analysis), control/inactivation, choice/instructed,
+% type-effector values.  
 %
 % USAGE:
-%	[session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_lfp, analyse_states, ecg_bna_cfg ) 
+%	[ session_tfs ] = ecg_bna_compute_session_Rpeak_evoked_TFS(
+%	session_proc_lfp, analyse_states, ecg_bna_cfg ) 
 %
+% INPUTS:
+%		session_proc_lfp  	- 1xN struct containing raw LFP data for a
+%		session,  output from ecg_bna_process_combined_LFP_ECG 
+%       analyse_states  - cell array containing states to be
+%       analysed and corresponding time windows
+%       ecg_bna_cfg     - struct containing configuration settings
+%           Required fields:
+%               session_results_fldr        - folder to which the
+%               results of the session should be saved
+%               mintrials_percondition          - minimum number of trials
+%               required per condition for considering the site for
+%               averaging
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%               ref_hemisphere      - reference hemisphere for ipsi- and
+%               contra- hand and space labeling           
+%
+% OUTPUTS:
+%		session_tfs	- output structure which saves the average 
+%       LFP TFS in a time window around Rpeak for trials of given 
+%       conditions
+% 
+% REQUIRES:	lfp_tfa_compare_conditions, lfp_tfa_get_condition_trials,
+% ecg_bna_get_ECG_triggered_tfs, lfp_tfa_compute_difference_condition_tfr,
+% lfp_tfa_plot_hs_tuned_tfr_multiple_img
+%
+% See also ecg_bna_compute_session_evoked_ECG,
+% ecg_bna_compute_session_Rpeak_evoked_LFP,
+% ecg_bna_compute_session_evoked_ECG_R2Rt,
+% ecg_bna_compute_session_Rpeak_evoked_state_onsets 
+
     
     % suppress warning for xticklabel
     warning ('off', 'MATLAB:hg:willberemoved');
 
     % make a folder to save figures
-    results_folder_tfr = fullfile(ecg_bna_cfg.session_results_fldr, 'Rpeak_evoked_LFP_TFS');
+    results_folder_tfr = fullfile(ecg_bna_cfg.session_lfp_fldr, 'Rpeak_evoked_LFP_TFS');
     if ~exist(results_folder_tfr, 'dir')
         mkdir(results_folder_tfr);
     end
@@ -100,10 +136,7 @@ function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_
                 % loop through states to analyse 
 
                 for st = 1:size(analyse_states, 1)
-                    
-%                     state_tfs = lfp_tfa_get_state_tfs(site_lfp, ...
-%                             cond_trials, analyse_states(st, :), lfp_tfa_cfg);  
-                        
+                
                     if strcmp(analyse_states{st, 1}, 'ecg')
                         state_tfs = ecg_bna_get_ECG_triggered_tfs(site_lfp, ...
                             cond_trials, analyse_states(st, :), ecg_bna_cfg);
@@ -305,8 +338,6 @@ function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_
         
         % Difference TFR for session
         % check if both pre- and post- injection blocks exist
-        %if sum(lfp_tfa_cfg.compare.perturbations == [0, 1]) > 1
-            %session_avg(t).difference = lfp_tfa_compute_diff_tfr(session_avg(t), lfp_tfa_cfg);
             session_avg(t).difference = [];
             % difference between conditions
             for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
@@ -322,11 +353,6 @@ function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_
                         '(ref_' ecg_bna_cfg.ref_hemisphere '), '  ...
                         'Session ', session_avg(t).difference(dcn).session, ...
                         ' ', session_avg(t).difference(dcn).label];
-%                     if session_avg(t).difference(dcn).cfg_condition.choice == 0
-%                         plottitle = [plottitle 'Instructed trials'];
-%                     else
-%                         plottitle = [plottitle 'Choice trials'];
-%                     end
                     result_file = fullfile(results_folder_tfr, ...
                                     ['LFP_DiffTFR_' session_avg(t).target '_' ...
                                     session_avg(t).difference(dcn).session '_' ...

@@ -1,11 +1,29 @@
 function Rpeak_evoked_state = ecg_bna_get_Rpeak_evoked_state_onsets(trials_ecg, state)
+% ecg_bna_get_Rpeak_evoked_state_onsets - computes the event onset
+% probability for a specified time window around the Rpeak onset for given
+% trials (usually trials belonging to a condition) in a session 
+%
+% USAGE:
+%	Rpeak_evoked_state = ecg_bna_get_Rpeak_evoked_state_onsets(trials_ecg,
+%	state) 
+%
+% INPUTS:
+%       trials          - 1xN struct containing LFP and Rpeak data of N
+%       trials
+%       state           - a cell array specifying time window around Rpeak
+%       during which evoked response should be obtained
+% OUTPUTS:
+%		Rpeak_evoked_state  - struct containing event onset probability in
+%		a given time window around Rpeak onset triggered for the given
+%		trials 
+%
+% See also ecg_bna_compute_session_Rpeak_evoked_state_onsets
 
 state_id = state{1};
 state_name = state{2};
 Rpeak_ref_abs_time = state{3};
 Rpeak_ref_rel_time = state{4};%state_reftend = state{4};
 
-%state_evoked_ecg.ecg_time = {}; % timebins fo spectrogram
 Rpeak_evoked_state.abs_onset_times = [];
 Rpeak_evoked_state.rel_onset_times = [];
 Rpeak_evoked_state.valid_trials = [];
@@ -53,8 +71,6 @@ for t = 1:length(trials_ecg)
         end
     end
     
-    %abs_onset_time_after_Rpeak = nan;
-    %if strcmp(Rpeak_ref_rel_time, 'aroundRpeak')
     abs_onset_time_around_Rpeak = ...
         Rpeak_ref_onset_times(...
         Rpeak_ref_onset_times < Rpeak_ref_abs_time(2) & ...

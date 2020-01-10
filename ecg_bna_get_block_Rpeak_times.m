@@ -1,6 +1,26 @@
-function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpeak, nrblock, plottrials, results_folder )
-%lfp_tfa_compute_site_tfr Summary of this function goes here
-%   Detailed explanation goes here
+function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpeak, nrblock, plottrials, ~ )
+% ecg_bna_get_block_Rpeak_times - get the Rpeak information (Rpeak time,
+% ECG beats per minute, ECG peak-to-peak time) for the ECG recorded in a
+% block and combine it with raw ECG information in the incoming struct 
+%
+% USAGE:
+%	[ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg,
+%	block_Rpeak, nrblock, plottrials, results_folder ) 
+%
+% INPUTS:
+%		session_ecg  	- struct containing raw ECG data for a session
+%       block_Rpeak     - struct containing Rpeak information for a block
+%       (this usually comes from
+%       Y:\Projects\PhysiologicalRecording\Data\[Monkey]\[Date]\[Date]_ecg.mat
+%       nrblock         - the block number
+%       plottrials      - whether to plot the ECG data for individual
+%       trials   
+%
+% OUTPUTS:
+%		session_ecg 	- same as input structure but with additional
+%		fields to store the ECG Rpeak information for all trials in a block
+% 
+% See also ecg_bna_read_combined_ECG, ecg_bna_read_preproc_ECG
 
     if nargin < 4
         plottrials = 0;
@@ -31,7 +51,6 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
         
     % concatenate all trials for this run
     block_ecg_timestamps = []; % to concatenate sample time
-%     block_LFP = [];
     trials_time = [];
     
     trials_time = vertcat(session_ecg.trials(...
@@ -55,11 +74,6 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
     end
     
     ECG_peaksamples = round(ECG_timestamps/ts) + 1;
-    %ECG_R2Rsamples = round(ECG_R2Rt/ts) + 1;
-%     ECG_midsamples = round(mean([ECG_R2Rsamples(1:end-1); ...
-%         ECG_R2Rsamples(2:end)]));
-%     ECG_midsamples = [round((ECG_peaksamples(1) + ECG_peaksamples(2))/2), ...
-%         ECG_midsamples];
     trials_samples = round(trials_time / ts) + 1;
     
     % ECG spikes based on ECG timestamps
@@ -100,11 +114,6 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
         if plottrials
             trial = session_ecg.trials(trials_idx(t));
             h = figure(1); clf; hold on;
-            
-%             h1 = uicontrol('Position', [5 5 200 40], 'String', 'Continue', ...
-%                       'Callback', 'uiresume(gcbf)');
-%             h2 = uicontrol('Position', [300 5 200 40], 'String', 'Continue', ...
-%                       'Callback', 'plottrials = 0; close;');
             % plot raw ECG
             ax1 = subplot(4,2,[3 4]);
             plot(trial.time, trial.ecg_data);
@@ -126,20 +135,7 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
                     text(double(state.onset_t), ax1.YLim(1) + ((ax1.YLim(2) - ax1.YLim(1))*(find([trial.states.id] == state.id)/length(trial.states))), num2str(state.id));
                 end
             end
-            
-            % second axis
-%             pos = get(ax1,'position');   % get the position vector
-%             pos1=pos(2);              % save the original bottom position
-%             pos(2)=pos(2)+0.06; %pos(4)=pos(4)-0.01;  % raise bottom/reduce height->same overall upper position
-%             set(ax1,'position',pos)   % and resize first axes
-%             pos(2)=pos1; pos(4)=0.00000000001; % reset bottom to original and small height
-%             ax1(2)=axes('position',pos,'color','none');
-%             trial_period = linspace(trial.trialperiod(1), trial.trialperiod(end), length(trial.time));
-%             plot(trial_period, zeros(length(trial_period)), 'k');
-%             ylabel('Block timestamp (s)');
-%             set(ax1(2), 'Xlim', [trial_period(1), ...
-%                 trial_period(end)]);
-                                    
+                                   
             % plot spikes
             subplot(4,2,[5 6]);
             plot(trial.time, trial.ECG_spikes);
@@ -185,7 +181,6 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
                 disp('Press any key to continue! To abort, press Ctrl+C');
             end
             pause;
-            %savefig(h, fullfile(results_folder, 'trials', sprintf('Block_%g_Trial_%g', nrblock, trials_idx(t))));
         end
     end
 

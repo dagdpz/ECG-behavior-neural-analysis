@@ -1,11 +1,56 @@
 function [ session_R2Rt ] = ecg_bna_compute_session_evoked_ECG_R2Rt( session_ecg, session_info, analyse_states, ecg_bna_cfg ) 
 
-% ecg_bna_compute_session_evoked_ECG_R2Rt  - plots average evoked ECG R2Rt
-% for different hand-space tuning conditions for each session
+% ecg_bna_compute_session_evoked_ECG_R2Rt - compute average evoked ECG for
+% different conditions for each session. A condition is a combination of
+% possibly hand-space tuning (for consitency with LFP analysis),
+% control/inactivation, choice/instructed, type-effector values. 
 %
 % USAGE:
-%	[ session_evoked ] = lfp_tfa_plot_site_evoked_LFP( states_lfp, analyse_states, lfp_tfa_cfg ) 
+%	[ session_evoked ] = ecg_bna_compute_session_evoked_ECG( session_ecg,
+%	session_info, analyse_states, ecg_bna_cfg )  
 %
+% INPUTS:
+%		session_ecg  	- struct containing raw ECG data for a session, 
+%       output from ecg_bna_read_preproc_ECG or
+%       ecg_bna_read_combined_ECG
+%       analyse_states  - cell array containing states to be
+%       analysed and corresponding time windows
+%       ecg_bna_cfg     - struct containing configuration settings
+%           Required fields:
+%               random_seed                 - random seed for
+%               reproducibility of random shuffling of Rpeaks
+%               session_results_fldr        - folder to which the
+%               results of the session should be saved
+%               mintrials_percondition          - minimum number of trials
+%               required per condition for considering the site for
+%               averaging
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
+%               random_permute_triggers     - flag indicating whether to
+%               randomly permute the Rpeak triggers
+%               n_shuffles                  - integer which specifies how
+%               many times the Rpeaks need to be randomly shuffled to
+%               compute statistics
+%               
+%
+% OUTPUTS:
+%		session_evoked_ecg	- output structure which saves the average 
+%       evoked ECG in a time window around for trials of given conditions
+% 
+% REQUIRES:	lfp_tfa_compare_conditions, lfp_tfa_get_condition_trials,
+% ecg_bna_get_Rpeak_based_STA, ecg_bna_get_shuffled_Rpeak_evoked_ECG,
+% ecg_bna_plot_evoked_lfp, ecg_bna_compute_diff_condition_average
+%
+% See also ecg_bna_compute_session_Rpeak_evoked_LFP,
+% ecg_bna_compute_session_Rpeak_evoked_TFS,
+% ecg_bna_compute_session_evoked_ECG,
+% ecg_bna_compute_session_Rpeak_evoked_state_onsets 
     
     % suppress warning for xticklabel
     warning ('off', 'MATLAB:hg:willberemoved');

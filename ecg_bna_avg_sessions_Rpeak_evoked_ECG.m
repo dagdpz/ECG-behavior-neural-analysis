@@ -1,27 +1,22 @@
 function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, ecg_bna_cfg)
-%lfp_tfa_avg_evoked_LFP_across_sessions  - Condition-based evoked LFP response
-% average across many session averages
+%ecg_bna_avg_sessions_Rpeak_evoked_ECG  - Rpeak evoked LFP response
+% average across many sessions
 %
 % USAGE:
-%	sessions_avg = lfp_tfa_avg_sessions_ECG_evoked(evoked_ecg, lfp_tfa_cfg)
+%	sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, ecg_bna_cfg)
 %
 % INPUTS:
-%		lfp_evoked		- struct containing the condition-based evoked LFP response for
-%		indiviual sites, output of lfp_tfa_plot_site_evoked_LFP.m
+%		Rpeak_evoked_ECG    - struct containing the Rpeak evoked ECG
+%       response average for indiviual sessions, output of 
+%       ecg_bna_compute_session_evoked_ECG.m
+%		ecg_bna_cfg         - struct containing the required settings
 %           Required Fields:
-%               1. session.session_avg - 1xN struct containing condition-based
-%               average evoked LFP response for N sessions (session_avg =
-%               Average of site averages for one session)
-%		lfp_tfa_cfg     - struct containing the required settings
-%           Required Fields:
-%               1. conditions          - trial conditions to compare, see
+%               conditions          - trial conditions to compare, see
 %               lfp_tfa_settings.m and lfp_tfa_compare_conditions.m
-%               2. root_results_fldr   - root folder where results are saved
-%               3. compare.targets     - targets to compare, see lfp_tfa_settings.m
-%               4. ref_hemisphere      - reference hemisphere for ipsi and
-%               contra labeling
+%               root_results_fldr   - root folder where results are saved
+%               compare.targets     - targets to compare, see lfp_tfa_settings.m
 % OUTPUTS:
-%		sessions_avg    - structure containing condition-based evoked LFP
+%		sessions_avg    - structure containing Rpeak evoked ECG
 %		response averaged across multiple sessions
 %
 % REQUIRES:	lfp_tfa_plot_evoked_lfp
@@ -44,7 +39,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, 
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.root_results_fldr, 'ECG analysis');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_ecg_folder, 'Evoked ECG');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -169,7 +164,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, 
     end
     
     % save session average tfs
-    save(fullfile(results_fldr, 'sessions_Rpeak_evoked_LFP.mat'), 'sessions_avg');
+    save(fullfile(results_fldr, 'sessions_avg_Rpeak_evoked_LFP.mat'), 'sessions_avg');
         
     close all;
 end

@@ -1,33 +1,42 @@
 function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bna_cfg)
-%lfp_tfa_avg_evoked_LFP_across_sessions  - Condition-based evoked LFP response
+%ecg_bna_avg_sessions_Rpeak_evoked_LFP  - Rpeak evoked LFP response
 % average across many session averages
 %
 % USAGE:
-%	sessions_avg = lfp_tfa_avg_sessions_ECG_evoked(evoked_ecg, lfp_tfa_cfg)
+%	sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP,
+%	ecg_bna_cfg) 
 %
 % INPUTS:
-%		lfp_evoked		- struct containing the condition-based evoked LFP response for
-%		indiviual sites, output of lfp_tfa_plot_site_evoked_LFP.m
+%		Rpeak_evoked_LFP	- struct containing the average Rpeak evoked 
+%		LFP for individual sessions. See
+%       ecg_bna_compute_session_Rpeak_evoked_LFP.m 
 %           Required Fields:
-%               1. session.session_avg - 1xN struct containing condition-based
+%               1. session.session_avg - 1xN struct containing 
 %               average evoked LFP response for N sessions (session_avg =
 %               Average of site averages for one session)
-%		lfp_tfa_cfg     - struct containing the required settings
+%		ecg_bna_cfg     - struct containing the required settings
 %           Required Fields:
-%               1. conditions          - trial conditions to compare, see
+%               conditions          - trial conditions to compare, see
 %               lfp_tfa_settings.m and lfp_tfa_compare_conditions.m
-%               2. root_results_fldr   - root folder where results are saved
-%               3. compare.targets     - targets to compare, see lfp_tfa_settings.m
-%               4. ref_hemisphere      - reference hemisphere for ipsi and
-%               contra labeling
+%               root_results_fldr   - root folder where results are saved
+%               compare.targets     - targets to compare, see lfp_tfa_settings.m
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
+%
 % OUTPUTS:
 %		sessions_avg    - structure containing condition-based evoked LFP
 %		response averaged across multiple sessions
 %
-% REQUIRES:	lfp_tfa_plot_evoked_lfp
+% REQUIRES:	ecg_bna_plot_evoked_lfp
 %
-% See also lfp_tfa_settings, lfp_tfa_define_settings, lfp_tfa_compare_conditions, 
-% lfp_tfa_plot_site_evoked_LFP
+% See also ecg_bna_compute_session_Rpeak_evoked_LFP,
+% ecg_bna_plot_evoked_lfp 
 %
 % Author(s):	S.Nair, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
@@ -44,7 +53,8 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.root_results_fldr, 'ECG analysis');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sessions', ...
+        'LFP evoked');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -63,7 +73,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
             % initialize number of site pairs for each handspace
             % label
             for st = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 1)
-                for hs = 1:size(Rpeak_evoked_LFP.session(1).condition(cn).hs_tuned_evoked, 2)
+                for hs = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 2)
                     sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions = 0;
                     sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).trial = {};                
                 end
@@ -135,9 +145,9 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
                     plottitle = [ecg_bna_cfg.compare.targets{t},...
                          ecg_bna_cfg.conditions(cn).label];
                     result_file = fullfile(results_fldr, ...
-                                    ['ECG_b2bt_Evoked_' ecg_bna_cfg.conditions(cn).label]);
+                                    ['Rpeak_evoked_LFP_' ecg_bna_cfg.conditions(cn).label]);
                     ecg_bna_plot_evoked_lfp(sessions_avg(t).condition(cn).hs_tuned_evoked, ...
-                                ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
+                                ecg_bna_cfg, plottitle, result_file, 'ylabel', 'LFP amplitude');
                 end
             end
 
@@ -155,7 +165,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
                 diff_legend = ecg_bna_cfg.diff_legend{diff};
             end
             sessions_avg(t).difference = [sessions_avg(t).difference, ...
-                ecg_bna_compute_diff_condition_average('Event_evoked_ECG_R2Rt', ...
+                ecg_bna_compute_diff_condition_average('Rpeak_evoked_LFP', ...
                 sessions_avg(t).condition, diff_condition, diff_color,diff_legend)];
         end
         % plot Difference TFR
@@ -166,17 +176,17 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
                     plottitle = ['Target ', ecg_bna_cfg.compare.targets{t}, ...
                         sessions_avg(t).difference(dcn).label];
                     result_file = fullfile(results_fldr, ...
-                        ['ECG_b2bt_DiffEvoked_' 'diff_condition' num2str(dcn)]);
+                        ['Rpeak_diffevoked_LFP_' 'diff_condition' num2str(dcn)]);
                         %sessions_avg(t).difference(dcn).label '.png']);
                     ecg_bna_plot_evoked_lfp(sessions_avg(t).difference(dcn).hs_tuned_evoked, ...
-                        ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
+                        ecg_bna_cfg, plottitle, result_file, 'ylabel', 'LFP amplitude');
                 end
             end
         end
     end
     
     % save session average tfs
-    save(fullfile(results_fldr, 'sessions_evoked_ECG.mat'), 'sessions_avg');
+    save(fullfile(results_fldr, 'sessions_avg_evoked_LFP.mat'), 'sessions_avg');
         
     close all;
 end

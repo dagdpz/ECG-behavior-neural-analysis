@@ -1,6 +1,21 @@
 function ecg_triggered_evoked = ecg_bna_get_Rpeak_evoked_LFP( trials_lfp, state )
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+% ecg_bna_get_Rpeak_evoked_LFP - computes the Rpeak evoked LFP for a specified 
+% time window around the Rpeak onset for given trials (usually trials
+% belonging to a condition) in a session 
+%
+% USAGE:
+%	ecg_triggered_evoked = ecg_bna_get_Rpeak_evoked_LFP( trials_lfp, state )
+%
+% INPUTS:
+%       trials          - 1xN struct containing LFP and Rpeak data of N
+%       trials
+%       state           - a cell array specifying time window around Rpeak
+%       during which evoked response should be obtained
+% OUTPUTS:
+%		ecg_triggered_evoked  - struct containing Rpeak onset triggered
+%		evoked LFP from the given trials 
+%
+% See also ecg_bna_get_Rpeak_based_STA, ecg_bna_get_shuffled_Rpeak_evoked_LFP
 
 state_name = state{2};
 width = state{4} - state{3};

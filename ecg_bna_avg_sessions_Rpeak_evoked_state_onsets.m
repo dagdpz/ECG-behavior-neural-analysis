@@ -1,33 +1,40 @@
-function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_state_onset, lfp_tfa_cfg)
-%lfp_tfa_avg_evoked_LFP_across_sessions  - Condition-based evoked LFP response
-% average across many session averages
+function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_state_onset, ecg_bna_cfg)
+%ecg_bna_avg_sessions_Rpeak_evoked_state_onsets  - Rpeak evoked event onset
+%probability average across sessions
 %
 % USAGE:
-%	sessions_avg = lfp_tfa_avg_sessions_ECG_evoked(evoked_ecg, lfp_tfa_cfg)
+%	sessions_avg =
+%	ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_state_onset, lfp_tfa_cfg) 
 %
 % INPUTS:
-%		lfp_evoked		- struct containing the condition-based evoked LFP response for
-%		indiviual sites, output of lfp_tfa_plot_site_evoked_LFP.m
+%		Rpeak_state_onset	- struct containing the Rpeak evoked event onset probability for
+%		indiviual sessions, output of
+%		ecg_bna_compute_session_Rpeak_evoked_state_onsets.m 
 %           Required Fields:
 %               1. session.session_avg - 1xN struct containing condition-based
-%               average evoked LFP response for N sessions (session_avg =
-%               Average of site averages for one session)
-%		lfp_tfa_cfg     - struct containing the required settings
+%               Rpeak evoked event onset probability for N sessions 
+%		ecg_bna_cfg         - struct containing the required settings
 %           Required Fields:
-%               1. conditions          - trial conditions to compare, see
+%               conditions          - trial conditions to compare, see
 %               lfp_tfa_settings.m and lfp_tfa_compare_conditions.m
-%               2. root_results_fldr   - root folder where results are saved
-%               3. compare.targets     - targets to compare, see lfp_tfa_settings.m
-%               4. ref_hemisphere      - reference hemisphere for ipsi and
-%               contra labeling
+%               root_results_fldr   - root folder where results are saved
+%               compare.targets     - targets to compare, see lfp_tfa_settings.m
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
 % OUTPUTS:
-%		sessions_avg    - structure containing condition-based evoked LFP
-%		response averaged across multiple sessions
+%		sessions_avg    - structure containing condition-based Rpeak evoked 
+%		state onset probability averaged across multiple sessions
 %
-% REQUIRES:	lfp_tfa_plot_evoked_lfp
+% REQUIRES:	ecg_bna_plot_Rpeak_ref_state_onsets
 %
-% See also lfp_tfa_settings, lfp_tfa_define_settings, lfp_tfa_compare_conditions, 
-% lfp_tfa_plot_site_evoked_LFP
+% See also ecg_bna_compute_session_Rpeak_evoked_state_onsets,
+% ecg_bna_plot_Rpeak_ref_state_onsets 
 %
 % Author(s):	S.Nair, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
@@ -44,7 +51,8 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
 
 
     % results folder
-    results_fldr = fullfile(lfp_tfa_cfg.root_results_fldr, 'ECG analysis');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_ecg_folder, ...
+        'Rpeak_evoked_states');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -53,11 +61,11 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
     sessions_avg = struct();
     t = 1;
     
-    for cn = 1:length(lfp_tfa_cfg.conditions)
-        fprintf('Condition %s\n', lfp_tfa_cfg.conditions(cn).label);
+    for cn = 1:length(ecg_bna_cfg.conditions)
+        fprintf('Condition %s\n', ecg_bna_cfg.conditions(cn).label);
         sessions_avg(t).condition(cn).Rpeak_evoked = struct();
-        sessions_avg(t).condition(cn).cfg_condition = lfp_tfa_cfg.conditions(cn);
-        sessions_avg(t).condition(cn).label = lfp_tfa_cfg.conditions(cn).label;
+        sessions_avg(t).condition(cn).cfg_condition = ecg_bna_cfg.conditions(cn);
+        sessions_avg(t).condition(cn).label = ecg_bna_cfg.conditions(cn).label;
         
         % initialize number of site pairs for each handspace
         % label
@@ -150,12 +158,12 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
                     sessions_avg(t).condition(cn).Rpeak_evoked, 'rel_timefromRpeak') && ...
                     ~isempty([sessions_avg(t).condition(cn).Rpeak_evoked.abs_timefromRpeak]) && ...
                     ~isempty([sessions_avg(t).condition(cn).Rpeak_evoked.rel_timefromRpeak])
-                plottitle = [lfp_tfa_cfg.compare.targets{t},...
-                     lfp_tfa_cfg.conditions(cn).label];
+                plottitle = [ecg_bna_cfg.compare.targets{t},...
+                     ecg_bna_cfg.conditions(cn).label];
                 result_file = fullfile(results_fldr, ...
-                                ['Rpeak_trig_P_event_' lfp_tfa_cfg.conditions(cn).label]);
+                                ['Rpeak_trig_P_event_' ecg_bna_cfg.conditions(cn).label]);
                 ecg_bna_plot_Rpeak_ref_state_onsets (sessions_avg(t).condition(cn).Rpeak_evoked, ...
-                            lfp_tfa_cfg, plottitle, result_file);
+                            ecg_bna_cfg, plottitle, result_file);
             end
         end
         % save session average tfs
@@ -164,14 +172,14 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
  
     % difference between conditions
     sessions_avg(t).difference = [];
-    for diff = 1:size(lfp_tfa_cfg.diff_condition, 2)
-        diff_condition = lfp_tfa_cfg.diff_condition{diff};
+    for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
+        diff_condition = ecg_bna_cfg.diff_condition{diff};
         diff_color = []; diff_legend = [];
-        if isfield(lfp_tfa_cfg, 'diff_color')
-            diff_color = lfp_tfa_cfg.diff_color{diff};
+        if isfield(ecg_bna_cfg, 'diff_color')
+            diff_color = ecg_bna_cfg.diff_color{diff};
         end
-        if isfield(lfp_tfa_cfg, 'diff_legend')
-            diff_legend = lfp_tfa_cfg.diff_legend{diff};
+        if isfield(ecg_bna_cfg, 'diff_legend')
+            diff_legend = ecg_bna_cfg.diff_legend{diff};
         end
         sessions_avg(t).difference = [sessions_avg(t).difference, ...
             ecg_bna_compute_diff_condition_average('Rpeak_evoked_states_onset', ...
@@ -185,18 +193,18 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets(Rpeak_sta
                     sessions_avg(t).difference(dcn).Rpeak_evoked, 'rel_timefromRpeak') && ...
                     ~isempty([sessions_avg(t).difference(dcn).Rpeak_evoked.abs_timefromRpeak]) && ...
                     ~isempty([sessions_avg(t).difference(dcn).Rpeak_evoked.rel_timefromRpeak])
-                plottitle = ['Target ', lfp_tfa_cfg.compare.targets{t}, ...
+                plottitle = ['Target ', ecg_bna_cfg.compare.targets{t}, ...
                     sessions_avg(t).difference(dcn).label];
                 result_file = fullfile(results_fldr, ...
                     ['Diff_Rpeak_trig_P_event_' 'diff_condition' num2str(dcn)]);
                     %sessions_avg(t).difference(dcn).label '.png']);
                 ecg_bna_plot_Rpeak_ref_state_onsets(sessions_avg(t).difference(dcn).Rpeak_evoked, ...
-                    lfp_tfa_cfg, plottitle, result_file);
+                    ecg_bna_cfg, plottitle, result_file);
             end
         end
     end
     % save session average tfs
-    save(fullfile(results_fldr, 'sessions_Rpeak_evoked_onsets.mat'), 'sessions_avg');
+    save(fullfile(results_fldr, 'sessions_avg_Rpeak_evoked_onsets.mat'), 'sessions_avg');
     
     close all;
 end

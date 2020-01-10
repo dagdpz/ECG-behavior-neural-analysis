@@ -1,10 +1,30 @@
 function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_file, varargin )
-%ecg_bna_plot_evoked_R2Rt  - Plots the ECG R2Rt evoked response
-%averages for different hand-space conditions to be compared
+%ecg_bna_plot_evoked_lfp  - Plots the ECG R2R interval averages for given
+%time windows and conditions to be compared 
 %
 % USAGE:
-%   ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_file, varargin )
+%   ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_file )
+%   ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle,
+%   results_file, 'ylabel', 'Norm. R2Rt', 'err', 'stdev' )  
 %
+% INPUTS:
+%       evoked_lfp       - average LFP power spectrum for different
+%       hand-space conditions to be compared
+%		ecg_bna_cfg      - struct containing the required settings
+%           Required Fields: see ecg_bna_settings
+%               compare.reach_hands     - reach hands
+%               compare.reach_spaces    - reach spaces               
+%       plottitle        - title for the plot
+%       results_file     - path to filename to store the resulting image
+%       varargin         - other settings for plotting given as name-value
+%       pairs. Names can be 
+%           'ylabel'  - if a user specified label has to be assigned for y
+%           axis, value must be a string) 
+%           'err'     - error measure to be used. Can be 'stdev' for
+%           standard deviation(default) or 'stderr' for standard error. 
+%
+% See also ecg_bna_compute_session_evoked_ECG_R2Rt,
+% ecg_bna_avg_sessions_ECGb2bt_evoked
 
     % defaults
     if ecg_bna_cfg.normalize_R2Rt
@@ -12,7 +32,7 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
     else
         yaxislabel = 'R2R time (s)';
     end
-    err = 'stdev'; % standard error
+    err = 'stdev'; % standard deviation
     
     % get settings
     if nargin > 4
@@ -35,8 +55,13 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
     noffset = 150;
     
     % number of subplots required
-    nhandlabels = length(ecg_bna_cfg.compare.reach_hands);
-    nspacelabels = length(ecg_bna_cfg.compare.reach_spaces);
+    nhandlabels = 1; nspacelabels = 1;
+    if isfield(ecg_bna_cfg.compare, 'reach_hands')
+        nhandlabels = length(ecg_bna_cfg.compare.reach_hands);
+    end
+    if isfield(ecg_bna_cfg.compare, 'reach_spaces')
+        nspacelabels = length(ecg_bna_cfg.compare.reach_spaces);
+    end
     
     % loop through handspace
     for hs = 1:size(evoked_R2Rt, 2)
@@ -113,10 +138,7 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
                 ax{st} = subplot(nhandlabels*nspacelabels*2, nstates, (((hs-1)*nstates) + st));
                 hold on;
                 colors = ['b'; 'r'; 'g'; 'y'; 'm'; 'c'; 'k'];
-%                 if isfield(evoked_R2Rt(1, hs), 'color') && ...
-%                         ~isempty(evoked_R2Rt(1, hs).color)
-%                     colors = evoked_R2Rt(1, hs).color;
-%                 end
+
                 % plot individual trials
                 if isfield(evoked_R2Rt(st, hs), 'ntrials') && ~isempty(evoked_R2Rt(st, hs).ntrials)
                     xx = [0];
@@ -138,18 +160,7 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
                 if isfield(evoked_R2Rt(st, hs), 'legend')
                     legend(ax{st}, evoked_R2Rt(st, hs).legend);
                 end
-%                 for i = 1:size(evoked_R2Rt(st, hs).mean, 1)
-%                     plot(ax{st}, evoked_R2Rt(st, hs).time, ...
-%                         evoked_R2Rt(st, hs).mean(i, :) + evoked_R2Rt(st, hs).std(i, :), ...
-%                         '--', 'Color', colors(i, :), 'LineWidth', 1);
-%                     plot(ax{st}, evoked_R2Rt(st, hs).time, ...
-%                         evoked_R2Rt(st, hs).mean(i, :) - evoked_R2Rt(st, hs).std(i, :), ...
-%                         '--', 'Color', colors(i, :), 'LineWidth', 1);
-%                 end
-                % mark state onsets
-                %if isfield(evoked_lfp, 'state_name')
-                %set(gca,'xtick', unique(state_samples))
-                %set(ax{st}, 'YLim', ylim);
+
 
                 line([0 0], ylim, 'color', 'k'); 
                 if isfield(evoked_R2Rt(st, hs), 'state_name') && ...
@@ -169,13 +180,7 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
                     ypos = ypos(1) + (ypos(2) - ypos(1))*0.2;
                     title(plottxt);
                 end
-                %end
-                %set(gca,'xticklabels', round(concat_states_R2Rt.time(unique(state_samples)), 2), 'fontsize', 10)
-                %set(gca, 'xticklabelrotation', 45);
-                
-                %subplottitle = [evoked_R2Rt(1, hs).hs_label{1}];
-                
-                %title(subplottitle);
+
                 
                 xlabel(ax{st}, 'Time(s)');
                 ylabel(ax{st}, yaxislabel);

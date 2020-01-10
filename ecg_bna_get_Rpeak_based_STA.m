@@ -1,6 +1,28 @@
-function ecg_triggered_evoked = ecg_bna_get_Rpeak_based_STA( trials, site_ID, cfg_ecg, signal_type )
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+function ecg_triggered_evoked = ecg_bna_get_Rpeak_based_STA( trials, label, cfg_ecg, signal_type )
+% ecg_bna_get_Rpeak_based_STA - computes the Rpeak evoked LFP/ECG for a specified 
+% time window around the Rpeak onset for given trials (usually trials
+% belonging to a condition) in a session 
+%
+% USAGE:
+%	ecg_triggered_evoked = ecg_bna_get_Rpeak_based_STA( trials, site_ID, cfg_ecg, 'lfp' ) 
+%   ecg_triggered_evoked = ecg_bna_get_Rpeak_based_STA( trials, site_ID, cfg_ecg, 'ecg' ) 
+%
+% INPUTS:
+%       trials          - 1xN struct containing LFP and ECG data of N
+%       trials
+%       label           - a string specifying a label of the signal whose
+%       evoked response is computed
+%       cfg_ecg         - a cell array specifying time window around Rpeak
+%       during which evoked response should be obtained
+%       signal_type     - type of signal whose Rpeak triggered evoked
+%       response should be obtained. Can be 'lfp' or 'tfs'
+% OUTPUTS:
+%		ecg_triggered_evoked  - struct containing Rpeak onset triggered
+%		evoked LFP/ECG from the given trials
+% 
+% REQUIRES:	ft_spiketriggeredaverage (FieldTrip toolbox)
+%
+% See also ecg_bna_get_Rpeak_evoked_LFP, ecg_bna_get_shuffled_Rpeak_evoked_LFP
 
 ecg_triggered_evoked.trial = {};
 ecg_triggered_evoked.time = {};
@@ -9,7 +31,7 @@ ecg_triggered_evoked.state_name = cfg_ecg{2};
 
 % create a FT datatype
 ft_data_all = struct();
-ft_data_all.label = {site_ID, 'ECG'};
+ft_data_all.label = {label, 'ECG'};
 ft_data_all.time = {}; % timestamps
 ft_data_all.trial = {}; % evoked LFP response
 

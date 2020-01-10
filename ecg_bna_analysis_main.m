@@ -8,10 +8,10 @@ clc; clear;
 % file containing settings for LFP analysis
 
 settings_filepaths = ...%{'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
-   {'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_inactivation.m', ...
-    'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_baseline1.m', ...
-    'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_inactivation_ecg_by_block.m', ...
-    'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_baseline_ecg_by_block.m'};
+   {'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_inactivation.m'};%, ...
+%     'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_baseline1.m', ...
+%     'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_inactivation_ecg_by_block.m', ...
+%     'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_baseline_ecg_by_block.m'};
 
 
 % whether the LFP should be processed (true) or not (false)
@@ -57,11 +57,7 @@ for s = 1:length(settings_filepaths)
             if process_ECG
                 fprintf('Reading ECG for session %s\n', session_name);
                 ecg_bna_cfg.session = session_name;
-                % folder to which results of analysis of this session should be
-                % stored
-                sessions_info(i).proc_results_fldr = ...
-                    fullfile(ecg_bna_cfg.proc_ecg_folder, session_name);
-                % read LFP data for each site and each trial 
+                % read ECG data for each session
                 if isfield(sessions_info(i), 'Input_ECG_combined') && ...
                         ~isempty(sessions_info(i).Input_ECG_combined)
                     session_ecg = ...
@@ -74,7 +70,7 @@ for s = 1:length(settings_filepaths)
                 
                 % Read LFP data
                 if isfield(sessions_info(i), 'Input_LFP') && ...
-                        ~isempty(sessions_info(i).Input_LFP) && process_LFP
+                        ~isempty(sessions_info(i).Input_LFP) && ecg_bna_cfg.process_LFP
                     sessions_info(i) = ...
                         ecg_bna_process_combined_LFP_ECG(sessions_info(i), ecg_bna_cfg);
                 end
@@ -84,7 +80,7 @@ for s = 1:length(settings_filepaths)
                 end
             else
                 % load session ecg for the session
-                session_ecg_filename = fullfile(sessions_info(i).proc_results_fldr, ...
+                session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ...
                     ['session_ecg_' session_name '.mat']);
                 if exist(session_ecg_filename, 'file')
                     load(session_ecg_filename, 'session_ecg');
@@ -97,10 +93,8 @@ for s = 1:length(settings_filepaths)
 
             % folder to which results of analysis of this session should be
             % stored
-            sessions_info(i).analyse_ecg_fldr = ...
-                fullfile(ecg_bna_cfg.analyse_ecg_folder, session_name);
-            ecg_bna_cfg.session_results_fldr = ...
-            fullfile(ecg_bna_cfg.analyse_ecg_folder, session_name);  
+            ecg_bna_cfg.session_ecg_fldr = ...
+                fullfile(ecg_bna_cfg.analyse_ecg_folder, session_name);  
         
             % Calculate and plot the session average ECG, 
             % evoked response for different conditions 
@@ -119,14 +113,16 @@ for s = 1:length(settings_filepaths)
             
             if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || ...
                     any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
+                ecg_bna_cfg.session_lfp_fldr = ...
+                    fullfile(ecg_bna_cfg.analyse_lfp_folder, session_name);
                 % read the processed lfp mat files for all sites of this session
-                sites_lfp_files = dir(fullfile(sessions_info(i).proc_results_fldr, 'site_lfp_*.mat'));
+                sites_lfp_files = dir(fullfile(sessions_info(i).proc_lfp_fldr, 'site_lfp_*.mat'));
                 session_proc_lfp = [];
                 for file = {sites_lfp_files.name}
                     %fprintf('Reading processed LFP for site %s\n', file{1});
                     if ~isempty(strfind(file{1}, 'site_lfp_'))
                         fprintf('Reading processed LFP for site %s\n', file{:});
-                        load(fullfile(sessions_info(i).proc_results_fldr, file{1}))
+                        load(fullfile(sessions_info(i).proc_lfp_fldr, file{1}))
                         session_proc_lfp = [session_proc_lfp site_lfp];
                     end            
                 end

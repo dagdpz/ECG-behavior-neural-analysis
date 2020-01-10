@@ -1,37 +1,50 @@
 function [ session_evoked_ecg ] = ...
     ecg_bna_compute_session_Rpeak_evoked_state_onsets( session_ecg, session_info, analyse_states, ecg_bna_cfg ) 
 
-% ecg_bna_plot_average_evoked_LFP  - plots average evoked LFP for
-% different hand-space tuning conditions for each site and across all sites
-% of a session
-%
+% ecg_bna_compute_session_Rpeak_evoked_state_onsets - computes the onset
+% probability of an event from trials of a given condition within a session
+% with respect to Rpeak phase and within a time window around Rpeak onset
+% 
 % USAGE:
-%	[ session_evoked ] = ecg_bna_plot_site_evoked_LFP( states_lfp, analyse_states, ecg_bna_cfg ) 
+%	[ session_evoked ] = ecg_bna_plot_site_evoked_LFP( states_lfp,
+%	analyse_states, ecg_bna_cfg )  
 %
 % INPUTS:
-%		states_lfp  	- struct containing raw lfp data for all sites of a 
-%       session, output from ecg_bna_process_lfp or
-%       ecg_bna_compute_baseline or ecg_bna_reject_noisy_lfp
+%		session_ecg  	- struct containing ECG Rpeak data for a session,
+%		output from ecg_bna_read_preproc_ECG or
+%       ecg_bna_read_combined_ECG
 %       analyse_states  - cell array containing states to be
 %       analysed and corresponding time windows
 %       ecg_bna_cfg     - struct containing configuration for TFR 
 %           Required fields:
-%               session_results_fldr            - folder to which the
-%               results of the session should be saved
+%               random_seed                 - random seed for
+%               reproducibility
 %               mintrials_percondition          - minimum number of trials
 %               required per condition for considering the site for
 %               averaging
-%               analyse_states                  - states to analyse 
+%               diff_condition      - conditions to compare, the plot
+%               for compared conditions would be shown one on top of the
+%               other
+%           Optional Fields:
+%               diff_color          - color to be used for plotting the
+%               compared conditions
+%               diff_legend         - legend to be used while plotting the
+%               compared conditions
 %
 % OUTPUTS:
-%		session_evoked	- output structure which saves the average evoked LFP for  
-%                         trials of a given condition for different handspace 
-%                         tunings and periods around the states analysed
+%		session_evoked	- output structure which saves the event onset
+%		probabilities from trials of a given condition with respect to
+%		Rpeak phase and within a time window around Rpeak onset
 % 
-% REQUIRES:	ecg_bna_compare_conditions, ecg_bna_plot_evoked_lfp
+% REQUIRES:	lfp_tfa_compare_conditions, lfp_tfa_get_condition_trials,
+% ecg_bna_get_Rpeak_evoked_state_onsets,
+% ecg_bna_compute_diff_condition_average,
+% ecg_bna_plot_Rpeak_ref_state_onsets 
 %
-% See also ecg_bna_process_lfp, ecg_bna_compute_baseline, ecg_bna_reject_noisy_lfp, 
-% ecg_bna_compare_conditions, ecg_bna_plot_evoked_lfp
+% See also ecg_bna_compute_session_Rpeak_evoked_LFP,
+% ecg_bna_compute_session_Rpeak_evoked_TFS,
+% ecg_bna_compute_session_evoked_ECG_R2Rt,
+% ecg_bna_compute_session_Rpeak_evoked_state_onsets 
     
     % suppress warning for xticklabel
     warning ('off', 'MATLAB:hg:willberemoved');

@@ -1,33 +1,31 @@
 function sessions_avg = ecg_bna_avg_sessions_ECGb2bt_evoked(ecg_b2bt_evoked, ecg_bna_cfg)
-%lfp_tfa_avg_evoked_LFP_across_sessions  - Condition-based evoked LFP response
-% average across many session averages
+% ecg_bna_avg_sessions_ECGb2bt_evoked  - Event evoked ECG b2bt average
+% across sessions
 %
 % USAGE:
-%	sessions_avg = lfp_tfa_avg_sessions_ECG_evoked(evoked_ecg, lfp_tfa_cfg)
+%	sessions_avg = ecg_bna_avg_sessions_ECGb2bt_evoked(ecg_b2bt_evoked, ecg_bna_cfg)
 %
 % INPUTS:
-%		lfp_evoked		- struct containing the condition-based evoked LFP response for
-%		indiviual sites, output of lfp_tfa_plot_site_evoked_LFP.m
+%		ecg_b2bt_evoked		- struct containing the ECG b2bt for
+%		individual sessions, output of ecg_bna_compute_session_evoked_ECG_R2Rt.m
+%		ecg_bna_cfg         - struct containing the required settings
 %           Required Fields:
-%               1. session.session_avg - 1xN struct containing condition-based
-%               average evoked LFP response for N sessions (session_avg =
-%               Average of site averages for one session)
-%		lfp_tfa_cfg     - struct containing the required settings
-%           Required Fields:
-%               1. conditions          - trial conditions to compare, see
-%               lfp_tfa_settings.m and lfp_tfa_compare_conditions.m
-%               2. root_results_fldr   - root folder where results are saved
-%               3. compare.targets     - targets to compare, see lfp_tfa_settings.m
-%               4. ref_hemisphere      - reference hemisphere for ipsi and
-%               contra labeling
+%               conditions          - trial conditions to compare,
+%               condition is a combination of hand-space tuning, 
+%               control/inactivation, choice/trial, type-effector, and 
+%               success
+%               root_results_fldr   - root folder where results are saved
+%               compare.targets     - targets to compare, see lfp_tfa_settings.m
 % OUTPUTS:
 %		sessions_avg    - structure containing condition-based evoked LFP
 %		response averaged across multiple sessions
+%           Fields:
+%              condition.hs_tuned_evoked - structure containing relevant 
+%              results for event evoked ECG b2bt average across sessions
 %
-% REQUIRES:	lfp_tfa_plot_evoked_lfp
+% REQUIRES:	ecg_bna_plot_evoked_R2Rt
 %
-% See also lfp_tfa_settings, lfp_tfa_define_settings, lfp_tfa_compare_conditions, 
-% lfp_tfa_plot_site_evoked_LFP
+% See also ecg_bna_define_settings, ecg_bna_plot_evoked_R2Rt
 %
 % Author(s):	S.Nair, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
@@ -44,7 +42,7 @@ function sessions_avg = ecg_bna_avg_sessions_ECGb2bt_evoked(ecg_b2bt_evoked, ecg
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.root_results_fldr, 'ECG analysis');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_ecg_folder, 'ECG R2Rt');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end

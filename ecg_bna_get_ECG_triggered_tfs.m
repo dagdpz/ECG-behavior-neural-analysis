@@ -1,6 +1,41 @@
 function ecg_triggered_tfs = ecg_bna_get_ECG_triggered_tfs( site_lfp, cond_trials, state, ecg_bna_cfg )
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+% ecg_bna_get_ECG_triggered_tfs - gets the LFP time frequency spectrogram
+% for a specified time window around the Rpeak onset for a single site for
+% given trials (usually trials belonging to a condition) in a session
+%
+% USAGE:
+%	ecg_triggered_tfs = ecg_bna_get_ECG_triggered_tfs( site_lfp,
+%	cond_trials, state, ecg_bna_cfg ) 
+%
+% INPUTS:
+%		site_lfp            - struct containing LFP data for all trials of 
+%		a session from a single site
+%       cond_trials         - indices of trials whose time freq spectrogram
+%       are to be obtaied
+%       state               - a cell array specifying time window during
+%       which LFP tfs should be obtained
+%       ecg_bna_cfg         - struct containing settings
+%       Required fields:
+%           tfr.timestep            - width of a timebin in LFP TFS in
+%           number of LFP samples
+%           baseline_method         - method used for baseline
+%           normalization of LFP TFS
+%           baseline_perturbation   - whether to use
+%           control(0)/inactivation(1) trials for baseline
+%           baseline_use_choice_trial - whether to use
+%           choice(1)/instructed(0) trials for baseline
+%           baseline_use_type       - type number mof trials to be used for
+%           baseline 
+%           baseline_use_effector   - effector value of trials to be used
+%           for baseline 
+% OUTPUTS:
+%		ecg_triggered_tfs   - struct containing LFP tfs for all given
+%		trials
+% 
+% REQUIRES:	lfp_tfa_baseline_normalization
+%
+% See also ecg_bna_get_Rpeak_based_STA, ecg_bna_get_Rpeak_evoked_LFP, 
+% ecg_bna_get_shuffled_Rpeak_evoked_LFP
 
 state_name = state{2};
 width = state{4} - state{3};
