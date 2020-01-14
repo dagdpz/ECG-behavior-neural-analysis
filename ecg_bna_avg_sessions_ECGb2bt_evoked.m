@@ -49,6 +49,8 @@ function sessions_avg = ecg_bna_avg_sessions_ECGb2bt_evoked(ecg_b2bt_evoked, ecg
     
     % Average Evoked LFP response across sessions
     sessions_avg = struct();
+    % this variable was used for target in lfp, can be used for something
+    % else here. for eg. baseline vs inactivation
     t = 1;
     
     for cn = 1:length(ecg_bna_cfg.conditions)

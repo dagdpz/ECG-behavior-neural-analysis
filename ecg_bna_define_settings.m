@@ -26,7 +26,8 @@ function ecg_bna_cfg = ecg_bna_define_settings(settings_filepath)
 %%%%%%%%%%%%%%%%%%%%%%%%%[DAG mfile header version 1]%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % add functions from lfp analysis pipeline
-    addpath('C:\Users\snair\Documents\GitHub\LFP_timefrequency_analysis');
+    % this has to be done by user since his path will be different
+    %addpath('C:\Users\snair\Documents\GitHub\LFP_timefrequency_analysis');
     
     % add external functions to path
     addpath(genpath('./external'));

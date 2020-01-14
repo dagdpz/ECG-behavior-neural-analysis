@@ -274,7 +274,7 @@ ecg_bna_cfg.diff_condition(1) = {{'perturbation', {0, 1}...
 
 % colors to be used for plotting the comparison plots
 ecg_bna_cfg.diff_color = {};
-%lfp_tfa_cfg.diff_color{1} = {[0, 0.5, 0; 0, 1, 0]};
+ecg_bna_cfg.diff_color{1} = {[0, 0.5, 0; 0, 1, 0]};
 
 %% Time information
 
