@@ -33,10 +33,15 @@ function ecg_bna_cfg = ecg_bna_define_settings(settings_filepath)
 %%%%%%%%%%%%%%%%%%%%%%%%%[DAG mfile header version 1]%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % add functions from lfp analysis pipeline
-    addpath('C:\Source\MATLAB\LFP_timefrequency_analysis');
+ %   addpath('C:\Source\MATLAB\LFP_timefrequency_analysis');
+    addpath('C:\Users\kkaduk\Desktop\Kristin\GitHub\LFP_timefrequency_analysis');
+
     
     % add external functions to path
-    addpath(genpath('./external'));
+    addpath('C:\Users\kkaduk\Desktop\Kristin\GitHub\External_modified');
+    addpath('C:\Users\kkaduk\Desktop\Kristin\GitHub\External_unmodified');
+
+    %addpath(genpath('./External_modified'));
     
     % define state IDs
     lfp_tfa_global_define_states;    

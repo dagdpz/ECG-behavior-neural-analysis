@@ -20,7 +20,7 @@ ecg_bna_cfg.info_filepath = 'Y:\Projects\PPC_pulv_body_signals\ephys\MIP_inactiv
 ecg_bna_cfg.use_datasets = [31];
 
 % absolute path to the folder where the results of analysis should be stored
-ecg_bna_cfg.results_folder = 'Y:\Personal\Sarath\Results\LFP_TFA_Results';
+ecg_bna_cfg.results_folder = 'Y:\Projects\PhysiologicalRecording\Figures\Cornelius\ECG_behavior';
 
 % info about sessions to be analysed
 % should be a 1 x N struct, N = number of sessions to analyse

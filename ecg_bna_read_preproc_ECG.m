@@ -14,16 +14,16 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     
     % struct to save data for a site
    
-    if ~exist(session_info.Input_ECG_preproc{1}, 'file')
+    if ~exist([session_info.Input_ECG_preproc], 'file') %KK     if ~exist(session_info.Input_ECG_preproc{1}, 'file')
         fprintf('No file found: %s\n', ...
             session_info.Input_ECG_preproc);
         return;
     else
-        combined_Blocks = cell(1, length(session_info.Input_ECG_preproc));
-        for s = 1:length(combined_Blocks)
+        combined_Files = cell(1, length(session_info.Input_ECG_preproc));
+        for s = 1:length(combined_Files)
             % Read input LFP file
-            load(session_info.Input_ECG_preproc{s}, 'by_block');
-            combined_Blocks{s} = by_block;
+            load(session_info.Input_ECG_preproc, 'by_block');%   KK         load(session_info.Input_ECG_preproc{s}, 'by_block');
+            combined_Files{s} = by_block;
         end
         
     end
@@ -44,7 +44,7 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
         end
         load(session_info.Input_ECG);
         if exist('out', 'var')
-            block_Rpeaks = out;
+            blocks_Rpeaks = out;
             clear out;
         end        
     end
@@ -57,10 +57,17 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     comp_trial = 0; % iterator for completed trials 
     
     % save data inside struct 
+%<<<<<<< Updated upstream
     % first loop through each site
-    for i_Files = 1:length(combined_Blocks)
-       by_block = combined_Blocks{i_Files};
-    for b = 1:length(by_block)
+%     for i_Files = 1:length(combined_Blocks)
+%        by_block = combined_Blocks{i_Files};
+%     for b = 1:length(by_block)
+%=======
+    % first loop through each file
+    for i_Files = 1:length(combined_Files)
+       by_block_ECG = combined_Files{i_Files};
+    for b = 1 :length(by_block_ECG)
+%>>>>>>> Stashed changes
         % get info about site
         % for future use
             % find if this site's entry is available in usable_sites_table
@@ -70,8 +77,8 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
     %         end
             
         % check if ECG peaks exists for this block
-        if length(block_Rpeaks) >= b
-            block_Rpeak = block_Rpeaks(b);
+        if length(blocks_Rpeaks) >= b
+            block_Rpeak = blocks_Rpeaks(b);
             if isempty(block_Rpeak) || isempty(block_Rpeak.Rpeak_t)
                 continue;
             end
@@ -222,10 +229,10 @@ function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
 
         
     end
-    
+    end
     results_mat = fullfile(results_fldr, ['session_ecg_' session_info.session '.mat']);
     save(results_mat, 'session_ecg', '-v7.3');
-    end
+    
     
 end
 

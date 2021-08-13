@@ -7,8 +7,22 @@ clc; clear;
 
 % file containing settings for LFP analysis
 
-settings_filepaths = ...%{'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
-   {'C:\Users\kkaduk\Desktop\Kristin\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
+%<<<<<<< Updated upstream
+% settings_filepaths = ...%{'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
+%    {'C:\Users\kkaduk\Desktop\Kristin\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
+%=======
+settings_filepaths = ...
+        { 'C:\Users\kkaduk\Desktop\Kristin\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_baseline_ecg_by_block.m', ...
+       'C:\Users\kkaduk\Desktop\Kristin\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_baseline_ecg_by_block.m' };
+
+   % {'C:\Users\kkaduk\Desktop\Kristin\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_Reaching_InactdPul_ECG.m'};
+    %{'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_inactivation.m'};
+    %{'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Magnus\ecg_bna_settings_Magnus_dPul_ECG_LFP.m'};
+   %, ...
+%     'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Curius\ecg_bna_settings_Curius_baseline1.m', ...
+  %   'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_inactivation_ecg_by_block.m', ...
+%     'C:\Users\snair\Documents\GitHub\ECG-behavior-neural-analysis\settings\Cornelius\ecg_bna_settings_Cornelius_baseline_ecg_by_block.m'};
+%>>>>>>> Stashed changes
 
 
 % whether the LFP should be processed (true) or not (false)
