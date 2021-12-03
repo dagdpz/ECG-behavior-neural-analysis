@@ -11,6 +11,7 @@ basepath_to_save='Y:\Projects\Pulv_distractor_spatial_choice\Data\ECG_triggered_
 
 
 Sanity_check=0;
+n_permutations=100;
 
 
 ECG_event=-1;
@@ -78,9 +79,6 @@ for s=1:numel(session_info)
             end
             RPEAK_ts=[out(o).Rpeak_t];
             
-            %% reduce RPEAK_ts potentially ? (f.e.: longer than recorded ephys, inter-trial-interval?)
-            during_trial_index = arrayfun(@(x) any(trial_onsets<=x+keys.PSTH_WINDOWS{1,3} & trial_ends>=x+keys.PSTH_WINDOWS{1,4}),RPEAK_ts);
-            RPEAK_ts=RPEAK_ts(during_trial_index);
             
             %% find if to append it to rest or task condition
             %not ideal, but should work for  now
@@ -99,13 +97,28 @@ for s=1:numel(session_info)
                 T=0;
             end
             
+            
             %% now the tricky part: sort by ECG peaks ...
-            for t=1:numel(RPEAK_ts)
-                condition(tasktype).unit(u).trial(t+T).states=ECG_event;
-                condition(tasktype).unit(u).trial(t+T).states_onset=0;
-                AT_temp=AT-RPEAK_ts(t);
-                condition(tasktype).unit(u).trial(t+T).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
+            tic
+            sorted=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event);
+            condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
+            
+            %% make surrogates
+            for p=1:n_permutations
+                RPEAKS_intervals=diff([0 RPEAK_ts ]);
+                RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
+                RPEAK_ts_perm=cumsum(RPEAKS_intervals);
+                sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event);
+                condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
             end
+            toc
+            
+%             for t=1:numel(RPEAK_ts)
+%                 condition(tasktype).unit(u).trial(t+T).states=ECG_event;
+%                 condition(tasktype).unit(u).trial(t+T).states_onset=0;
+%                 AT_temp=AT-RPEAK_ts(t);
+%                 condition(tasktype).unit(u).trial(t+T).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
+%             end
             
             %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
             if Sanity_check
@@ -145,14 +158,43 @@ for s=1:numel(session_info)
         if numel(condition(1).unit) >= u
             trial=condition(1).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
+            
+            for p=1:n_permutations                
+            trial=condition(1).unit(u).permuations(p).trial;
+            SDP(p,:)                =ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
+            end
+            
+            lineProps={'color','b','linewidth',1};
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SD,SD_SEM,lineProps,1);
+            
+            %% get mean and confidence intervals of shuffle predictor
+            SDPmean=nanmean(SDP,1);
+            SDPconf(1,:)=abs(prctile(SDP,2.5,1)-SDPmean);
+            SDPconf(2,:)=abs(prctile(SDP,97.5,1)-SDPmean);
+            
+            lineProps={'color','b','linewidth',1,'linestyle',':'};
+            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
         end
         
         if numel(condition(2).unit) >= u
             trial=condition(2).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
+            
+              for p=1:n_permutations                
+            trial=condition(2).unit(u).permuations(p).trial;
+             SDP(p,:)               =ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
+              end
+            
             lineProps={'color','r','linewidth',1};
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SD,SD_SEM,lineProps,1);
+            
+            %% get mean and confidence intervals of shuffle predictor
+            SDPmean=nanmean(SDP,1);
+            SDPconf(1,:)=abs(prctile(SDP,2.5,1)-SDPmean);
+            SDPconf(2,:)=abs(prctile(SDP,97.5,1)-SDPmean);
+            
+            lineProps={'color','r','linewidth',1,'linestyle',':'};
+            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
         end
         
         filename=unit_ID;
@@ -172,7 +214,22 @@ aaa=12;
 
 end
 
+function out=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event)
+%% now the tricky part: sort by ECG peaks ...
 
+            %% reduce RPEAK_ts potentially ? (f.e.: longer than recorded ephys, inter-trial-interval?)
+            during_trial_index = arrayfun(@(x) any(trial_onsets<=x+keys.PSTH_WINDOWS{1,3} & trial_ends>=x+keys.PSTH_WINDOWS{1,4}),RPEAK_ts);
+            RPEAK_ts=RPEAK_ts(during_trial_index);
+            
+out=struct('states',num2cell(ones(size(RPEAK_ts))*ECG_event),'states_onset',num2cell(zeros(size(RPEAK_ts))),'arrival_times',num2cell(NaN(size(RPEAK_ts))));
+
+for t=1:numel(RPEAK_ts)
+    out(t).states=ECG_event;
+    out(t).states_onset=0;
+    AT_temp=AT-RPEAK_ts(t);
+    out(t).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
+end
+end
 
 
 
