@@ -4,9 +4,11 @@ function ecg_bna_spike_histogram(basepath_ecg,basepath_spikes,basepath_to_save,s
 
 session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
 session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
+session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
+session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
 
 basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
-basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\StimulusType_Difficulty_Position_LS\';
+basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\ECG_taskRest\';
 basepath_to_save='Y:\Projects\Pulv_distractor_spatial_choice\Data\ECG_triggered_PSTH';
 
 
