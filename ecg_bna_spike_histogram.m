@@ -11,10 +11,9 @@ basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
 basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\ECG_taskRest\';
 basepath_to_save='Y:\Projects\Pulv_distractor_spatial_choice\Data\ECG_triggered_PSTH';
 
-
-Sanity_check=0;
+Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
+remove_ini=0;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
 n_permutations=100;
-
 
 ECG_event=-1;
 keys.PSTH_WINDOWS={'ECG',ECG_event,-0.5,0.5};
@@ -22,15 +21,11 @@ keys.PSTH_binwidth=0.01;
 keys.kernel_type='gaussian';
 keys.gaussian_kernel=0.02;
 
-
-
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_ecg, 'ECG_triggered_PSTH');
 end
 
-
 condition=struct('unit',{});
-
 u=0; % unit counter across sessions
 
 for s=1:numel(session_info)
@@ -38,10 +33,9 @@ for s=1:numel(session_info)
     session=session_info{s}{2};
     blocks=session_info{s}{3};
     
-    
+    % Rpeaks derived from concatenated ECG data [First_trial_INI.ECG1 trial.TDT_ECG1]
     load([basepath_ecg monkey filesep 'ECG' filesep session filesep session  '_ecg.mat']);
     load([basepath_spikes 'population_' monkey '_' session '.mat']);
-    
     
     for U=1:numel(population)
         pop=population(U);
@@ -60,23 +54,18 @@ for s=1:numel(session_info)
             
             %% here we could potentially further reduce trials
             tr=[pop.trial.block]==block;
-            
-            
             trcell=num2cell(pop.trial(tr));
             % add trial onset time to each spike so its basically one stream again
-            % also, make sure spikes aren't counted twice (because previous
-            % trial is appended in beginning;
-            arrival_times=cellfun(@(x) [x.arrival_times(x.arrival_times>0)]+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart,trcell,'Uniformoutput',false);
-            trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart,trcell); % add trial onset time to each spike so its basically one stream again
+            % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
+                                                        % removing overlapping spikes here            % add trial onset time
+            arrival_times=cellfun(@(x) [x.arrival_times(x.arrival_times>x.states_onset(x.states==1))]+x.TDT_ECG1_t0_from_rec_start,trcell,'Uniformoutput',false);
+            % trial_onsets and ends only relevant if removing ITI 
+            trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart,trcell); 
             trial_ends=cellfun(@(x) x.states_onset(x.states==98)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart,trcell,'Uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
             trial_ends=[trial_ends{:}];
             
             AT=vertcat(arrival_times{:});
             if ~numel(trial_onsets)>0
-%                 AT=AT-trial_onsets(1);                      %% subtract trial onset time of first trial per block so all arrival times are aligned to fixation acquisition of first trial!
-%                 trial_ends=trial_ends-trial_onsets(1);      %% subtract trial onset time of first trial per block so all arrival times are aligned to fixation acquisition of first trial!
-%                 trial_onsets=trial_onsets-trial_onsets(1);  %% subtract trial onset time of first trial per block so all arrival times are aligned to fixation acquisition of first trial!
-%             else
                 continue;
             end
             RPEAK_ts=[out(o).Rpeak_t];
@@ -99,10 +88,8 @@ for s=1:numel(session_info)
                 T=0;
             end
             
-            
             %% now the tricky part: sort by ECG peaks ...
-            tic
-            sorted=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event);
+            sorted=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
             condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
             
             %% make surrogates
@@ -110,17 +97,9 @@ for s=1:numel(session_info)
                 RPEAKS_intervals=diff([0 RPEAK_ts ]);
                 RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
                 RPEAK_ts_perm=cumsum(RPEAKS_intervals);
-                sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event);
+                sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
                 condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
             end
-            toc
-            
-%             for t=1:numel(RPEAK_ts)
-%                 condition(tasktype).unit(u).trial(t+T).states=ECG_event;
-%                 condition(tasktype).unit(u).trial(t+T).states_onset=0;
-%                 AT_temp=AT-RPEAK_ts(t);
-%                 condition(tasktype).unit(u).trial(t+T).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
-%             end
             
             %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
             if Sanity_check
@@ -184,7 +163,7 @@ for s=1:numel(session_info)
             
               for p=1:n_permutations                
             trial=condition(2).unit(u).permuations(p).trial;
-             SDP(p,:)               =ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
+            SDP(p,:)               =ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
               end
             
             lineProps={'color','r','linewidth',1};
@@ -202,12 +181,7 @@ for s=1:numel(session_info)
         filename=unit_ID;
         export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
         close(gcf);
-        
-        
     end
-    
-    
-    
 end
 
 %% Here comes some sort of across population plot i assume?
@@ -216,13 +190,15 @@ aaa=12;
 
 end
 
-function out=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event)
+function out=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini)
 %% now the tricky part: sort by ECG peaks ...
 
-            %% reduce RPEAK_ts potentially ? (f.e.: longer than recorded ephys, inter-trial-interval?)
-            during_trial_index = arrayfun(@(x) any(trial_onsets<=x+keys.PSTH_WINDOWS{1,3} & trial_ends>=x+keys.PSTH_WINDOWS{1,4}),RPEAK_ts);
-            RPEAK_ts=RPEAK_ts(during_trial_index);
-            
+if remove_ini
+%% reduce RPEAK_ts potentially ? (f.e.: longer than recorded ephys, inter-trial-interval?)
+during_trial_index = arrayfun(@(x) any(trial_onsets<=x+keys.PSTH_WINDOWS{1,3} & trial_ends>=x+keys.PSTH_WINDOWS{1,4}),RPEAK_ts);
+RPEAK_ts=RPEAK_ts(during_trial_index);
+end
+
 out=struct('states',num2cell(ones(size(RPEAK_ts))*ECG_event),'states_onset',num2cell(zeros(size(RPEAK_ts))),'arrival_times',num2cell(NaN(size(RPEAK_ts))));
 
 for t=1:numel(RPEAK_ts)
