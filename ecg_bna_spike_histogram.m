@@ -2,10 +2,15 @@ function ecg_bna_spike_histogram(basepath_ecg,basepath_spikes,basepath_to_save,s
 
 %20210706
 
-session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
-session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
-session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
-session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
+% session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
+% session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
+% session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
+% session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
+session_info{1}={'Bacchus','20211207',[1 2 3 4 6 7 9 10 11 12]};%4
+session_info{2}={'Bacchus','20211214',[1 2 3 4 5 6 7 ]};
+session_info{3}={'Bacchus','20211222',[1 2 3 4 5 6 7 8 9]};
+session_info{4}={'Bacchus','20220105',[1 2 3 4 5 6 7 8 9 10 11 12 13]};
+session_info{5}={'Bacchus','20220106',[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15]};
 
 basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
 basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\ECG_taskRest\';
