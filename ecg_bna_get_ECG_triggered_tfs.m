@@ -43,11 +43,10 @@ width = state{4} - state{3};
 ecg_triggered_tfs.powspctrm = {}; % power spectrogram
 ecg_triggered_tfs.time = {}; % timebins fo spectrogram
 ecg_triggered_tfs.freq = {}; % freq bins
-ecg_triggered_tfs.state = [];
+ecg_triggered_tfs.state = NaN;%[];
 ecg_triggered_tfs.state_name = state_name;
 
 for t = find(cond_trials)
-
     trialperiod           = site_lfp.trials(t).trialperiod;
     
     % get the LFP samples and timestamps between start and end states
@@ -57,9 +56,7 @@ for t = find(cond_trials)
     
     % ecg peak times
     lfp_time = site_lfp.trials(t).time; 
-    ecg_peaks = site_lfp.trials(t).ECG_spikes; %...
-%         ((site_lfp.trials(t).time >= trialperiod(1) & ...
-%         site_lfp.trials(t).time <= trialperiod(2))); 
+    ecg_peaks = site_lfp.trials(t).ECG_spikes; 
     ecg_peak_times = lfp_time(ecg_peaks);
     
     % lfp sample indices
@@ -79,14 +76,12 @@ for t = find(cond_trials)
         if min(abs(lfp_tfs_time - p)) > tbin_width
             continue;
         end
-        window_mid_idx = [window_mid_idx, find(abs(lfp_tfs_time - p) == ...
-            min(abs(lfp_tfs_time - p)))];
+        window_mid_idx = [window_mid_idx, find(abs(lfp_tfs_time - p) ==  min(abs(lfp_tfs_time - p)))];
     end
 
     % loop through each window
     for w = 1:length(window_mid_idx)
-        if window_mid_idx(w) - round(ntbins_window/2) < 1 || ...
-                window_mid_idx(w) + round(ntbins_window/2) > length(lfp_tfs_time)
+        if window_mid_idx(w) - round(ntbins_window/2) < 1 || window_mid_idx(w) + round(ntbins_window/2) > length(lfp_tfs_time)
             continue;
         end
         % power spectrum for this window
@@ -107,8 +102,7 @@ for t = find(cond_trials)
 end
 
 
-% find number of time bins in power
-% spectrogram
+% find number of time bins in power spectrogram
 ntimebins = min(cellfun('size', ecg_triggered_tfs.powspctrm, 3));
 nfreqbins = numel(ecg_triggered_tfs.freq);
 % crop each tfs to the ntimebins
@@ -130,35 +124,30 @@ if ~isempty(ecg_triggered_tfs.powspctrm)
     % baseline normalization
     cfg_baseline.method = ecg_bna_cfg.baseline_method;
     if ~strcmp(cfg_baseline.method, 'none')
-        if isinf(ecg_bna_cfg.baseline_perturbation)
-            baseline_cnd_idx = isinf([site_lfp.baseline.perturbation]);
-        end
-        if isinf(ecg_bna_cfg.baseline_use_choice_trial)
-            baseline_cnd_idx = baseline_cnd_idx & isinf([site_lfp.baseline.choice]);
-        end
-        if isinf(ecg_bna_cfg.baseline_use_type)
-            baseline_cnd_idx = baseline_cnd_idx & isinf([site_lfp.baseline.type]);
-        end
-        if isinf(ecg_bna_cfg.baseline_use_effector)
-            baseline_cnd_idx = baseline_cnd_idx & isinf([site_lfp.baseline.effector]);
-        end
-        if ~isinf(ecg_bna_cfg.baseline_perturbation) && ~isinf(ecg_bna_cfg.baseline_use_choice_trial)
-            baseline_cnd_idx = ...
-                [site_lfp.baseline.perturbation] == ecg_bna_cfg.baseline_perturbation & ...
-                [site_lfp.baseline.choice] == ecg_bna_cfg.baseline_use_choice_trial & ...
-                [site_lfp.baseline.type] == ecg_bna_cfg.baseline_use_type & ...
-                [site_lfp.baseline.effector] == ecg_bna_cfg.baseline_use_effector;
-        end
-        cfg_baseline.mean = site_lfp.baseline(baseline_cnd_idx).pow_mean;
-        cfg_baseline.std = site_lfp.baseline(baseline_cnd_idx).pow_std;
-        ecg_triggered_tfs.powspctrm_normmean = lfp_tfa_baseline_normalization(...
-            ecg_triggered_tfs.powspctrm_rawmean, cfg_baseline); 
+        
+        baseline_cnd_idx=...
+        find_conditon(site_lfp,ecg_bna_cfg,'perturbation','baseline_perturbation') & ...
+        find_conditon(site_lfp,ecg_bna_cfg,'choice','baseline_use_choice_trial') & ...
+        find_conditon(site_lfp,ecg_bna_cfg,'type','baseline_use_type') & ...
+        find_conditon(site_lfp,ecg_bna_cfg,'effector','baseline_use_effector');
+        
+        cfg_baseline.mean = nanmean(vertcat(site_lfp.baseline(baseline_cnd_idx).pow_mean),1);
+        cfg_baseline.std  = nanmean(vertcat(site_lfp.baseline(baseline_cnd_idx).pow_std),1);
+        ecg_triggered_tfs.powspctrm_normmean = lfp_tfa_baseline_normalization(ecg_triggered_tfs.powspctrm_rawmean, cfg_baseline); 
     else
         ecg_triggered_tfs.powspctrm_normmean = ecg_triggered_tfs.powspctrm_rawmean;
     end
-    
-    
 end
 
+end
+
+function baseline_cnd_idx=find_conditon(site_lfp,ecg_bna_cfg,site_field,cfg_field)
+if isinf(ecg_bna_cfg.(cfg_field))
+    baseline_cnd_idx = isinf([site_lfp.baseline.(site_field)]);
+elseif isnan(ecg_bna_cfg.(cfg_field))
+    baseline_cnd_idx = isnan([site_lfp.baseline.(site_field)]);
+else
+    baseline_cnd_idx = ismember([site_lfp.baseline.(site_field)],ecg_bna_cfg.(cfg_field));
+end
 end
 

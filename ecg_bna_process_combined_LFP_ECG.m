@@ -95,9 +95,9 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
         for s = 1:length(combined_sites)
             sites = combined_sites{s};
                         
-            %% get information common to all sites for a session
+            %% get information common to all sites for a session (PROBLEM IS: these parameters ARE NOT common for all sites in a session...)
             
-            if i == 1    
+            if true %i == 1    
                 % iterator for completed trials 
                 if s == 1
                     comp_trial = 0; 
@@ -263,21 +263,21 @@ function session_info = ecg_bna_process_combined_LFP_ECG( session_info, ecg_bna_
 
                 end
                 
-            else
-                % loop through each trial for this site to get the LFP data
-                if s == 1
-                    comp_trial = 0; % iterator for completed trials
-                end
-                for t = 1:length(sites(i).trial)
-                    completed = sites(i).trial(t).completed;
-                    if true
-                        LFP = sites(i).trial(t).LFP; % LFP data
-                        comp_trial = comp_trial + 1;
-                        % overwrite only LFP data
-                        site_lfp.trials(comp_trial).lfp_data = LFP;
-                    end
-                end
-            end
+%             else
+%                 % loop through each trial for this site to get the LFP data
+%                 if s == 1
+%                     comp_trial = 0; % iterator for completed trials
+%                 end
+%                 for t = 1:length(sites(i).trial)
+%                     completed = sites(i).trial(t).completed;
+%                     if true
+%                         LFP = sites(i).trial(t).LFP; % LFP data
+%                         comp_trial = comp_trial + 1;
+%                         % overwrite only LFP data
+%                         site_lfp.trials(comp_trial).lfp_data = LFP;
+%                     end
+%                 end
+             end
         end
         
             

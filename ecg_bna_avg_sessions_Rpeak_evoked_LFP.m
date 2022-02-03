@@ -53,8 +53,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sessions', ...
-        'LFP evoked');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sessions');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -72,8 +71,11 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
 
             % initialize number of site pairs for each handspace
             % label
-            for st = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 1)
-                for hs = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 2)
+%             for st = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 1)
+%                 for hs = 1:size(Rpeak_evoked_LFP.session(1).session_avg(1).condition(cn).hs_tuned_evoked, 2)
+%             
+            for st = 1:size(ecg_bna_cfg.analyse_states, 1)
+                for hs = 1:size(ecg_bna_cfg.conditions(cn).hs_labels, 2)
                     sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions = 0;
                     sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).trial = {};                
                 end
@@ -81,49 +83,43 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
 
             for i = 1:length(Rpeak_evoked_LFP.session)
                 for k = 1:length(Rpeak_evoked_LFP.session(i).session_avg)
-                    if isempty(Rpeak_evoked_LFP.session(i).session_avg(k).condition)
+                    if isempty(Rpeak_evoked_LFP.session(i).session_avg(k).condition) || ...
+                        ~strcmp(Rpeak_evoked_LFP.session(i).session_avg(k).target, ecg_bna_cfg.compare.targets{t}) || ...
+                        ~isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 'mean') || ...
+                        all(isnan([Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked.mean]));
                         continue;
                     end
-                    if ~strcmp(Rpeak_evoked_LFP.session(i).session_avg(k).target, ecg_bna_cfg.compare.targets{t})
-                        continue;
-                    end
-                    if isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 'mean')
-                        for st = 1:size(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 1)
-                            for hs = 1:size(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 2)
-                                if isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs), 'mean') ...
-                                        && ~isempty(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean)
-                                    sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions = ...
-                                        sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions + 1;
-                                    if sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions == 1
-                                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).time ...
-                                            = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).time;
-                                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label ...
-                                            = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
-                                        if isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs), 'state') && ...
-                                                isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs), 'state_name')
-                                            sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).state ...
-                                                = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).state;
-                                            sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).state_name ...
-                                                = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).state_name;
-                                        end
-                                    end
-                                    sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial ...
-                                        = [sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, ...
-                                        Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean];  
-                                else
-                                    continue; %sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs) = struct();
-                                end
+                    for st = 1:size(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 1)
+                        for hs = 1:size(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked, 2)
+                            if all(isnan(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean))
+                                continue;
                             end
+                            sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions = ...
+                                sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions + 1;
+                                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).time ...
+                                    = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).time;
+                                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label ...
+                                    = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
+%                                 if isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs), 'state') && ...
+%                                         isfield(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs), 'state_name')
+%                                     sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).state ...
+%                                         = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).state;
+%                                     sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).state_name ...
+%                                         = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).state_name;
+                                %end
+                            sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial ...
+                                = [sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, ...
+                                Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean];
                         end
-                    end     
+                    end
                 end
             end
 
             % compute average
-            if isfield(sessions_avg(t).condition(cn).hs_tuned_evoked, 'trial')
+            %if isfield(sessions_avg(t).condition(cn).hs_tuned_evoked, 'trial')
                 for st = 1:size(sessions_avg(t).condition(cn).hs_tuned_evoked, 1)
                     for hs = 1:size(sessions_avg(t).condition(cn).hs_tuned_evoked, 2)
-                        if ~isempty(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial)
+                        %if ~isempty(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial)
                             sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial = ...
                                 cat(1, sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial{:});
                             sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).dimord = 'nsessions_time';
@@ -133,23 +129,23 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
                                 std(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, 0, 1);
                             sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).mean = ...
                                 mean(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, 1);                           
-                        end
+                        %end
                     end
                 end
-            end
+            %end
 
 
-            if ~isempty(sessions_avg(t).condition(cn).hs_tuned_evoked)
-                if isfield(sessions_avg(t).condition(cn).hs_tuned_evoked,... 
-                        'mean')
+%             if ~isempty(sessions_avg(t).condition(cn).hs_tuned_evoked)
+%                 if isfield(sessions_avg(t).condition(cn).hs_tuned_evoked,... 
+%                         'mean')
                     plottitle = [ecg_bna_cfg.compare.targets{t},...
                          ecg_bna_cfg.conditions(cn).label];
                     result_file = fullfile(results_fldr, ...
                                     ['Rpeak_evoked_LFP_' ecg_bna_cfg.conditions(cn).label]);
                     ecg_bna_plot_evoked_lfp(sessions_avg(t).condition(cn).hs_tuned_evoked, ...
                                 ecg_bna_cfg, plottitle, result_file, 'ylabel', 'LFP amplitude');
-                end
-            end
+%                 end
+%             end
 
         end
 

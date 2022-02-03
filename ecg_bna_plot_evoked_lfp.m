@@ -64,7 +64,7 @@ function ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_fi
     
     % loop through handspace
     for hs = 1:size(evoked_lfp, 2)
-        if ~isempty([evoked_lfp(:,hs).mean]) &&  ~isempty([evoked_lfp(:,hs).std])
+        if ~isempty([evoked_lfp(:,hs).mean]) &&  ~all(all(isnan([evoked_lfp(:,hs).mean]))) && ~isempty([evoked_lfp(:,hs).std])
             
             % now plot
             subplot(nhandlabels, nspacelabels, hs)

@@ -1,11 +1,16 @@
 function ecg_bna_spike_histogram(basepath_ecg,basepath_spikes,basepath_to_save,session_info)
 
-%20210706
+% %20210706
+% 
+% session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
+% session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
+% session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
+% session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
 
-session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
-session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
-session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
-session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
+
+
+session_info{1}={'Bacchus','20210720',[7 8]};
+
 
 basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
 basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\ECG_taskRest\';
@@ -25,7 +30,8 @@ if ~exist(basepath_to_save,'dir')
     mkdir(basepath_ecg, 'ECG_triggered_PSTH');
 end
 
-condition=struct('unit',{});
+condition(1)=struct('unit',{[]});
+condition(2)=struct('unit',{[]});
 u=0; % unit counter across sessions
 
 for s=1:numel(session_info)
@@ -36,11 +42,11 @@ for s=1:numel(session_info)
     % Rpeaks derived from concatenated ECG data [First_trial_INI.ECG1 trial.TDT_ECG1]
     load([basepath_ecg monkey filesep 'ECG' filesep session filesep session  '_ecg.mat']);
     load([basepath_spikes 'population_' monkey '_' session '.mat']);
-    
+    us=u;
     for U=1:numel(population)
         pop=population(U);
         unit_ID=population(U).unit_ID;
-        u=U+u;
+        u=U+us;
         
         for b=1:numel(blocks)
             block=blocks(b);
@@ -92,10 +98,20 @@ for s=1:numel(session_info)
             sorted=sort_by_rpeaks(RPEAK_ts,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
             condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
             
+%             %% make surrogates
+%             for p=1:n_permutations
+%                 RPEAKS_intervals=diff([0 RPEAK_ts ]);
+%                 RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
+%                 RPEAK_ts_perm=cumsum(RPEAKS_intervals);
+%                 sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
+%                 condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
+%             end
+
+ 
             %% make surrogates
             for p=1:n_permutations
-                RPEAKS_intervals=diff([0 RPEAK_ts ]);
-                RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
+                RPEAKS_intervals=diff(RPEAK_ts);
+                RPEAKS_intervals=[RPEAK_ts(1) Shuffle(RPEAKS_intervals)]; %% shuffle the intervals
                 RPEAK_ts_perm=cumsum(RPEAKS_intervals);
                 sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
                 condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
@@ -205,7 +221,7 @@ for t=1:numel(RPEAK_ts)
     out(t).states=ECG_event;
     out(t).states_onset=0;
     AT_temp=AT-RPEAK_ts(t);
-    out(t).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
+    out(t).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-1 & AT_temp<keys.PSTH_WINDOWS{1,4}+1);
 end
 end
 
