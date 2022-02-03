@@ -1,17 +1,26 @@
 function ecg_bna_spike_histogram(basepath_ecg,basepath_spikes,basepath_to_save,session_info)
-
+savePlot = 1; 
 %20210706
+% ToDos
+% 1 - loading the data automatically
+% 2 - each plot should get a label for the brain areas -> 
+% 3 - average 
+%% - average of the surrogate data pro unit (per taskType) 
+%% - Mittelwert (SEM) über alle units per Brain area
 
-% session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7]};
-% session_info{2}={'Bacchus','20210720',[4 5 6 7 8]};
-% session_info{3}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
-% session_info{4}={'Bacchus','20211028',[1 2 3 4 5 6]};
-session_info{1}={'Bacchus','20211207',[1 2 3 4 6 7 9 10 11 12]};%4
-session_info{2}={'Bacchus','20211214',[1 2 3 4 5 6 7 ]};
-session_info{3}={'Bacchus','20211222',[1 2 3 4 5 6 7 8 9]};
-session_info{4}={'Bacchus','20220105',[1 2 3 4 5 6 7 8 9 10 11 12 13]};
-session_info{5}={'Bacchus','20220106',[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15]};
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7 ]}; 
+% session_info{1}={'Bacchus','20210720',[4 5 6 7 8]};
+% session_info{1}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
+%session_info{1}={'Bacchus','20211028',[1 2 3 4 5 6]};
+% session_info{1}={'Bacchus','20211207',[1 2 3 4 6  9 10 11 12]};%4 VPL
+ session_info{1}={'Bacchus','20211208',[2 4 6 7 8 9 10 11 12 13 14 15]};% VPL
+% session_info{1}={'Bacchus','20211214',[1 2 3 4 5 6 7 ]}; %Dpul & VPL
+% session_info{1}={'Bacchus','20211222',[1 2 3 4 5 6 7 8 9]}; %Dpul & VPL
+% session_info{1}={'Bacchus','20220105',[1 2 3 4 5 6 7 8 9 10 11 12 13]}; %Dpul & VPL
+% session_info{1}={'Bacchus','20220106',[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15]}; %MD & VPL
+tic
 basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
 basepath_spikes='Y:\Projects\Pulv_distractor_spatial_choice\ephys\ECG_taskRest\';
 basepath_to_save='Y:\Projects\Pulv_distractor_spatial_choice\Data\ECG_triggered_PSTH';
@@ -42,9 +51,10 @@ for s=1:numel(session_info)
     load([basepath_ecg monkey filesep 'ECG' filesep session filesep session  '_ecg.mat']);
     load([basepath_spikes 'population_' monkey '_' session '.mat']);
     
-    for U=1:numel(population)
+    for U=1: 3 %numel(population)
         pop=population(U);
         unit_ID=population(U).unit_ID;
+        target =population(U).target;
         u=U+u;
         
         for b=1:numel(blocks)
@@ -100,7 +110,8 @@ for s=1:numel(session_info)
             %% make surrogates
             for p=1:n_permutations
                 RPEAKS_intervals=diff([0 RPEAK_ts ]);
-                RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
+                %RPEAKS_intervals=Shuffle(RPEAKS_intervals); %% shuffle the intervals
+                RPEAKS_intervals = RPEAKS_intervals(randperm(length(RPEAKS_intervals))); 
                 RPEAK_ts_perm=cumsum(RPEAKS_intervals);
                 sorted=sort_by_rpeaks(RPEAK_ts_perm,AT,trial_onsets,trial_ends,keys,ECG_event,remove_ini);
                 condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
@@ -138,13 +149,14 @@ for s=1:numel(session_info)
             
         end
         
+        
         figure;
-        title(unit_ID,'interpreter','none');
+        title([unit_ID,'__',target ],'interpreter','none');
         hold on
         if numel(condition(1).unit) >= u
             trial=condition(1).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
-            
+
             for p=1:n_permutations                
             trial=condition(1).unit(u).permuations(p).trial;
             SDP(p,:)                =ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
@@ -161,7 +173,10 @@ for s=1:numel(session_info)
             lineProps={'color','b','linewidth',1,'linestyle',':'};
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
         end
-        
+        % separate for Rest and Task, group for Target
+            Output.(target)(U).Rest.SD       = SD ; 
+            Output.(target)(U).Rest.SD_SEM   = SD_SEM ; 
+        if size(condition)
         if numel(condition(2).unit) >= u
             trial=condition(2).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
@@ -182,16 +197,45 @@ for s=1:numel(session_info)
             lineProps={'color','r','linewidth',1,'linestyle',':'};
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
         end
+            Output.(target)(U).Task.SD = SD ; 
+            Output.(target)(U).Task.SD_SEM = SD_SEM ; 
         
-        filename=unit_ID;
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
+        filename= [unit_ID, '__' target];
+        if savePlot; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent'); end % pdf by run
         close(gcf);
-    end
-end
+    end % population
+end %SessionInfo
 
 %% Here comes some sort of across population plot i assume?
-aaa=12;
+TaskTyp = {'Rest', 'Task'};
+figure;
+TargetBrainArea = fieldnames(Output); 
+for i_BrArea = 1: numel(TargetBrainArea)
+    
+    title(['Mean_', (TargetBrainArea{i_BrArea})],'interpreter','none');
+    for i_tsk = 1: numel(TaskTyp)
+        O = [Output.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        Tab_SD = [];
+        for p = 1: size(O,2)
+            Tab_SD(p,:)     =    [O(:,p).SD];
+        end
+        TaskType(i_tsk).SDmean  =   mean(Tab_SD);
+        TaskType(i_tsk).SDmean_SEM  =  std(Tab_SD) ;
+        hold on
+        if i_tsk == 1
+            lineProps={'color','r','linewidth',1};
+        else
+            lineProps={'color','b','linewidth',1}; 
+        end
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,TaskType(i_tsk).SDmean ,TaskType(i_tsk).SDmean_SEM ,lineProps,1);
+          
+    end
 
+toc
+end
+        filename= [monkey,'_' session,'_' (TargetBrainArea{i_BrArea})];
+
+        if savePlot; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent'); end % pdf by run
 
 end
 
@@ -213,6 +257,7 @@ for t=1:numel(RPEAK_ts)
     out(t).arrival_times=AT_temp(AT_temp>keys.PSTH_WINDOWS{1,3}-0.2 & AT_temp<keys.PSTH_WINDOWS{1,4}+0.2);
 end
 end
+
 
 
 
