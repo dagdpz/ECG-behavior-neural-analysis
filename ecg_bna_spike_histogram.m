@@ -10,12 +10,12 @@ savePlot = 1;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% session_info{1}={'Bacchus','20211001',[1 2 3 4 5 6 7 ]}; 
+ session_info{1}={'Bacchus','20211001',[1 2  ]};  %3 4 5 6 7
 % session_info{1}={'Bacchus','20210720',[4 5 6 7 8]};
 % session_info{1}={'Bacchus','20210826',[2 3 4 5 6 7 8 9]};
 %session_info{1}={'Bacchus','20211028',[1 2 3 4 5 6]};
 % session_info{1}={'Bacchus','20211207',[1 2 3 4 6  9 10 11 12]};%4 VPL
- session_info{1}={'Bacchus','20211208',[2 4 6 7 8 9 10 11 12 13 14 15]};% VPL
+% session_info{1}={'Bacchus','20211208',[2 4 6 7 8 9 10 11 12 13 14 15]};% VPL
 % session_info{1}={'Bacchus','20211214',[1 2 3 4 5 6 7 ]}; %Dpul & VPL
 % session_info{1}={'Bacchus','20211222',[1 2 3 4 5 6 7 8 9]}; %Dpul & VPL
 % session_info{1}={'Bacchus','20220105',[1 2 3 4 5 6 7 8 9 10 11 12 13]}; %Dpul & VPL
@@ -125,7 +125,7 @@ for s=1:numel(session_info)
                 tt=0;
                 clear ECG_to_plot
                 for t=1:numel(RPEAK_ts)
-                    ECg_t_idx=ECG_time>RPEAK_ts(t)-0.5 & ECG_time<RPEAK_ts(t)+0.5;
+                    ECg_t_idx=CG_time>RPEAK_ts(t)-0.5 & CG_time<RPEAK_ts(t)+0.5;
                     if round(sum(ECg_t_idx)-trcell{1}.TDT_ECG1_SR)~=0
                         continue
                     end
@@ -153,6 +153,7 @@ for s=1:numel(session_info)
         figure;
         title([unit_ID,'__',target ],'interpreter','none');
         hold on
+        Output = []; 
         if numel(condition(1).unit) >= u
             trial=condition(1).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
@@ -174,10 +175,10 @@ for s=1:numel(session_info)
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
         end
         % separate for Rest and Task, group for Target
-            Output.(target)(U).Rest.SD       = SD ; 
-            Output.(target)(U).Rest.SD_SEM   = SD_SEM ; 
-        if size(condition)
-        if numel(condition(2).unit) >= u
+            Output.target.Rest.SD(U,:)       = SD ; 
+            Output.target.Rest.SDP(U,:)   = SDPmean ; 
+
+          if numel(condition(2).unit) >= u
             trial=condition(2).unit(u).trial;
             [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
             
@@ -196,9 +197,10 @@ for s=1:numel(session_info)
             
             lineProps={'color','r','linewidth',1,'linestyle',':'};
             shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,SDPmean,SDPconf,lineProps,1);
-        end
-            Output.(target)(U).Task.SD = SD ; 
-            Output.(target)(U).Task.SD_SEM = SD_SEM ; 
+          end
+            Output.target.Task.SD(U,:)       = SD ; 
+            Output.target.Task.SDP(U,:)   = SDPmean ; 
+            
         
         filename= [unit_ID, '__' target];
         if savePlot; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent'); end % pdf by run
@@ -215,20 +217,15 @@ for i_BrArea = 1: numel(TargetBrainArea)
     title(['Mean_', (TargetBrainArea{i_BrArea})],'interpreter','none');
     for i_tsk = 1: numel(TaskTyp)
         O = [Output.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
-        Tab_SD = [];
-        for p = 1: size(O,2)
-            Tab_SD(p,:)     =    [O(:,p).SD];
-        end
-        TaskType(i_tsk).SDmean  =   mean(Tab_SD);
-        TaskType(i_tsk).SDmean_SEM  =  std(Tab_SD) ;
+        TaskType(i_tsk).SDmean          =   mean(O.SD - O.SDP);
+        TaskType(i_tsk).SDmean_SEM      =  std(O.SD - O.SDP)/ sqrt(length(TaskType(i_tsk).SDmean )) ;
         hold on
         if i_tsk == 1
-            lineProps={'color','r','linewidth',1};
+            lineProps={'color','r','linewidth',3};
         else
-            lineProps={'color','b','linewidth',1}; 
+            lineProps={'color','b','linewidth',3}; 
         end
         shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,TaskType(i_tsk).SDmean ,TaskType(i_tsk).SDmean_SEM ,lineProps,1);
-          
     end
 
 toc
