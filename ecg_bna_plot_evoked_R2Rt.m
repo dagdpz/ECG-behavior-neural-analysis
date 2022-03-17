@@ -155,7 +155,7 @@ function ecg_bna_plot_evoked_R2Rt( evoked_R2Rt, ecg_bna_cfg, plottitle, results_
                     %end
                 end
                 for i = 1:size(evoked_R2Rt(st, hs).mean, 1)
-                    shadedErrorBar(evoked_R2Rt(st, hs).time, evoked_R2Rt(st, hs).mean(i, :), evoked_R2Rt(st, hs).std(i, :), 'lineprops', colors(i, :));
+                    shadedErrorBar(evoked_R2Rt(st, hs).time, evoked_R2Rt(st, hs).mean(i, :), evoked_R2Rt(st, hs).std(i, :), colors(i, :));
                 end
                 if isfield(evoked_R2Rt(st, hs), 'legend')
                     legend(ax{st}, evoked_R2Rt(st, hs).legend);

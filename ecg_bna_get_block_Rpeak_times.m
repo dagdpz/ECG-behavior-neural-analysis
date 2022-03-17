@@ -99,16 +99,15 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
     % now divide into trials
     for t = 1:length(trials_idx)
         
-        trial_ECG_spikes = ECG_spikes(trials_samples(t, 1):trials_samples(t, 2));
-        trial_ECG_bpm = ECG_bpm(trials_samples(t, 1):trials_samples(t, 2));
-        trial_ECG_b2btime = ECG_b2bt(trials_samples(t, 1):trials_samples(t, 2));
-        trial_ECG_valid = block_ecg_validsamples(...
-            trials_samples(t, 1):trials_samples(t, 2));
-        session_ecg.trials(trials_idx(t)).ECG_spikes = trial_ECG_spikes;
-        session_ecg.trials(trials_idx(t)).nRpeaks = sum(trial_ECG_spikes);
-        session_ecg.trials(trials_idx(t)).ECG_bpm = trial_ECG_bpm;
-        session_ecg.trials(trials_idx(t)).ECG_b2btime = trial_ECG_b2btime;
-        session_ecg.trials(trials_idx(t)).ECG_valid = trial_ECG_valid;
+        trial_ECG_spikes    = ECG_spikes(trials_samples(t, 1):trials_samples(t, 2));
+        trial_ECG_bpm       = ECG_bpm(trials_samples(t, 1):trials_samples(t, 2));
+        trial_ECG_b2btime   = ECG_b2bt(trials_samples(t, 1):trials_samples(t, 2));
+        trial_ECG_valid     = block_ecg_validsamples(trials_samples(t, 1):trials_samples(t, 2));
+        session_ecg.trials(trials_idx(t)).ECG_spikes    = trial_ECG_spikes;
+        session_ecg.trials(trials_idx(t)).nRpeaks       = sum(trial_ECG_spikes);
+        session_ecg.trials(trials_idx(t)).ECG_bpm       = trial_ECG_bpm;
+        session_ecg.trials(trials_idx(t)).ECG_b2btime   = trial_ECG_b2btime;
+        session_ecg.trials(trials_idx(t)).ECG_valid     = trial_ECG_valid;
         
         % plot individual trials
         if plottrials

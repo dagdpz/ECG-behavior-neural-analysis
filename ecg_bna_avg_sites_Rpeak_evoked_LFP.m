@@ -53,8 +53,7 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sites', ...
-        'LFP evoked');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sites');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -72,8 +71,10 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
 
             % initialize number of site pairs for each handspace
             % label
-            for st = 1:size(Rpeak_evoked_LFP.session(1).sites(1).condition(cn).hs_tuned_evoked, 1)
-                for hs = 1:size(Rpeak_evoked_LFP.session(1).sites(1).condition(cn).hs_tuned_evoked, 2)
+%             for st = 1:size(Rpeak_evoked_LFP.session(1).sites(1).condition(cn).hs_tuned_evoked, 1)
+%                 for hs = 1:size(Rpeak_evoked_LFP.session(1).sites(1).condition(cn).hs_tuned_evoked, 2)
+            for st = 1:size(ecg_bna_cfg.analyse_states, 1)
+                for hs = 1:size(ecg_bna_cfg.conditions(cn).hs_labels, 2)
                     sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites = 0;
                     sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).trial = {};                
                 end
@@ -81,49 +82,56 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
 
             for i = 1:length(Rpeak_evoked_LFP.session)
                 for k = 1:length(Rpeak_evoked_LFP.session(i).sites)
-                    if isempty(Rpeak_evoked_LFP.session(i).sites(k).condition)
+                    if isempty(Rpeak_evoked_LFP.session(i).sites(k).condition) || ...
+                            ~strcmp(Rpeak_evoked_LFP.session(i).sites(k).target, ecg_bna_cfg.compare.targets{t}) || ...
+                            ~isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 'mean') || ...
+                            all(isnan([Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked.mean]));
                         continue;
                     end
-                    if ~strcmp(Rpeak_evoked_LFP.session(i).sites(k).target, ecg_bna_cfg.compare.targets{t})
-                        continue;
-                    end
-                    if isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 'mean')
-                        for st = 1:size(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 1)
-                            for hs = 1:size(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 2)
-                                if isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs), 'mean') ...
-                                        && ~isempty(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).mean)
-                                    sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites = ...
-                                        sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites + 1;
-                                    if sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites == 1
-                                        sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).time ...
-                                            = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).time;
-                                        sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label ...
-                                            = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
-                                        if isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs), 'state') && ...
-                                                isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs), 'state_name')
-                                            sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).state ...
-                                                = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).state;
-                                            sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).state_name ...
-                                                = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).state_name;
-                                        end
-                                    end
-                                    sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial ...
-                                        = [sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, ...
-                                        Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).mean];  
-                                else
-                                    continue; %sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs) = struct();
-                                end
+                    %                     if isempty(Rpeak_evoked_LFP.session(i).sites(k).condition)
+                    %                         continue;
+                    %                     end
+                    %                     if ~strcmp(Rpeak_evoked_LFP.session(i).sites(k).target, ecg_bna_cfg.compare.targets{t})
+                    %                         continue;
+                    %                     end
+                    %                     if isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 'mean')
+                    for st = 1:size(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 1)
+                        for hs = 1:size(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked, 2)
+                            if all(isnan(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).mean))
+                                continue;
                             end
+                                sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites = ...
+                                    sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites + 1;
+                                %if sites_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsites == 1
+                                    sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).time ...
+                                        = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).time;
+                                    sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label ...
+                                        = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
+%                                     if isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs), 'state') && ...
+%                                             isfield(Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs), 'state_name')
+%                                         sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).state ...
+%                                             = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).state;
+%                                         sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).state_name ...
+%                                             = Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).state_name;
+%                                     end
+                                %end
+                                sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial ...
+                                    = [sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, ...
+                                    Rpeak_evoked_LFP.session(i).sites(k).condition(cn).hs_tuned_evoked(st, hs).mean];
+                                %                                 else
+                                %                                     continue; %sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs) = struct();
+                                %                                 end
+                                %                             end
                         end
-                    end     
+                    end
                 end
             end
 
             % compute average
-            if isfield(sites_avg(t).condition(cn).hs_tuned_evoked, 'trial')
+            %if isfield(sites_avg(t).condition(cn).hs_tuned_evoked, 'trial')
                 for st = 1:size(sites_avg(t).condition(cn).hs_tuned_evoked, 1)
                     for hs = 1:size(sites_avg(t).condition(cn).hs_tuned_evoked, 2)
-                        if ~isempty(sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial)
+%                         if ~isempty(sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial)
                             sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial = ...
                                 cat(1, sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial{:});
                             sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).dimord = 'nsites_time';
@@ -133,23 +141,23 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
                                 std(sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, 0, 1);
                             sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).mean = ...
                                 mean(sites_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, 1);                           
-                        end
+                        %end
                     end
                 end
-            end
+            %end
 
 
-            if ~isempty(sites_avg(t).condition(cn).hs_tuned_evoked)
-                if isfield(sites_avg(t).condition(cn).hs_tuned_evoked,... 
-                        'mean')
+%             if ~isempty(sites_avg(t).condition(cn).hs_tuned_evoked)
+%                 if isfield(sites_avg(t).condition(cn).hs_tuned_evoked,... 
+%                        'mean')
                     plottitle = [ecg_bna_cfg.compare.targets{t},...
                          ecg_bna_cfg.conditions(cn).label];
                     result_file = fullfile(results_fldr, ...
                                     ['ECG_b2bt_Evoked_' ecg_bna_cfg.conditions(cn).label]);
                     ecg_bna_plot_evoked_lfp(sites_avg(t).condition(cn).hs_tuned_evoked, ...
                                 ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
-                end
-            end
+%                 end
+%             end
 
         end
 
