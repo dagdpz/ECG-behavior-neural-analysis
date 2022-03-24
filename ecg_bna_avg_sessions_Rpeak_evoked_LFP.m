@@ -53,7 +53,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sessions');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'ECG_triggered_avg_across_sites');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -141,7 +141,7 @@ function sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_LFP, 
                     plottitle = [ecg_bna_cfg.compare.targets{t},...
                          ecg_bna_cfg.conditions(cn).label];
                     result_file = fullfile(results_fldr, ...
-                                    ['Rpeak_evoked_LFP_' ecg_bna_cfg.conditions(cn).label]);
+                                    ['Rpeak_evoked_LFP_' ecg_bna_cfg.compare.targets{t} '_' ecg_bna_cfg.conditions(cn).label]);
                     ecg_bna_plot_evoked_lfp(sessions_avg(t).condition(cn).hs_tuned_evoked, ...
                                 ecg_bna_cfg, plottitle, result_file, 'ylabel', 'LFP amplitude');
 %                 end

@@ -53,7 +53,7 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
 
 
     % results folder
-    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Avg_across_sites');
+    results_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'ECG_triggered_avg_across_sessions');
     if ~exist(results_fldr, 'dir')
         mkdir(results_fldr);
     end
@@ -153,7 +153,7 @@ function sites_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_LFP, ecg_bn
                     plottitle = [ecg_bna_cfg.compare.targets{t},...
                          ecg_bna_cfg.conditions(cn).label];
                     result_file = fullfile(results_fldr, ...
-                                    ['ECG_b2bt_Evoked_' ecg_bna_cfg.conditions(cn).label]);
+                                    ['ECG_b2bt_Evoked_' ecg_bna_cfg.compare.targets{t} '_' ecg_bna_cfg.conditions(cn).label]);
                     ecg_bna_plot_evoked_lfp(sites_avg(t).condition(cn).hs_tuned_evoked, ...
                                 ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
 %                 end

@@ -47,7 +47,7 @@ function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_
     warning ('off', 'MATLAB:hg:willberemoved');
 
     % make a folder to save figures
-    results_folder_tfr = fullfile(ecg_bna_cfg.session_lfp_fldr, 'Rpeak_evoked_LFP_TFS');
+    results_folder_tfr = fullfile(ecg_bna_cfg.session_lfp_fldr, 'Rpeak_evoked_TFS');
     if ~exist(results_folder_tfr, 'dir')
         mkdir(results_folder_tfr);
     end
@@ -70,7 +70,7 @@ function [session_tfs] = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_
         site_lfp = session_proc_lfp(i);
         
         % folder to save sitewise results
-        site_results_folder = fullfile(ecg_bna_cfg.sites_lfp_fldr, 'Rpeak_evoked_LFP_TFS');
+        site_results_folder = fullfile(ecg_bna_cfg.sites_lfp_fldr, 'Rpeak_evoked_TFS');
         if ~exist(site_results_folder, 'dir')
             mkdir(site_results_folder);
         end

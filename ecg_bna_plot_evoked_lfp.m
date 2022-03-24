@@ -140,7 +140,7 @@ function ecg_bna_plot_evoked_lfp( evoked_lfp, ecg_bna_cfg, plottitle, results_fi
     end
     ann = annotation('textbox', [0 0.9 1 0.1], 'String', strrep(plottitle, '_', '\_')...
         , 'EdgeColor', 'none', 'HorizontalAlignment', 'center');
-    export_fig(h, results_file);
+    export_fig(h, results_file,'-pdf');
 
 end
 
