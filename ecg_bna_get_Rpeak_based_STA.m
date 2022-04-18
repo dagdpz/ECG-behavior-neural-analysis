@@ -36,7 +36,6 @@ ft_data_all.time = {}; % timestamps
 ft_data_all.trial = {}; % evoked LFP response
 
 for t = 1:length(trials)
-
     trialperiod           = trials(t).trialperiod;
     
     % check if ECG spike data exists for this trial
@@ -53,14 +52,12 @@ for t = 1:length(trials)
     
     ecg_peaks = trials(t).ECG_spikes;
     signal_time = trials(t).time;
-    ft_data_all.trial = [ft_data_all.trial, ...
-        [signal; ecg_peaks]];
+    ft_data_all.trial = [ft_data_all.trial, [signal; ecg_peaks]];
     ft_data_all.time = [ft_data_all.time, signal_time];
 
 end
 
 if ~isempty(ft_data_all.trial)
-
     % evoked LFP average
     cfg                 = [];
     cfg.keeptrials      = 'yes';
@@ -68,7 +65,7 @@ if ~isempty(ft_data_all.trial)
     cfg.channel         = ft_data_all.label(1); % LFP chan
     cfg.spikechannel    = ft_data_all.label(2); % ECG peak
     
-    ecg_based_sta       = ft_spiketriggeredaverage(cfg, ft_data_all);
+    ecg_based_sta       = ft_spiketriggeredaverage(cfg, ft_data_all); % remember, this function already subtracts mean!
     
     ecg_triggered_evoked.trial = ecg_based_sta.trial;
     ecg_triggered_evoked.dimord = 'npeaks_time';
@@ -76,9 +73,7 @@ if ~isempty(ft_data_all.trial)
     ecg_triggered_evoked.mean = ecg_based_sta.avg;
     ecg_triggered_evoked.std = permute(nanstd(ecg_based_sta.trial, 0, 1), [2 3 1]);
 %     ecg_based_sta.std = nanstd(arr_state_lfp, 0, 1);
-
     clear ft_data_all ecg_based_sta;
-    
 end
 
 end

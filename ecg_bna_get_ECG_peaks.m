@@ -19,6 +19,13 @@ function [ site_lfp ] = ecg_bna_get_ECG_peaks( site_lfp, block_ECG )
 % See also ecg_bna_process_combined_LFP_ECG, ecg_bna_get_ECG_raw 
 
 %loop through each run
+for b=1:numel(block_ECG.out)
+    if isempty(block_ECG.out(b).nrblock_combinedFiles)
+        block_nrcombined(b)= NaN;
+    else
+        block_nrcombined(b)= block_ECG.out(b).nrblock_combinedFiles;
+    end
+end
 u_blocks=unique([site_lfp.trials.block]);
 for b = u_blocks
     fprintf('Extracting ECG for block %g\n-----------------------\n', b);
@@ -46,9 +53,12 @@ for b = u_blocks
     end
     
     % get ECG timestamps for this block
-    ECG_timestamps = block_ECG.out(u_blocks==b).Rpeak_t;    
-    ECG_peaksamples = round(ECG_timestamps/ts) + 1;
-    trials_samples = round(trials_time / ts) + 1;
+    ECG_peaksamples=[];
+    if any(block_nrcombined==b)
+        ECG_timestamps = block_ECG.out(block_nrcombined==b).Rpeak_t;
+        ECG_peaksamples = round(ECG_timestamps/ts) + 1;
+    end
+    %trials_samples = round(trials_time / ts) + 1;
     
     % ECG spikes based on ECG timestamps
     ECG_spikes = false(size(concat_time));

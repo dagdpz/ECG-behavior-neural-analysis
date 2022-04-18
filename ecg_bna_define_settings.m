@@ -47,11 +47,15 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
     % ecg_tfa_cfg.version];
     ecg_bna_cfg.ECG_root_results_fldr = fullfile(ecg_bna_cfg.results_folder, 'ECG', num2str(ecg_bna_cfg.version));
     ecg_bna_cfg.LFP_root_results_fldr = fullfile(ecg_bna_cfg.results_folder, 'LFP', num2str(ecg_bna_cfg.LFP_version));
+    ecg_bna_cfg.SPK_root_results_fldr = fullfile(ecg_bna_cfg.results_folder, 'ECG_triggered_spikes', num2str(ecg_bna_cfg.version));
     if ~exist(ecg_bna_cfg.ECG_root_results_fldr, 'dir')
         mkdir(ecg_bna_cfg.ECG_root_results_fldr);
     end
     if ~exist(ecg_bna_cfg.LFP_root_results_fldr, 'dir')
         mkdir(ecg_bna_cfg.LFP_root_results_fldr);
+    end
+    if ~exist(ecg_bna_cfg.SPK_root_results_fldr, 'dir')
+        mkdir(ecg_bna_cfg.SPK_root_results_fldr);
     end
     
     % get conditions to be included in the analysis
@@ -71,13 +75,14 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
     end
     % folder to store session-wise analysis results - let's try to please NOT do this
     for i = 1:length(ecg_bna_cfg.session_info)
-        ecg_bna_cfg.session_info(i).session = [ecg_bna_cfg.session_info(i).Monkey, '_', ecg_bna_cfg.session_info(i).Date];
-        ecg_bna_cfg.session_info(i).proc_ecg_fldr = ecg_bna_cfg.proc_ecg_folder;
-        ecg_bna_cfg.session_info(i).analyse_ecg_fldr = ecg_bna_cfg.analyse_ecg_folder;
+        ecg_bna_cfg.session_info(i).session             = [ecg_bna_cfg.session_info(i).Monkey, '_', ecg_bna_cfg.session_info(i).Date];
+        ecg_bna_cfg.session_info(i).proc_ecg_fldr       = ecg_bna_cfg.proc_ecg_folder;
+        ecg_bna_cfg.session_info(i).analyse_ecg_fldr    = ecg_bna_cfg.analyse_ecg_folder;
         %         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || ...
         %                 any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-        ecg_bna_cfg.session_info(i).analyse_lfp_fldr =  ecg_bna_cfg.analyse_lfp_folder;
-        ecg_bna_cfg.session_info(i).proc_lfp_fldr =  ecg_bna_cfg.proc_lfp_folder;
+        ecg_bna_cfg.session_info(i).analyse_lfp_fldr    =  ecg_bna_cfg.analyse_lfp_folder;
+        ecg_bna_cfg.session_info(i).proc_lfp_fldr       =  ecg_bna_cfg.proc_lfp_folder;
+        ecg_bna_cfg.session_info(i).SPK_fldr            =  ecg_bna_cfg.SPK_root_results_fldr;
         %        end
     end
     % save settings struct

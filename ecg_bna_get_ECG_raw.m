@@ -55,9 +55,6 @@ for b = (unique([site_lfp.trials.block]))
         
         % store ECG data
         site_lfp.trials(trials_idx(t)).ecg_data = trial_ECG_raw;
-       
         
-        
-    end
-    
+    end    
 end

@@ -48,6 +48,11 @@ for v = 1:length(versions)
         % name of session = [Monkey name '_' Recording date]
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
         
+        %% ECG spike histogram per session...
+        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+            SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i));
+        end
+        
         if ecg_bna_cfg.process_ECG
             fprintf('Reading ECG for session %s\n', session_name);
             ecg_bna_cfg.session = session_name;
@@ -58,14 +63,14 @@ for v = 1:length(versions)
 %             end
             
             if isfield(sessions_info(i), 'Input_ECG_combined') && ~isempty(sessions_info(i).Input_ECG_combined)
-                session_ecg = ecg_bna_read_combined_ECG(sessions_info(i), ecg_bna_cfg.plottrials);
+                session_ecg = ecg_bna_read_combined_ECG(sessions_info(i), ecg_bna_cfg.plottrials); %this one isnt fixed at all (?)
             elseif isfield(sessions_info(i), 'Input_ECG_preproc') && ~isempty(sessions_info(i).Input_ECG_preproc)
-                session_ecg = ecg_bna_read_preproc_ECG(sessions_info(i), ecg_bna_cfg.plottrials);
+                session_ecg = ecg_bna_read_preproc_ECG(sessions_info(i), ecg_bna_cfg.plottrials); %this one is somewhat fixed
             end
             
             % Read LFP data
             if isfield(sessions_info(i), 'Input_LFP') && ~isempty(sessions_info(i).Input_LFP) && ecg_bna_cfg.process_LFP
-                sessions_info(i) = ecg_bna_process_combined_LFP_ECG(sessions_info(i), ecg_bna_cfg);
+                sessions_info(i) = ecg_bna_process_combined_LFP_ECG(sessions_info(i), ecg_bna_cfg); %this one should be fixed
             end
             
             if isempty(fieldnames(session_ecg))
@@ -113,7 +118,7 @@ for v = 1:length(versions)
         end
         
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
-            Rpeak_evoked_lfp_raw.session(i) = ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, ecg_bna_cfg.analyse_states, ecg_bna_cfg );
+            Rpeak_evoked_lfp_raw.session(i) = ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % this one is pretty fixed
         end
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
             Rpeak_evoked_lfp_tfr.session(i) = ecg_bna_compute_session_Rpeak_evoked_TFS( session_proc_lfp, ecg_bna_cfg.analyse_states, ecg_bna_cfg );
@@ -129,14 +134,17 @@ for v = 1:length(versions)
 
     %% average across sessions
     if length(sessions_info) > 1
+        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+            ecg_bna_avg_spike_histogram(SPK_PSTH,session_info);
+        end
+        
         % Average task evoked ECG
         Rpeak_evoked_ECG.sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, ecg_bna_cfg);
         % Average task evoked ECG b2bt
         
 
     % %     % Average task evoked ECG time frequency spectrogram
-    %     tfs_ecg.sessions_avg = lfp_tfa_avg_sessions_ECG_tfs(tfs_ecg, ...
-    %         lfp_tfa_cfg);
+    %     tfs_ecg.sessions_avg = lfp_tfa_avg_sessions_ECG_tfs(tfs_ecg, lfp_tfa_cfg);
         % Average Rpeak evoked state onset probability
         
         %% these two functions here still have big issues!!
@@ -146,7 +154,7 @@ for v = 1:length(versions)
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sessions'))
             if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
                 ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder;
-                Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sessions(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg, fullfile(ecg_bna_cfg.root_results_fldr, 'ECG_triggered_avg_across_sites'));
+                Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sessions(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg, fullfile(ecg_bna_cfg.root_results_fldr, 'ECG_triggered_avg_across_sessions'));
             end
             if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
                 Rpeak_evoked_lfp_raw.sessions_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_lfp_raw, ecg_bna_cfg);
@@ -156,7 +164,7 @@ for v = 1:length(versions)
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sites'))
             if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
                 ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder;
-                Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sites(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg, fullfile(ecg_bna_cfg.root_results_fldr, 'ECG_triggered_avg_across_sessions'));
+                Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sites(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg, fullfile(ecg_bna_cfg.root_results_fldr, 'ECG_triggered_avg_across_sites'));
             end
             if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
                 Rpeak_evoked_lfp_raw.sessions_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_lfp_raw, ecg_bna_cfg);

@@ -50,10 +50,7 @@ else
         load(session_info.Input_ECG_preproc{s}, 'by_block');
         combined_Blocks{s} = by_block;
     end
-    
 end
-
-
 
 % prepare results folder
 results_fldr = fullfile(session_info.proc_ecg_fldr);
@@ -73,12 +70,16 @@ if isfield(session_info, 'Input_ECG')
     end
 end
 
-% for future use
-%     usable_sites_table = table;
-%     if ~isempty(ecg_bna_cfg.sites_info)
-%        usable_sites_table = ecg_bna_cfg.sites_info;
-%     end
 comp_trial = 0; % iterator for completed trials
+
+% fix block assignment (LS 2022)
+for b=1:numel(block_Rpeaks)
+    if isempty(block_Rpeaks(b).nrblock_combinedFiles)
+        block_nrcombined(b)= NaN;
+    else
+        block_nrcombined(b)= block_Rpeaks(b).nrblock_combinedFiles;
+    end
+end
 
 % save data inside struct
 % first loop through each file
@@ -86,20 +87,9 @@ for i_Files = 1:length(combined_Blocks)
     by_block_ECG = combined_Blocks{i_Files};
     for b = 1:length(by_block_ECG)
         % get info about site
-        % for future use
-        % find if this site's entry is available in usable_sites_table
-        %         if isempty(usable_sites_table(strcmp(usable_sites_table.Site_ID, ...
-        %                 sites(i).site_ID),:))
-        %             continue;
-        %         end
-        
         % check if ECG peaks exists for this block
-        if length(block_Rpeaks) >= b
-            block_Rpeak = block_Rpeaks(b);
-            if isempty(block_Rpeak) || isempty(block_Rpeak.Rpeak_t)
-                continue;
-            end
-        else
+        block_Rpeak = block_Rpeaks(block_nrcombined==by_block_ECG(b).trial(1).block);
+        if isempty(block_Rpeak) || isempty(block_Rpeak.Rpeak_t)
             continue;
         end
         
@@ -107,11 +97,6 @@ for i_Files = 1:length(combined_Blocks)
         block_ecg_timestamps = [];
         trial_ecg_timestamps = [];
         
-        
-        % for future use
-        % get 'Set' entry from usable_sites_table
-        %         site_lfp.dataset = usable_sites_table(...
-        %             strcmp(usable_sites_table.Site_ID, sites(i).site_ID), :).Set(1);
         session_ecg.session = session_info.session;
         
         trial = by_block_ECG(b).trial;
@@ -123,11 +108,7 @@ for i_Files = 1:length(combined_Blocks)
         fprintf('=============================================================\n');
         fprintf('Reading ECG for block, %g\n', trial(1).block);
         fprintf('Number of trials %g\n', length(trial));
-        
-        
-        
-        %% get information common to all sites for a session
-        
+                
         % now loop through each trial for this site
         for t = 1:length(trial)
             
@@ -141,18 +122,10 @@ for i_Files = 1:length(combined_Blocks)
             fix_pos = trial(t).fix_pos;
             tar_pos = trial(t).tar_pos;
             sac_off = trial(t).sac_off;
-            % for future use
-            % check if the block is usable
-            %                 if isempty(usable_sites_table(strcmp(usable_sites_table.Site_ID, ...
-            %                         sites(i).site_ID) && usable_sites_table.Block == block))
-            %                     continue;
-            %                 end
             
             perturbation = nan;
             
-            if isfield(session_info, 'Preinj_blocks') && ...
-                    ~isempty(session_info.Preinj_blocks) && ...
-                    ismember(block, session_info.Preinj_blocks)
+            if isfield(session_info, 'Preinj_blocks') && ~isempty(session_info.Preinj_blocks) && ismember(block, session_info.Preinj_blocks)
                 perturbation = 0;
                 %             elseif isfield(trial, 'perturbation') && ...
                 %                 ~isempty(trial(t).perturbation)
@@ -161,7 +134,7 @@ for i_Files = 1:length(combined_Blocks)
                 perturbation = 0;
             end
             
-            if isnan(perturbation)
+            if isnan(perturbation) %% this part makes no sense to me
                 if isfield(session_info, 'Postinj_blocks') && ~isempty(session_info.Postinj_blocks) && ismember(block, session_info.Postinj_blocks)
                     perturbation = 1;
                 elseif exist('ses', 'var') && block >= ses.first_inj_block
@@ -183,10 +156,10 @@ for i_Files = 1:length(combined_Blocks)
             else
                 trial_ecg_timestamps = timestamps - timestamps(1);
             end
-            %                         block_ecg_timestamps = [block_ecg_timestamps, ...
-            %                             trial_ecg_timestamps];
+            %                         block_ecg_timestamps = [block_ecg_timestamps, trial_ecg_timestamps];
             % save retrieved data into struct
             comp_trial = comp_trial + 1;
+            session_ecg.trials(comp_trial).time_from_rec_start = timestamps+trial(t).TDT_ECG1_t0_from_rec_start; %% LS 20220328 THIS IS FROM REC ONSET
             session_ecg.trials(comp_trial).completed = completed;
             session_ecg.trials(comp_trial).type = type;
             session_ecg.trials(comp_trial).effector = effector;
@@ -218,17 +191,14 @@ for i_Files = 1:length(combined_Blocks)
                 state_id = trial(t).states(st);
                 st_idx = st_idx + 1;
                 % get state onset time
-                state_onset = trial(t).states_onset(trial(t).states == ...
-                    state_id);
+                state_onset = trial(t).states_onset(trial(t).states == state_id);
                 % get sample number of state onset time
-                state_onset_sample = find(abs(timestamps - state_onset(1)) == ...
-                    min(abs(timestamps - state_onset(1))), 1);
+                state_onset_sample = find(abs(timestamps - state_onset(1)) == min(abs(timestamps - state_onset(1))), 1);
                 % save into struct
                 session_ecg.trials(comp_trial).states(st_idx).id = state_id;
                 session_ecg.trials(comp_trial).states(st_idx).onset_t  = state_onset(1);
                 session_ecg.trials(comp_trial).states(st_idx).onset_s  = state_onset_sample;
             end
-            %end
         end
         
         session_ecg = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpeak, block, plottrials, results_fldr );

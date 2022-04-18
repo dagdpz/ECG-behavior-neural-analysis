@@ -183,8 +183,8 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
     
     ann = annotation('textbox', [0 0.9 1 0.1], 'String', strrep(plottitle, '_', '\_')...
         , 'EdgeColor', 'none', 'HorizontalAlignment', 'center');
-    export_fig(h, [results_file '.png']);
-    print(h, '-depsc', [results_file '.ai']);
+    export_fig(h, results_file, '-pdf');
+    %print(h, '-depsc', [results_file '.ai']);
 
 end
 
