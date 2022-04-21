@@ -166,9 +166,11 @@ for U=1:numel(population)
     
     
     %% NANs if task type not present
-    SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
+    SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];NrTrials=NaN; 
     if numel(condition(1).unit) >= u
         trial=condition(1).unit(u).trial;
+        NrTrials = numel(trial); 
+
         [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
         
         % get mean and confidence intervals of shuffle predictor
@@ -186,11 +188,13 @@ for U=1:numel(population)
     Output.(target).Rest.SDP(U,:)     = SDPmean ;
     Output.(target).Rest.SDPCL(U,:)   = SDPconf(1,:) ;
     Output.(target).Rest.SDPCU(U,:)   = SDPconf(2,:) ;
+    Output.(target).Rest.NrTrials(U,:)      = NrTrials; 
     
     %% NANs if task type not present
-    SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
+    SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))]; NrTrials=NaN; 
     if numel(condition(2).unit) >= u
         trial=condition(2).unit(u).trial;
+        NrTrials = numel(trial); 
         [SD  bins SD_VAR SD_SEM]=ph_spike_density(trial,1,keys,zeros(size(trial)),ones(size(trial)));
         
         % get mean and confidence intervals of shuffle predictor
@@ -203,12 +207,12 @@ for U=1:numel(population)
         SDPconf(2,:)=abs(prctile(SDP,97.5,1)-SDPmean);
     end
     
-    Output.(target).Task.SD(U,:)      = SD ; %% not good because
-    Output.(target).Task.SD_SEM(U,:)  = SD_SEM ; %% not good because
+    Output.(target).Task.SD(U,:)      = SD ; 
+    Output.(target).Task.SD_SEM(U,:)  = SD_SEM ; 
     Output.(target).Task.SDP(U,:)     = SDPmean ;
     Output.(target).Task.SDPCL(U,:)   = SDPconf(1,:) ;
     Output.(target).Task.SDPCU(U,:)   = SDPconf(2,:) ;
-    
+    Output.(target).Task.NrTrials(U,:)      = NrTrials; 
     
     
     if savePlot
@@ -228,6 +232,13 @@ for U=1:numel(population)
         lineProps={'color','r','linewidth',1,'linestyle',':'};
         shadedErrorBar(BINS,Output.(target).Task.SDP(U,:),[Output.(target).Task.SDPCL(U,:);Output.(target).Task.SDPCU(U,:)],lineProps,1);
         
+        
+        ylabel('Firing rate (spikes/s)','fontsize',14,'fontweight','b' );
+        xlabel('Time relative to ECG peak (ms)','fontsize',14,'fontweight','b' );
+
+        text(BINS(10),max([Output.(target).Task.SD(U,:), Output.(target).Rest.SD(U,:)])*0.1, ['Task: trials = ' ,num2str(Output.(target).Task.NrTrials) ],'Color','red')
+        text(BINS(10),max([Output.(target).Task.SD(U,:), Output.(target).Rest.SD(U,:)]), ['Rest: trials = ' ,num2str(Output.(target).Rest.NrTrials) ],'Color','blue')
+
         filename= [unit_ID, '__' target]; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent');
         close(gcf);
     end % pdf by run
