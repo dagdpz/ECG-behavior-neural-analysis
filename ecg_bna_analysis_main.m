@@ -49,9 +49,11 @@ for v = 1:length(versions)
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
         
         %% ECG spike histogram per session...
+        tic
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
             SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i));
         end
+        toc
         
         if ecg_bna_cfg.process_ECG
             fprintf('Reading ECG for session %s\n', session_name);
