@@ -292,6 +292,7 @@ SD= conv(hist(AT,PSTH_time),Kernel,'same');
 end
 
 function [SD,BINS]=ecg_bna_condition_spike_density(condition,u,keys)
+definition='max';
     BINS=(keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000;
     %% NANs if task type not present
     SD_mean=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
@@ -316,31 +317,56 @@ function [SD,BINS]=ecg_bna_condition_spike_density(condition,u,keys)
     
     %% signficance
     sig_to_check=BINS>keys.significance_window(1)*1000 & BINS<keys.significance_window(2)*1000;
-    sig_above=SD_mean>(SDPmean+SDPconf(2,:))&sig_to_check;
-    sig_below=SD_mean<(SDPmean-SDPconf(1,:))&sig_to_check;
-    % find longest period of significance
+%     sig_above=SD_mean>(SDPmean+SDPconf(2,:))&sig_to_check;
+%     sig_below=SD_mean<(SDPmean-SDPconf(1,:))&sig_to_check;
+    pos_diff=SD_mean-(SDPmean+SDPconf(2,:));
+    neg_diff=SD_mean-(SDPmean-SDPconf(1,:));
+    sig_above=pos_diff>0&sig_to_check;
+    sig_below=neg_diff<0&sig_to_check;
+    
+    
     sig_idx_above_start=find(diff([0 sig_above 0])>0);
     sig_idx_above_end=find(diff([0 sig_above 0])<0);
-    [ma,m_ia]=max(sig_idx_above_end-sig_idx_above_start);
     sig_idx_below_start=find(diff([0 sig_below 0])>0);
     sig_idx_below_end=find(diff([0 sig_below 0])<0);
-    [mb,m_ib]=max(sig_idx_below_end-sig_idx_below_start);
     
-    if ma>mb
-        sig_sign=1;
-        m=ma;
-        m_i=m_ia;
-        sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
-    else
-        sig_sign=-1;
-        m=mb;
-        m_i=m_ib;
-        sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+    
+    % find longest period of significance
+    [ma,m_ia]=max(sig_idx_above_end-sig_idx_above_start);
+    [mb,m_ib]=max(sig_idx_below_end-sig_idx_below_start);
+    % find maximum deviation from surrogates
+    [max_pos_diff,max_idx]=max(pos_diff);
+    [max_neg_diff,min_idx]=min(neg_diff);
+    
+    m_imax=find(sig_idx_above_start<=max_idx & sig_idx_above_end>=max_idx);
+    m_imin=find(sig_idx_below_start<=min_idx & sig_idx_below_end>=min_idx);
+    
+    if strcmp(definition,'max')
+        if abs(max_pos_diff)>abs(max_neg_diff)
+            sig_sign=1;
+            m_i=m_imax;
+            sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+        else
+            sig_sign=-1;
+            m_i=m_imin;
+            sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+        end
+    elseif strcmp(definition,'dur')
+        if ma>mb
+            sig_sign=1;
+            m_i=m_ia;
+            sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+        else
+            sig_sign=-1;
+            m_i=m_ib;
+            sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+        end
     end
     
-    if isempty(m)
+    m=numel(sig_start_end);
+        
+    if m==0
         sig_sign=0;
-        m=NaN;
         t_start_end=[NaN NaN];
         maxidx=1;
         max_FR_diff=NaN;
@@ -350,6 +376,7 @@ function [SD,BINS]=ecg_bna_condition_spike_density(condition,u,keys)
     end
     sig_period=BINS>=t_start_end(1) & BINS<=t_start_end(end) ;
     max_time=t_start_end(maxidx);
+    
     SD.sig_all=sig_above-sig_below;
     SD.sig=(sig_above&sig_period)-(sig_below&sig_period);
     SD.sig_FR_diff=max_FR_diff;
