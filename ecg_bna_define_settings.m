@@ -36,7 +36,8 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
     lfp_tfa_global_define_states;    
 
     % load the specified settings file
-     user=getUserName;
+    % previously we had: keys=ph_general_settings(project,keys); where the
+    user=getUserName;
     if strcmp(user, 'kkaduk')
     run(['C:\Users\' user '\Desktop\Kristin\GitHub\Settings\' project '\ECG_bna\' version '.m']); 
     else     
