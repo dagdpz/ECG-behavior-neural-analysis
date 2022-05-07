@@ -55,6 +55,7 @@ for v = 1:length(versions)
         end
         toc
         
+        
         if ecg_bna_cfg.process_ECG
             fprintf('Reading ECG for session %s\n', session_name);
             ecg_bna_cfg.session = session_name;
@@ -87,6 +88,7 @@ for v = 1:length(versions)
                 continue;
             end
         end
+         if ecg_bna_cfg.process_LFP
         
         fprintf('Analysing for session %s\n', session_name);
         
@@ -130,14 +132,14 @@ for v = 1:length(versions)
         
         %         tfs_ecg.session(i) = lfp_tfa_plot_session_tfs_ECG( session_ecg, ...
         %             sessions_info(i), lfp_tfa_cfg.event_triggers, lfp_tfa_cfg );
-        
+         end
     end
     
 
     %% average across sessions
     if length(sessions_info) > 1
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            ecg_bna_avg_spike_histogram(SPK_PSTH,session_info);
+            ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info);
         end
         
         % Average task evoked ECG

@@ -36,8 +36,12 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
     lfp_tfa_global_define_states;    
 
     % load the specified settings file
-    user=getUserName;
+     user=getUserName;
+    if strcmp(user, 'kkaduk')
+    run(['C:\Users\' user '\Desktop\Kristin\GitHub\Settings\' project '\ECG_bna\' version '.m']); 
+    else     
     run(['C:\Users\' user '\GitHub\Settings\' project '\ECG_bna\' version '.m']);
+    end
     
     % read info excel file (Sorted neurons file)
     ecg_bna_cfg.sites_info = lfp_tfa_read_info_file(ecg_bna_cfg);

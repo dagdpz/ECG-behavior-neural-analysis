@@ -1,5 +1,5 @@
 function Output=ecg_bna_compute_session_spike_histogram(session_info)
-savePlot = 1;
+savePlot = 0;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 remove_ini=1;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
 keys.n_permutations=100; %100;
@@ -158,12 +158,13 @@ for u=1:numel(population)
 %     end
     
     % separate for Rest and Task, group for Target
-    [SD,BINS]=ecg_bna_condition_spike_density(condition(1),u,keys);
+    [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition(1),u,keys);
     Output.(target).Rest.SD(u,:)      = SD.SD_mean ;
     Output.(target).Rest.SD_SEM(u,:)  = SD.SD_SEM ;
     Output.(target).Rest.SDP(u,:)     = SD.SDPmean ;
     Output.(target).Rest.SDPCL(u,:)   = SD.SDPconf(1,:) ;
     Output.(target).Rest.SDPCu(u,:)   = SD.SDPconf(2,:) ;
+    Output.(target).Rest.NrTrials(u,:)      = NrTrials; 
     
     
     Output.(target).Rest.sig_all(u,:)       = SD.sig_all;
@@ -173,12 +174,13 @@ for u=1:numel(population)
     Output.(target).Rest.sig_n_bins(u,:)    = SD.sig_n_bins;
     Output.(target).Rest.sig_sign(u,:)      = SD.sig_sign;
     
-    [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,keys);
+    [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition(2),u,keys);
     Output.(target).Task.SD(u,:)      = SD.SD_mean ; %% not good because
     Output.(target).Task.SD_SEM(u,:)  = SD.SD_SEM ; %% not good because
     Output.(target).Task.SDP(u,:)     = SD.SDPmean ;
     Output.(target).Task.SDPCL(u,:)   = SD.SDPconf(1,:) ;
     Output.(target).Task.SDPCu(u,:)   = SD.SDPconf(2,:) ;
+    Output.(target).Task.NrTrials(u,:)      = NrTrials; 
     
     Output.(target).Task.sig_all(u,:)       = SD.sig_all;
     Output.(target).Task.sig(u,:)           = SD.sig;
@@ -235,8 +237,11 @@ for u=1:numel(population)
         to_plot=Output.(target).Task.sig(u,:);to_plot(to_plot==0)=NaN;
         plot(BINS,to_plot*factor+offset,'r','linewidth',5);
         
+        text(BINS(10),max([Output.(target).Task.SD(u,:), Output.(target).Rest.SD(u,:)])*0.1, ['Task: trials = ' ,num2str(Output.(target).Task.NrTrials) ],'Color','red')
+        text(BINS(10),max([Output.(target).Task.SD(u,:), Output.(target).Rest.SD(u,:)]), ['Rest: trials = ' ,num2str(Output.(target).Rest.NrTrials) ],'Color','blue')
         
-        filename= [unit_ID, '__' target]; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent');
+        
+       filename= [unit_ID, '__' target]; export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent');
         close(gcf);
     end % pdf by run
     
@@ -291,8 +296,8 @@ PSTH_time=trial_onsets(1):keys.PSTH_binwidth:trial_ends(end);
 SD= conv(hist(AT,PSTH_time),Kernel,'same');
 end
 
-function [SD,BINS]=ecg_bna_condition_spike_density(condition,u,keys)
-definition='max';
+function [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition,u,keys)
+definition='max';NrTrials = NaN; 
     BINS=(keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000;
     %% NANs if task type not present
     SD_mean=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
@@ -300,7 +305,8 @@ definition='max';
         trial=condition.unit(u).trial;
         SD_mean=mean(vertcat(trial.PSTH),1);
         SD_SEM=sterr(vertcat(trial.PSTH),1);
-        
+        NrTrials = numel(trial); 
+
         % get mean and confidence intervals of shuffle predictor
         for p=1:keys.n_permutations
             trial=condition.unit(u).permuations(p).trial;
