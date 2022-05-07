@@ -1,14 +1,5 @@
 function Output=ecg_bna_compute_session_spike_histogram(session_info)
 savePlot = 1;
-%20210706
-% ToDos
-% 1 - loading the data automatically
-% 2 - each plot should get a label for the brain areas ->
-% 3 - average
-%% - average of the surrogate data pro unit (per taskType)
-%% - Mittelwert (SEM) über alle units per Brain area
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % session_info{1}={'Bacchus','20210720',[4 5 6 7 8]};
 % basepath_ecg='Y:\Projects\Pulv_distractor_spatial_choice\Data\';
@@ -44,13 +35,27 @@ u=0; % TOTAL unit counter across sessions
 load(session_info.Input_ECG);
 load(session_info.Input_spikes);
 Output = [];
-    
+
 for U=1:numel(population)
     pop=population(U);
     unit_ID=population(U).unit_ID;
     target =population(U).target;
     u=U; %T
     blocks=unique([pop.trial.block]);
+    
+    
+    Min_waveform_average =  find(pop.waveform_average == min(pop.waveform_average)); 
+    Max_waveform_average =  find(pop.waveform_average == max(pop.waveform_average));      
+    pop.amplitude = abs(min(pop.waveform_average)) + max(pop.waveform_average); 
+    pop.quantMean_SNR_rating = Amplitude / nanmean(abs(pop.waveform_average)); 
+    pop.quantSTD_SNR_rating = Amplitude / nanmean(pop.waveform_std); 
+    
+    plot(pop.waveform_average), hold on; 
+    plot(pop.waveform_std)
+    plot(Min_waveform_average,min(pop.waveform_average), 'o'); 
+    plot(Max_waveform_average,max(pop.waveform_average), 'o'); 
+    
+    
     for b=1:numel(blocks)
         block=blocks(b);
         
