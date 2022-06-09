@@ -133,7 +133,7 @@ for v = 1:length(versions)
         %         tfs_ecg.session(i) = lfp_tfa_plot_session_tfs_ECG( session_ecg, ...
         %             sessions_info(i), lfp_tfa_cfg.event_triggers, lfp_tfa_cfg );
          end
-      save(['Y:\Projects\Pulv_distractor_spatial_choice\ECG_triggered_spikes\ver1\per_unit', filesep 'SPK_PSTH'],'SPK_PSTH')
+      save([sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'],'SPK_PSTH')
    
     end
 
@@ -141,9 +141,7 @@ for v = 1:length(versions)
     %% average across sessions
     if length(sessions_info) > 1
         % load all sessions
-       
         if isempty( SPK_PSTH)
-            
             ephys_folder=['Y:\Projects\' project '\ECG_triggered_spikes\' versions{1} filesep 'per_unit' filesep];
             Files =  dir([ephys_folder '*.mat']);
             fprintf(['Reading processed ECG-triggered spike data: ', Files.name]);
