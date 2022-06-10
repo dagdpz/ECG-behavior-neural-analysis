@@ -8,7 +8,7 @@ function ecg_bna_analysis_main(project,versions)
 clc; clear; 
 
 project='Pulv_distractor_spatial_choice';
-versions={'ver1'};
+versions={'ver_LS'};
 
 % whether the LFP should be processed (true) or not (false)
 % if the LFP for the sessions to analyse has already been processed, and no
@@ -49,11 +49,9 @@ for v = 1:length(versions)
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
         
         %% ECG spike histogram per session...
-        tic
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
             SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i));
         end
-        toc
         
         
         if ecg_bna_cfg.process_ECG
@@ -133,8 +131,14 @@ for v = 1:length(versions)
         %         tfs_ecg.session(i) = lfp_tfa_plot_session_tfs_ECG( session_ecg, ...
         %             sessions_info(i), lfp_tfa_cfg.event_triggers, lfp_tfa_cfg );
          end
-      save([sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'],'SPK_PSTH')
-   
+
+         
+         path_population=[sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'];
+         if ~exist(path_population,'dir')
+             mkdir(path_population);
+         end
+         save([sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'],'SPK_PSTH')
+         
     end
 
 

@@ -157,11 +157,11 @@ for i_BrArea = 1: length(fieldnames(Out))
             end
             
             
-            TaskType = repmat((TaskTyp{i_tsk}), length(InVal_idx), 1);
+            TaskType = repmat((TaskTyp(i_tsk)), length(InVal_idx), 1);
             if strcmp((TargetBrainArea{i_BrArea}), 'VPL_R')||   strcmp((TargetBrainArea{i_BrArea}), 'mdT_L') ||   strcmp((TargetBrainArea{i_BrArea}), 'mdT_R')
-                BrainArea = repmat([ '_', (TargetBrainArea{i_BrArea})], length(InVal_idx), 1);
+                BrainArea = repmat({[ '_', (TargetBrainArea{i_BrArea})]}, length(InVal_idx), 1);
             else
-                BrainArea = repmat((TargetBrainArea{i_BrArea}), length(InVal_idx), 1);
+                BrainArea = repmat((TargetBrainArea(i_BrArea)), length(InVal_idx), 1);
             end
             Criterium_SpkPerSec = repmat(Criterium_SpkPerSec, length(InVal_idx), 1);
             Criterium_NrCardiacCycles = repmat(Criterium_NrCardiacCycles, length(InVal_idx), 1);
@@ -235,35 +235,35 @@ for i_BrArea = 1: length(fieldnames(Out))
 end
 
 %% Example for 
-i_BrArea = 1; 
- hf = figure('Name',sprintf(TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
-    for i_tsk = 1: numel(TaskTyp)
-        
-        out = [Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
-        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
-        ha1 = subplot(2,4,[1:2]); %
-        if i_tsk == 1
-            lineProps={'color','b','linewidth',4};
-        else
-            lineProps={'color','r','linewidth',4};
-        end
-        
-        
-        % bar plot how many are significant & positive and negative FR?
-        if i_tsk == 1
-            text(-400,-10, ['Rest: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ],'Color','b');
-            for i = find(idx_sig)
-                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1 0.2],'LineWidth', 1); hold on;
-            end
-        else
-            text(-400,-12, ['Task: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN))  ],'Color','r')
-            
-            for i = find(idx_sig)
-                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0 0.2] ,'LineWidth', 1);hold on;
-            end
-        end
-    end
-
+% i_BrArea = 1; 
+%  hf = figure('Name',sprintf(TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+%     for i_tsk = 1: numel(TaskTyp)
+%         
+%         out = [Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+%         idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+%         ha1 = subplot(2,4,[1:2]); %
+%         if i_tsk == 1
+%             lineProps={'color','b','linewidth',4};
+%         else
+%             lineProps={'color','r','linewidth',4};
+%         end
+%         
+%         
+%         % bar plot how many are significant & positive and negative FR?
+%         if i_tsk == 1
+%             text(-400,-10, ['Rest: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ],'Color','b');
+%             for i = find(idx_sig)
+%                 line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1 0.2],'LineWidth', 1); hold on;
+%             end
+%         else
+%             text(-400,-12, ['Task: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN))  ],'Color','r')
+%             
+%             for i = find(idx_sig)
+%                 line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0 0.2] ,'LineWidth', 1);hold on;
+%             end
+%         end
+%     end
+% 
 
 
 if Graph_SelectionCriterion

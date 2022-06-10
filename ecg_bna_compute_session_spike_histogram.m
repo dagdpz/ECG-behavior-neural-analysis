@@ -137,68 +137,7 @@ for u=1:numel(population)
         end
         
     end
-    
-    
-%     
-%     %% NANs if task type not present
-%     SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
-%     if numel(condition(1).unit) >= u
-%         trial=condition(1).unit(u).trial;
-%         SD=mean(vertcat(trial.PSTH),1);
-%         SD_SEM=sterr(vertcat(trial.PSTH),1);
-%         
-%         % get mean and confidence intervals of shuffle predictor
-%         for p=1:n_permutations
-%             trial=condition(1).unit(u).permuations(p).trial;
-%             SDP(p,:)=mean(vertcat(trial.PSTH),1);
-%         end
-%         SDPmean=nanmean(SDP,1);
-%         SDPconf(1,:)=abs(prctile(SDP,2.5,1)-SDPmean);
-%         SDPconf(2,:)=abs(prctile(SDP,97.5,1)-SDPmean);
-%     end
-    
-    % separate for Rest and Task, group for Target
-%     [SD,BINS]=ecg_bna_condition_spike_density(condition(1),u,keys);
-%     Output.Rest.SD(u,:)      = SD.SD_mean ;
-%     Output.Rest.SD_SEM(u,:)  = SD.SD_SEM ;
-%     Output.Rest.SDP(u,:)     = SD.SDPmean ;
-%     Output.Rest.SDPCL(u,:)   = SD.SDPconf(1,:) ;
-%     Output.Rest.SDPCu(u,:)   = SD.SDPconf(2,:) ;
-%     Output.Rest.NrTrials(u,:)      = SD.NrTrials; 
-%     Output.Rest.NrEvents(u,:)      = SD.NrEvents; 
-% 
-%     Output.Rest.quantSNR(u,:)      = population(u).quantSNR;   
-%     Output.Rest.FR(u,:)      = population(u).FR;   
-%   
-%     
-%     Output.Rest.sig_all(u,:)       = SD.sig_all;
-%     Output.Rest.sig(u,:)           = SD.sig;
-%     Output.Rest.sig_FR_diff(u,:)   = SD.sig_FR_diff;
-%     Output.Rest.sig_time(u,:)      = SD.sig_time;
-%     Output.Rest.sig_n_bins(u,:)    = SD.sig_n_bins;
-%     Output.Rest.sig_sign(u,:)      = SD.sig_sign;
-%     Output.Rest.unit_ID{u}         = unit_ID;
-%     
-%     [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,keys);
-%     Output.Task.SD(u,:)      = SD.SD_mean ; %% not good because
-%     Output.Task.SD_SEM(u,:)  = SD.SD_SEM ; %% not good because
-%     Output.Task.SDP(u,:)     = SD.SDPmean ;
-%     Output.Task.SDPCL(u,:)   = SD.SDPconf(1,:) ;
-%     Output.Task.SDPCu(u,:)   = SD.SDPconf(2,:) ;
-%     Output.Task.NrTrials(u,:)  = SD.NrTrials; 
-%     Output.Task.NrEvents(u,:)  = SD.NrEvents; 
-%     Output.Task.quantSNR(u,:)  = population(u).quantSNR;   
-%     Output.Task.FR(u,:)        = population(u).FR;   
-%     
-%     Output.Task.sig_all(u,:)       = SD.sig_all;
-%     Output.Task.sig(u,:)           = SD.sig;
-%     Output.Task.sig_FR_diff(u,:)   = SD.sig_FR_diff;
-%     Output.Task.sig_time(u,:)      = SD.sig_time;
-%     Output.Task.sig_n_bins(u,:)    = SD.sig_n_bins;
-%     Output.Task.sig_sign(u,:)      = SD.sig_sign;
-%     Output.Task.unit_ID{u}         = unit_ID;
-    
-    
+        
     [SD,BINS]=ecg_bna_condition_spike_density(condition(1),u,keys);
     Output.Rest.SD(u,:)      = SD.SD_mean ;
     Output.Rest.SD_SEM(u,:)  = SD.SD_SEM ;
@@ -207,11 +146,9 @@ for u=1:numel(population)
     Output.Rest.SDPCu(u,:)   = SD.SDPconf(2,:) ;
     Output.Rest.NrTrials(u,:)      = SD.NrTrials; 
     Output.Rest.NrEvents(u,:)      = SD.NrEvents; 
-
     Output.Rest.quantSNR(u,:)      = population(u).quantSNR;   
-    Output.Rest.FR(u,:)      = population(u).FR;   
-  
-    
+    Output.Rest.FR(u,:)            = population(u).FR;   
+      
     Output.Rest.sig_all(u,:)       = SD.sig_all;
     Output.Rest.sig(u,:)           = SD.sig;
     Output.Rest.sig_FR_diff(u,:)   = SD.sig_FR_diff;
@@ -219,7 +156,7 @@ for u=1:numel(population)
     Output.Rest.sig_n_bins(u,:)    = SD.sig_n_bins;
     Output.Rest.sig_sign(u,:)      = SD.sig_sign;
     Output.Rest.unit_ID{u}         = unit_ID;
-    Output.Rest.target{u}         = target;
+    Output.Rest.target{u}          = target;
     
     [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,keys);
     Output.Task.SD(u,:)      = SD.SD_mean ; %% not good because
@@ -239,26 +176,8 @@ for u=1:numel(population)
     Output.Task.sig_n_bins(u,:)    = SD.sig_n_bins;
     Output.Task.sig_sign(u,:)      = SD.sig_sign;
     Output.Task.unit_ID{u}         = unit_ID;
-    Output.Task.target{u}         = target;
-
-
-%     
-%     SD=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];
-%     if numel(condition(2).unit) >= u
-%         trial=condition(2).unit(u).trial;
-%         SD=mean(vertcat(trial.PSTH),1);
-%         SD_SEM=sterr(vertcat(trial.PSTH),1);
-%         
-%         % get mean and confidence intervals of shuffle predictor
-%         for p=1:n_permutations
-%             trial=condition(2).unit(u).permuations(p).trial;
-%             SDP(p,:)=mean(vertcat(trial.PSTH),1);
-%         end
-%         SDPmean=nanmean(SDP,1);
-%         SDPconf(1,:)=abs(prctile(SDP,2.5,1)-SDPmean);
-%         SDPconf(2,:)=abs(prctile(SDP,97.5,1)-SDPmean);
-%     end
-        
+    Output.Task.target{u}          = target;
+    
     if savePlot
         figure;
         title([unit_ID,'__',target ],'interpreter','none');
@@ -269,7 +188,6 @@ for u=1:numel(population)
         lineProps={'color','b','linewidth',1,'linestyle',':'};
         shadedErrorBar(BINS,Output.Rest.SDP(u,:),[Output.Rest.SDPCL(u,:);Output.Rest.SDPCu(u,:)],lineProps,1);
         lineProps={'color','r','linewidth',1};
-        
         
         shadedErrorBar(BINS,Output.Task.SD(u,:),Output.Task.SD_SEM(u,:),lineProps,1);
         lineProps={'color','r','linewidth',1,'linestyle',':'};
@@ -293,21 +211,11 @@ for u=1:numel(population)
         
         text(BINS(10),max([Output.Task.SD(u,:), Output.Rest.SD(u,:)])+0.3, ['Task: trials = ' ,num2str(Output.Task.NrTrials(u,:)), '  events = ' ,num2str(Output.Task.NrEvents(u,:)) ],'Color','red')
         text(BINS(10),max([Output.Task.SD(u,:), Output.Rest.SD(u,:)]), ['Rest: trials = ' ,num2str(Output.Rest.NrTrials(u,:)), '  events = ' ,num2str(Output.Rest.NrEvents(u,:)) ],'Color','blue')
-        
-        
-       filename= [unit_ID, '__' target]; 
-       %export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent');
-       
-       
+                
+        filename= [unit_ID, '__' target]; 
         print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
-
-        
-        
         close(gcf);
     end % pdf by run
-    
-    
-    
 end 
 %% save output
 save([basepath_to_save, filesep, session_info.session],'Output')
@@ -330,9 +238,7 @@ RPEAK_ts(RPEAK_samples<=-bins_before)=[];
 RPEAK_samples(RPEAK_samples<=-bins_before)=[];
 RPEAK_ts(RPEAK_samples>=numel(SD)-bins_after)=[];
 RPEAK_samples(RPEAK_samples>=numel(SD)-bins_after)=[];
-
 PSTH=NaN(numel(RPEAK_samples),bins_after-bins_before+1);
-
 for s=1:numel(RPEAK_samples)
     PSTH(s,:)=SD(bins_before+RPEAK_samples(s):bins_after+RPEAK_samples(s));
 end
@@ -387,26 +293,22 @@ SD.SDPconf=SDPconf;
 
 %% signficance
 sig_to_check=BINS>keys.significance_window(1)*1000 & BINS<keys.significance_window(2)*1000;
-%     sig_above=SD_mean>(SDPmean+SDPconf(2,:))&sig_to_check;
-%     sig_below=SD_mean<(SDPmean-SDPconf(1,:))&sig_to_check;
 pos_diff=SD_mean-(SDPmean+SDPconf(2,:));
 neg_diff=SD_mean-(SDPmean-SDPconf(1,:));
 sig_above=pos_diff>0&sig_to_check;
 sig_below=neg_diff<0&sig_to_check;
-
 
 sig_idx_above_start=find(diff([0 sig_above 0])>0);
 sig_idx_above_end=find(diff([0 sig_above 0])<0);
 sig_idx_below_start=find(diff([0 sig_below 0])>0);
 sig_idx_below_end=find(diff([0 sig_below 0])<0);
 
-
 % find longest period of significance
 [ma,m_ia]=max(sig_idx_above_end-sig_idx_above_start);
 [mb,m_ib]=max(sig_idx_below_end-sig_idx_below_start);
 % find maximum deviation from surrogates
-[max_pos_diff,max_idx]=max(pos_diff);
-[max_neg_diff,min_idx]=min(neg_diff);
+[max_pos_diff,max_idx]=max(pos_diff.*sig_to_check);
+[max_neg_diff,min_idx]=min(neg_diff.*sig_to_check);
 
 m_imax=find(sig_idx_above_start<=max_idx & sig_idx_above_end>=max_idx);
 m_imin=find(sig_idx_below_start<=min_idx & sig_idx_below_end>=min_idx);
