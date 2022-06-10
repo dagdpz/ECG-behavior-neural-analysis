@@ -81,7 +81,7 @@ end
 
 
 
-%% Crieriua for the dataset
+%% Crieria for the dataset
 if OnlyUnits_withRestANDTask
     for i_BrArea = 1: length(fieldnames(Out))
         Idx_Units_RestTask = []; Idx_NoSpikes_T = [];  Idx_NoSpikes_R = [];
@@ -101,9 +101,9 @@ if OnlyUnits_withRestANDTask
         %     'Bac_20210906_05'
         %     'Bac_20210906_06'
         
-        Idx_Spikes_R = find(~any(isnan([Out.(TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
-        Idx_Spikes_T = find(~any(isnan([Out.(TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2));
-        Idx_Units_RestTask = intersect(Idx_Spikes_R, Idx_Spikes_T);
+        Idx_Spikes_R = ~any(isnan([Out.(TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2);
+        Idx_Spikes_T = ~any(isnan([Out.(TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2);
+        Idx_Units_RestTask = ~(Idx_Spikes_T & Idx_Spikes_R);
         
         disp([(TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
         for i_tsk = 1: numel(TaskTyp)
@@ -246,6 +246,7 @@ for i_BrArea = 1: length(fieldnames(Out))
 end
 
 %% Example for 
+<<<<<<< Updated upstream
 % i_BrArea = 1; 
 %  hf = figure('Name',sprintf(TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 %     for i_tsk = 1: numel(TaskTyp)
@@ -275,6 +276,43 @@ end
 %         end
 %     end
 % 
+=======
+i_BrArea = 1; 
+ hf = figure('Name',sprintf(TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+    for i_tsk = 1: numel(TaskTyp)
+        
+        out = [Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        ha1 = subplot(2,1,[1:2]); %
+      
+        UnitSig_Rest = find(out.FR_Modulation >40); 
+        UnitNotSign_Rest = intersect(find(out.FR_ModIndex_AllUnits2 >30) , find(~idx_sig)); 
+        UnitNotSign_Rest = 7; 
+        %out.unit_ID(find(~idx_sig))
+        if i_tsk == 1
+             text(-400,-10, [out.unit_ID(UnitSig_Rest)],'Color','b');
+            lineProps={'color','b','linewidth',4};
+            for i = UnitSig_Rest
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1 ],'LineWidth', 1); hold on;
+            end
+            lineProps={'color','k','linewidth',4};
+            text(-400,-13, [out.unit_ID(UnitNotSign_Rest)],'Color','k');
+            for i = UnitNotSign_Rest
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 0 ],'LineWidth', 1); hold on;
+            end
+            
+            
+        elseif   i_tsk == 2
+            lineProps={'color','r','linewidth',4};
+            
+            for i = find(idx_sig)
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0 0.2] ,'LineWidth', 1);hold on;
+            end
+        end
+        
+    end
+
+>>>>>>> Stashed changes
 
 
 if Graph_SelectionCriterion
