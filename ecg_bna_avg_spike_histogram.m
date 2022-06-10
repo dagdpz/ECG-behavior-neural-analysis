@@ -220,11 +220,15 @@ for i_BrArea = 1: length(fieldnames(Out))
             Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits2(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx)) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
             
             if any(logical(out.sig_period(i,:)))
-                Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
-                Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
-                
+                switch out.sig_sign(i)
+                    case 1
+                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
+                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
+                    case -1
+                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx )) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:))));
+                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx)) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:))));
+                end
             end
-            
         end
         
         %% Which units were recorded only during rest?
