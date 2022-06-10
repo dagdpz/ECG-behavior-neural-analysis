@@ -213,21 +213,28 @@ for i_BrArea = 1: length(fieldnames(Out))
         
         % the window of analysis is restricted
         A = (keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4}); 
-        A1 = find(A == -0.25); 
-        A2 = find(A == 0.25);
+        A1 = find(A == -0.25)+1; 
+        A2 = find(A == 0.25)-1;
         WindowIdx = A1:A2; 
         for i = 1: size(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized,1)
             Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits2(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx)) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
             
             if any(logical(out.sig_period(i,:)))
-                switch out.sig_sign(i)
-                    case 1
-                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
-                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
-                    case -1
-                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx )) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:))));
-                        Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx)) -  min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:))));
-                end
+%                 switch out.sig_sign(i)
+%                     case 1
+%                         Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = ...
+%                          max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:)))) -  ...
+%                          min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx));
+%                     case -1
+%                         Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = ...
+%                             max(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,WindowIdx)) -  ...
+%                             min(Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(i,logical(out.sig_period(i,:))));
+%                 end
+%                 
+%                 a=Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) == Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits2(i);
+%                 
+                Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i) = Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits2(i);
+                Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits(i) = Out.(TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation(i);
             end
         end
         
