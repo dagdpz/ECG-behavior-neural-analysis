@@ -44,7 +44,7 @@ for v = 1:length(versions)
     Rpeak_evoked_lfp_raw = struct();
     
     % loop through each session to process
-    SPK_PSTH = []; 
+            SPK_PSTH = []; 
 
     for i = 1:length(sessions_info)
         % name of session = [Monkey name '_' Recording date]
