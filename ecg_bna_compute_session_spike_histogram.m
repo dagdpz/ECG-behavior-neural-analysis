@@ -1,7 +1,8 @@
 function Output=ecg_bna_compute_session_spike_histogram(session_info)
 savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
-remove_ini=1;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
+remove_ini=0;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
+                %% !! this caused drift !
 keys.n_permutations=100; %100;
     keys.significance_window=[-0.25 0.25];
 
@@ -59,7 +60,8 @@ for u=1:numel(population)
         RPEAK_ts=[out(o).Rpeak_t(1) intersect(out(o).Rpeak_t,out(o).R2R_t)];
         RPEAK_ts(RPEAK_ts> trial_ends(end))=[];
         RPEAKS_intervals=diff(RPEAK_ts);
-        idx_valid = RPEAKS_intervals<1.5*mode(RPEAKS_intervals);
+        ecg_R2Rt_mean=mean(RPEAKS_intervals);
+        idx_valid = RPEAKS_intervals<1.5*ecg_R2Rt_mean; %use mode or mean ?
         invalid_intervals=[NaN,NaN];
         nonval_idx=find([0, ~idx_valid]);
         for iv=1:numel(nonval_idx)
@@ -68,7 +70,6 @@ for u=1:numel(population)
         end
         RPEAKS_intervals=RPEAKS_intervals(idx_valid);
         ecg_R2Rt_std=std(RPEAKS_intervals);
-        ecg_R2Rt_mean=mean(RPEAKS_intervals);
         
         %% find if to append it to rest or task condition
         %not ideal, but should work for  now
@@ -89,12 +90,20 @@ for u=1:numel(population)
         
         %% now the tricky part: sort by ECG peaks first, compute spike density across all trials!
         SD_full_block=ecg_bna_spike_density(AT,trial_onsets,trial_ends,keys);
-        sorted=sort_by_rpeaks_temp(RPEAK_ts,SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
+        sorted=sort_by_rpeaks_temp(RPEAK_ts(2:end),SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
         condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
-        condition(tasktype).unit(u).Nr_RPEAK_ts = length(RPEAK_ts); 
+        condition(tasktype).unit(u).Nr_RPEAK_ts = length(RPEAK_ts(2:end)); 
+        condition(tasktype).unit(u).FR = mean(SD_full_block); 
         %% make surrogates
         for p=1:keys.n_permutations
-            RPEAKS_intervals_p = [RPEAK_ts(1)+randn(1)*ecg_R2Rt_std RPEAKS_intervals(randperm(length(RPEAKS_intervals))) RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; %% slightly jitter first Rpeak
+%             RPEAKS_intervals_p = [RPEAK_ts(1)+(rand(1)-0.5)*ecg_R2Rt_mean RPEAKS_intervals RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; % shifting entire intervals, but keeping internal structure
+%             if RPEAKS_intervals_p(1)<0
+%                RPEAKS_intervals_p=[RPEAKS_intervals_p(1) RPEAKS_intervals_p(RPEAKS_intervals_p>abs(PEAKS_intervals_p(1)))];
+%             end
+            
+            RPEAKS_intervals_p = [RPEAK_ts(1) RPEAKS_intervals+(randn(1,length(RPEAKS_intervals))*ecg_R2Rt_std) RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; % jittering every interval!
+            %RPEAKS_intervals_p = [RPEAK_ts(1) RPEAKS_intervals(randperm(length(RPEAKS_intervals))) RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; %% no jitter of first peak, because we exclude it later
+            
             RPEAK_ts_perm=cumsum(RPEAKS_intervals_p);
             RPEAK_ts_perm(RPEAK_ts_perm> trial_ends(end))=[];
             RPEAK_ts_perm(RPEAK_ts_perm<=0)=[];
@@ -102,8 +111,9 @@ for u=1:numel(population)
             for iv=1:size(invalid_intervals,1)
                 RPEAK_ts_perm(RPEAK_ts_perm>invalid_intervals(iv,1)+ecg_R2Rt_mean/2 & RPEAK_ts_perm<invalid_intervals(iv,2)-ecg_R2Rt_mean/2)=[];
             end
-            sorted=sort_by_rpeaks_temp(RPEAK_ts_perm,SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
+            sorted=sort_by_rpeaks_temp(RPEAK_ts_perm(2:end),SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
             condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
+            condition(tasktype).unit(u).permuations(p).Nr_RPEAK_ts = length(RPEAK_ts_perm(2:end)); 
         end
         
         %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
@@ -147,7 +157,7 @@ for u=1:numel(population)
     Output.Rest.NrTrials(u,:)      = SD.NrTrials; 
     Output.Rest.NrEvents(u,:)      = SD.NrEvents; 
     Output.Rest.quantSNR(u,:)      = population(u).quantSNR;   
-    Output.Rest.FR(u,:)            = population(u).FR;   
+    Output.Rest.FR(u,:)            = SD.FR;   
       
     Output.Rest.sig_all(u,:)       = SD.sig_all;
     Output.Rest.sig(u,:)           = SD.sig;
@@ -159,15 +169,15 @@ for u=1:numel(population)
     Output.Rest.target{u}          = target;
     
     [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,keys);
-    Output.Task.SD(u,:)      = SD.SD_mean ; %% not good because
-    Output.Task.SD_SEM(u,:)  = SD.SD_SEM ; %% not good because
+    Output.Task.SD(u,:)      = SD.SD_mean ;
+    Output.Task.SD_SEM(u,:)  = SD.SD_SEM ;
     Output.Task.SDP(u,:)     = SD.SDPmean ;
     Output.Task.SDPCL(u,:)   = SD.SDPconf(1,:) ;
     Output.Task.SDPCu(u,:)   = SD.SDPconf(2,:) ;
     Output.Task.NrTrials(u,:)  = SD.NrTrials; 
     Output.Task.NrEvents(u,:)  = SD.NrEvents; 
     Output.Task.quantSNR(u,:)  = population(u).quantSNR;   
-    Output.Task.FR(u,:)        = population(u).FR;   
+    Output.Task.FR(u,:)        = SD.FR;   
     
     Output.Task.sig_all(u,:)       = SD.sig_all;
     Output.Task.sig(u,:)           = SD.sig;
@@ -186,12 +196,12 @@ for u=1:numel(population)
         lineProps={'color','b','linewidth',1};
         shadedErrorBar(BINS,Output.Rest.SD(u,:),Output.Rest.SD_SEM(u,:),lineProps,1);
         lineProps={'color','b','linewidth',1,'linestyle',':'};
-        shadedErrorBar(BINS,Output.Rest.SDP(u,:),[Output.Rest.SDPCL(u,:);Output.Rest.SDPCu(u,:)],lineProps,1);
+        shadedErrorBar(BINS,Output.Rest.SDP(u,:),[Output.Rest.SDPCu(u,:);Output.Rest.SDPCL(u,:)],lineProps,1);
         lineProps={'color','r','linewidth',1};
         
         shadedErrorBar(BINS,Output.Task.SD(u,:),Output.Task.SD_SEM(u,:),lineProps,1);
         lineProps={'color','r','linewidth',1,'linestyle',':'};
-        shadedErrorBar(BINS,Output.Task.SDP(u,:),[Output.Task.SDPCL(u,:);Output.Task.SDPCu(u,:)],lineProps,1);
+        shadedErrorBar(BINS,Output.Task.SDP(u,:),[Output.Task.SDPCu(u,:);Output.Task.SDPCL(u,:)],lineProps,1);
         
         y_lims=get(gca,'ylim');
         offset=NaN;factor=NaN;
@@ -234,10 +244,10 @@ bins_before=round(keys.PSTH_WINDOWS{3}/keys.PSTH_binwidth);
 bins_after=round(keys.PSTH_WINDOWS{4}/keys.PSTH_binwidth);
 
 %% remove samples that would land outside
-RPEAK_ts(RPEAK_samples<=-bins_before)=[];
-RPEAK_samples(RPEAK_samples<=-bins_before)=[];
 RPEAK_ts(RPEAK_samples>=numel(SD)-bins_after)=[];
 RPEAK_samples(RPEAK_samples>=numel(SD)-bins_after)=[];
+RPEAK_ts(RPEAK_samples<=-bins_before)=[];
+RPEAK_samples(RPEAK_samples<=-bins_before)=[];
 PSTH=NaN(numel(RPEAK_samples),bins_after-bins_before+1);
 for s=1:numel(RPEAK_samples)
     PSTH(s,:)=SD(bins_before+RPEAK_samples(s):bins_after+RPEAK_samples(s));
@@ -267,13 +277,14 @@ function [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition,u,keys)
 definition='max';
 BINS=(keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000;
 %% NANs if task type not present
-SD_mean=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];NrTrials = NaN; NrEvents = NaN;
+SD_mean=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];NrTrials = NaN; NrEvents = NaN;  FR = NaN;
 if numel(condition.unit) >= u
     trial=condition.unit(u).trial;
     SD_mean=mean(vertcat(trial.PSTH),1);
     SD_SEM=sterr(vertcat(trial.PSTH),1);
     NrTrials = numel(trial);
     NrEvents = condition.unit(u).Nr_RPEAK_ts;
+    FR = condition.unit(u).FR;
     
     % get mean and confidence intervals of shuffle predictor
     for p=1:keys.n_permutations
@@ -286,6 +297,7 @@ if numel(condition.unit) >= u
 end
 SD.NrEvents = NrEvents;
 SD.NrTrials = NrTrials;
+SD.FR = FR;
 SD.SD_mean=SD_mean;
 SD.SD_SEM=SD_SEM;
 SD.SDPmean=SDPmean;

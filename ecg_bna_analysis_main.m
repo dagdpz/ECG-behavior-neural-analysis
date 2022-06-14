@@ -8,7 +8,7 @@ function ecg_bna_analysis_main(project,versions)
 clc; clear; 
 
 project='Pulv_distractor_spatial_choice';
-versions={'ver1'};
+versions={'ver_LS'};
 
 % whether the LFP should be processed (true) or not (false)
 % if the LFP for the sessions to analyse has already been processed, and no
@@ -27,7 +27,7 @@ for v = 1:length(versions)
     version = versions{v};
 
     ecg_bna_cfg = ecg_bna_define_settings(project,version);
-
+    
     %% Get info about sessions to be analysed
 
     % Read the info about sessions to analyse
@@ -51,7 +51,15 @@ for v = 1:length(versions)
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
         
         %% ECG spike histogram per session...
-        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram')) %% not quite sure yet where to put seed
+            seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat'];
+            if exist(seed_filename,'file');
+                load(seed_filename);
+                rng(seed);
+            else
+                seed=rng;
+                save(seed_filename,'seed');
+            end
             SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i));
         end
         
