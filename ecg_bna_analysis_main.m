@@ -5,10 +5,7 @@ function ecg_bna_analysis_main(project,versions)
 % Runs functions for reading processed LFP data, rejection of noise trials
 % and task specific analysis using TFR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clc; clear; 
-
-project='Pulv_distractor_spatial_choice';
-versions={'ver_LS'};
+clc; 
 
 % whether the LFP should be processed (true) or not (false)
 % if the LFP for the sessions to analyse has already been processed, and no
@@ -60,7 +57,7 @@ for v = 1:length(versions)
                 seed=rng;
                 save(seed_filename,'seed');
             end
-            SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i));
+            SPK_PSTH{i}=ecg_bna_compute_session_spike_histogram(sessions_info(i),ecg_bna_cfg);
         end
         
         

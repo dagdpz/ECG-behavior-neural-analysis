@@ -1,16 +1,13 @@
-function Output=ecg_bna_compute_session_spike_histogram(session_info)
+function Output=ecg_bna_compute_session_spike_histogram(session_info,ecg_bna_cfg)
 savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 remove_ini=0;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
                 %% !! this caused drift !
-keys.n_permutations=100; %100;
-    keys.significance_window=[-0.25 0.25];
-
-ECG_event=-1;
-keys.PSTH_WINDOWS={'ECG',ECG_event,-0.5,0.5};
-keys.PSTH_binwidth=0.01;
-keys.kernel_type='gaussian';
-keys.gaussian_kernel=0.02;
+ecg_bna_cfg.n_permutations=100; %100;
+ecg_bna_cfg.significance_window=[-0.25 0.25];
+ecg_bna_cfg.PSTH_binwidth=0.01;
+ecg_bna_cfg.kernel_type='gaussian';
+ecg_bna_cfg.gaussian_kernel=0.02;
 
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
@@ -89,13 +86,13 @@ for u=1:numel(population)
         end
         
         %% now the tricky part: sort by ECG peaks first, compute spike density across all trials!
-        SD_full_block=ecg_bna_spike_density(AT,trial_onsets,trial_ends,keys);
-        sorted=sort_by_rpeaks_temp(RPEAK_ts(2:end),SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
+        SD_full_block=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
+        sorted=sort_by_rpeaks_temp(RPEAK_ts(2:end),SD_full_block,trial_onsets,trial_ends,ecg_bna_cfg,remove_ini);
         condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
         condition(tasktype).unit(u).Nr_RPEAK_ts = length(RPEAK_ts(2:end)); 
         condition(tasktype).unit(u).FR = mean(SD_full_block); 
         %% make surrogates
-        for p=1:keys.n_permutations
+        for p=1:ecg_bna_cfg.n_permutations
 %             RPEAKS_intervals_p = [RPEAK_ts(1)+(rand(1)-0.5)*ecg_R2Rt_mean RPEAKS_intervals RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; % shifting entire intervals, but keeping internal structure
 %             if RPEAKS_intervals_p(1)<0
 %                RPEAKS_intervals_p=[RPEAKS_intervals_p(1) RPEAKS_intervals_p(RPEAKS_intervals_p>abs(PEAKS_intervals_p(1)))];
@@ -111,7 +108,7 @@ for u=1:numel(population)
             for iv=1:size(invalid_intervals,1)
                 RPEAK_ts_perm(RPEAK_ts_perm>invalid_intervals(iv,1)+ecg_R2Rt_mean/2 & RPEAK_ts_perm<invalid_intervals(iv,2)-ecg_R2Rt_mean/2)=[];
             end
-            sorted=sort_by_rpeaks_temp(RPEAK_ts_perm(2:end),SD_full_block,trial_onsets,trial_ends,keys,remove_ini);
+            sorted=sort_by_rpeaks_temp(RPEAK_ts_perm(2:end),SD_full_block,trial_onsets,trial_ends,ecg_bna_cfg,remove_ini);
             condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
             condition(tasktype).unit(u).permuations(p).Nr_RPEAK_ts = length(RPEAK_ts_perm(2:end)); 
         end
@@ -148,7 +145,7 @@ for u=1:numel(population)
         
     end
         
-    [SD,BINS]=ecg_bna_condition_spike_density(condition(1),u,keys);
+    [SD,BINS]=ecg_bna_condition_spike_density(condition(1),u,ecg_bna_cfg);
     Output.Rest.SD(u,:)      = SD.SD_mean ;
     Output.Rest.SD_SEM(u,:)  = SD.SD_SEM ;
     Output.Rest.SDP(u,:)     = SD.SDPmean ;
@@ -168,7 +165,7 @@ for u=1:numel(population)
     Output.Rest.unit_ID{u}         = unit_ID;
     Output.Rest.target{u}          = target;
     
-    [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,keys);
+    [SD,BINS]=ecg_bna_condition_spike_density(condition(2),u,ecg_bna_cfg);
     Output.Task.SD(u,:)      = SD.SD_mean ;
     Output.Task.SD_SEM(u,:)  = SD.SD_SEM ;
     Output.Task.SDP(u,:)     = SD.SDPmean ;
@@ -231,17 +228,17 @@ end
 save([basepath_to_save, filesep, session_info.session],'Output')
 end
 
-function out=sort_by_rpeaks_temp(RPEAK_ts,SD,trial_onsets,trial_ends,keys,remove_ini)
+function out=sort_by_rpeaks_temp(RPEAK_ts,SD,trial_onsets,trial_ends,cfg,remove_ini)
 %% now the tricky part: sort by ECG peaks ...
 if remove_ini
     %% reduce RPEAK_ts potentially ? (f.e.: longer than recorded ephys, inter-trial-interval?)
-    during_trial_index = arrayfun(@(x) any(trial_onsets<=x+keys.PSTH_WINDOWS{1,3} & trial_ends>=x+keys.PSTH_WINDOWS{1,4}),RPEAK_ts);
+    during_trial_index = arrayfun(@(x) any(trial_onsets<=x+ecg_bna_cfg.analyse_states{1,3} & trial_ends>=x+ecg_bna_cfg.analyse_states{1,4}),RPEAK_ts);
     RPEAK_ts=RPEAK_ts(during_trial_index);
 end
         
-RPEAK_samples=round(RPEAK_ts/keys.PSTH_binwidth);
-bins_before=round(keys.PSTH_WINDOWS{3}/keys.PSTH_binwidth);
-bins_after=round(keys.PSTH_WINDOWS{4}/keys.PSTH_binwidth);
+RPEAK_samples=round(RPEAK_ts/cfg.PSTH_binwidth);
+bins_before=round(cfg.analyse_states{3}/cfg.PSTH_binwidth);
+bins_after=round(cfg.analyse_states{4}/cfg.PSTH_binwidth);
 
 %% remove samples that would land outside
 RPEAK_ts(RPEAK_samples>=numel(SD)-bins_after)=[];
@@ -260,22 +257,22 @@ for t=1:numel(trial_onsets)
 end
 end
 
-function SD=ecg_bna_spike_density(AT,trial_onsets,trial_ends,keys)
+function SD=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg)
 %% make SD across all trials appended (no average)!
-switch keys.kernel_type
+switch cfg.kernel_type
     case 'gaussian'
-        Kernel=normpdf(-5*keys.gaussian_kernel:keys.PSTH_binwidth:5*keys.gaussian_kernel,0,keys.gaussian_kernel);
+        Kernel=normpdf(-5*cfg.gaussian_kernel:cfg.PSTH_binwidth:5*cfg.gaussian_kernel,0,cfg.gaussian_kernel);
     case 'box'
-        n_bins=round(2*keys.gaussian_kernel/keys.PSTH_binwidth);
-        Kernel=ones(1,n_bins)/n_bins/keys.PSTH_binwidth; %%*1000 cause a one full spike in one 1ms bin means 1000sp/s locally
+        n_bins=round(2*cfg.gaussian_kernel/cfg.PSTH_binwidth);
+        Kernel=ones(1,n_bins)/n_bins/cfg.PSTH_binwidth; %%*1000 cause a one full spike in one 1ms bin means 1000sp/s locally
 end
-PSTH_time=trial_onsets(1):keys.PSTH_binwidth:trial_ends(end);
+PSTH_time=trial_onsets(1):cfg.PSTH_binwidth:trial_ends(end);
 SD= conv(hist(AT,PSTH_time),Kernel,'same');
 end
 
-function [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition,u,keys)
+function [SD,BINS,NrTrials]=ecg_bna_condition_spike_density(condition,u,cfg)
 definition='max';
-BINS=(keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000;
+BINS=(cfg.analyse_states{1,3}:cfg.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
 %% NANs if task type not present
 SD_mean=NaN(size(BINS));SD_SEM=NaN(size(BINS));SDPmean=NaN(size(BINS));SDPconf=[NaN(size(BINS));NaN(size(BINS))];NrTrials = NaN; NrEvents = NaN;  FR = NaN;
 if numel(condition.unit) >= u
@@ -287,7 +284,7 @@ if numel(condition.unit) >= u
     FR = condition.unit(u).FR;
     
     % get mean and confidence intervals of shuffle predictor
-    for p=1:keys.n_permutations
+    for p=1:cfg.n_permutations
         trial=condition.unit(u).permuations(p).trial;
         SDP(p,:)=mean(vertcat(trial.PSTH),1);
     end
@@ -304,7 +301,7 @@ SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 
 %% signficance
-sig_to_check=BINS>keys.significance_window(1)*1000 & BINS<keys.significance_window(2)*1000;
+sig_to_check=BINS>cfg.significance_window(1)*1000 & BINS<cfg.significance_window(2)*1000;
 pos_diff=SD_mean-(SDPmean+SDPconf(2,:));
 neg_diff=SD_mean-(SDPmean-SDPconf(1,:));
 sig_above=pos_diff>0&sig_to_check;
