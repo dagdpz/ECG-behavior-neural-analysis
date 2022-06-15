@@ -1,4 +1,6 @@
 function ecg_bna_analysis_main(project,versions)
+% project='Pulv_distractor_spatial_choice';
+% versions={'ver_LS'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Script for LFP time frequency analysis

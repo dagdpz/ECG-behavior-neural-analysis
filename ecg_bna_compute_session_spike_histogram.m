@@ -50,7 +50,7 @@ for u=1:numel(population)
         
         AT=vertcat(arrival_times{:});
         if ~numel(trial_onsets)>0 || isempty(o) || isempty(out(o).Rpeak_t(1)) || isempty(out(o).R2R_t)
-            continue;
+            continue; % out(1).nrblock_combinedFiles might be empty!
         end
         
         %% re-evaluating valid intervals... this is important to fix surrogates being higher due to periods of increased spiking that correlate with invalid Rpeaks
