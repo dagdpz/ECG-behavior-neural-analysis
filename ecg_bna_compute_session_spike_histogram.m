@@ -3,7 +3,7 @@ savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 remove_ini=0;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
                 %% !! this caused drift !
-ecg_bna_cfg.n_permutations=100; %100;
+ecg_bna_cfg.n_permutations=1000; %100;
 ecg_bna_cfg.significance_window=[-0.25 0.25];
 ecg_bna_cfg.PSTH_binwidth=0.01;
 ecg_bna_cfg.kernel_type='gaussian';

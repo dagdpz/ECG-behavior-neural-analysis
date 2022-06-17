@@ -143,7 +143,7 @@ end
 Tab_ExcludedUnits = [];
 for i_BrArea = 1: length(fieldnames(Out))
     for i_tsk = 1: numel(TaskTyp)
-        Criterium_SpkPerSec = 1;
+        Criterium_SpkPerSec = 2;
         InVal_idx1 = find([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] <= Criterium_SpkPerSec);
         
         Criterium_NrCardiacCycles = 120*5;
@@ -218,6 +218,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits   = zeros(size(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized,1),1);
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits_PcS  = NaN(size(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized,1),1);
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_Modulation          = NaN(size(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized,1),1);
+       
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_AllUnits_SubtrSDP  = NaN(size(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP,1),1);
         
         % the window of analysis is restricted
@@ -255,11 +256,59 @@ for i_BrArea = 1: length(fieldnames(Out))
     end
 end
 
+
+
+    %% IDentify problems 
+    % IDENTIFY specific units
+ Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
+ Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).unit_ID(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
+ Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
+ Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
+
+  %   'Bac_20220224_34' - problem
+ Out.(Ana_TargetBrainArea{3}).(TaskTyp{2}).unit_ID(Out.(Ana_TargetBrainArea{3}).(TaskTyp{2}).sig_n_bins > 20)
+%     'Bac_20210803_13' -problem
+%     'Bac_20210903_08' ok
+ Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).unit_ID(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40)
+%     'Bac_20220222_29'  ok
+%     'Bac_20220222_30'  ok
+%     'Bac_20220310_41' -problem - 
+ Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).FR(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40)
+ mean(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).SDP(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40,:))
+
+ hf = figure('Name',sprintf('Surrogate_MeanFr'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+ for i_BrArea = 1: length(fieldnames(Out))
+     for i_tsk = 1: numel(TaskTyp)
+         out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+         
+         ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+         % all not significant & NaN units
+         % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+         scatter(out.FR , nanmean(out.SDP,2), 'filled', 'k')  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
+         %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
+         
+         %colorbar();
+         %colormap jet
+         ylabel('mean surrogate','fontsize',14 );
+         xlabel('average Firing rate','fontsize',14 );        axis square; box on;
+         title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
+         
+     end
+ end
+
+    filename= ['MeanSurrogate_MeanFr'];
+
+    if savePlot;
+        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+        close all;
+    end
+ 
+ 
 %% Example for 
 i_BrArea = 3; 
- hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_tsk = 1: numel(TaskTyp)   
- 
+  hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+
         if i_tsk == 1 ; %: numel(TaskTyp)
             Color  = [0 0 1]; 
         else
@@ -273,9 +322,9 @@ i_BrArea = 3;
 
         scatter(out.quantSNR(idx_sig) , out.FR_Modulation(idx_sig), 'filled', 'MarkerFaceColor',Color)        
         if i_tsk == 1 ; 
-            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
+            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
         else
-            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
+            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
 
         end
 
@@ -285,23 +334,23 @@ i_BrArea = 3;
         title([Ana_TargetBrainArea{i_BrArea} , ' ' ,(TaskTyp{i_tsk}) ])
         
         xf = [min(out.quantSNR), max(out.quantSNR)];
-        [p,S] = polyfit(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits2)),out.FR_ModIndex_AllUnits2(~isnan(out.FR_ModIndex_AllUnits2)),1); %
-        [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_AllUnits2)),S);
-        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits2, 'rows','complete') ;
+        [p,S] = polyfit(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)),out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_PcS)),1); %
+        [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)),S);
+        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits_PcS, 'rows','complete') ;
           if i_tsk == 1 ; 
-        plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits2)), y_fit,'LineWidth', 2, 'Color', 'b');
+        plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
         text(8,25, ['coef, p ', num2str([round(coef,2), round(pval,4)])], 'Color', 'b')
           else
-        plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits2)), y_fit,'LineWidth', 2, 'Color', 'r');
+        plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
         text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,4)])], 'Color', 'r')
           end
 
         ha1 = subplot(2,4,[2]);        hold on;
         scatter(out.FR(idx_sig) , out.FR_Modulation(idx_sig), 'filled', 'MarkerFaceColor',Color)
           if i_tsk == 1 ; 
-        scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
+        scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
           else
-        scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
+        scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
 
           end
         ylabel('Modulation index (%)','fontsize',14 );
@@ -312,47 +361,50 @@ i_BrArea = 3;
         ha1 = subplot(2,4,[3]);        hold on;
         scatter(out.sig_n_bins(idx_sig) , out.FR_Modulation(idx_sig), 'filled', 'MarkerFaceColor',Color)
          if i_tsk == 1 ; 
-        scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
+        scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0 0 0])
          else
-        scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
+        scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0.5 0 0.2])
 
          end
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('sig. Nr. bins','fontsize',14 );        axis square;
-        hold on;
+        hold off;
         
         
         ha1 = subplot(2,4,[5:6]); %
         UnitSig_Rest = intersect(find(out.FR_Modulation >30) , find(idx_sig)); 
-        UnitNotSign_Rest = intersect(find(out.FR_ModIndex_AllUnits2 >30) , find(~idx_sig)); 
+        UnitNotSign_Rest = intersect(find(out.FR_ModIndex_AllUnits_PcS >30) , find(~idx_sig)); 
 
         
-             text(-400,-15, [out.unit_ID(UnitSig_Rest)],'Color',Color);
+            text(-400,-15, [out.unit_ID(UnitSig_Rest)],'Color',Color);
             lineProps={'color','b','linewidth',4};
             for i = UnitSig_Rest
+                if ~ isempty(i)
                 line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',Color,'LineWidth', 1); hold on;
+                end
             end
             hold on; 
             
             colormap bone;
-            cmap=colormap;                idx = 1; 
-
+            cmap=colormap;                idx = 1;
+            
             lineProps={'color','k','linewidth',4};
             text(300,20, [out.unit_ID(UnitNotSign_Rest)],'Color','k');
-            col = cmap([1;30],:); 
+            col = cmap([1;30],:);
             for i = 1: length(UnitNotSign_Rest)
-               idx_unit = UnitNotSign_Rest(i); 
-               line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(idx_unit,:), 'color',cmap(i,:),'LineWidth', 4); hold on;
+                idx_unit = UnitNotSign_Rest(i);
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(idx_unit,:), 'color',cmap(i,:),'LineWidth', 4); hold on;
             end
             title('Units with Modulation strength > 30%'); %axis square;
             
-        ha1 = subplot(2,4,[7:8]); %
-          text(300,20, [out.unit_ID(UnitNotSign_Rest)],'Color','k');
+            ha1 = subplot(2,4,[7:8]); %
+            text(300,20, [out.unit_ID(UnitNotSign_Rest)],'Color','k');
             for i = 1: length(UnitNotSign_Rest)
-               idx_unit = UnitNotSign_Rest(i); 
-               line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(idx_unit,:), 'color',cmap(i,:),'LineWidth', 4); hold on;
+                idx_unit = UnitNotSign_Rest(i);
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(idx_unit,:), 'color',cmap(i,:),'LineWidth', 4); hold on;
             end
-            title('Non-Sign units with Modulation strength > 30%'); 
+            
+            title('Non-Sign units with Modulation strength > 30%'); hold off; 
     if savePlot;
         export_fig([basepath_to_save,filesep ,['Check_ModulationIndex_',Ana_TargetBrainArea{i_BrArea},'_',(TaskTyp{i_tsk}) ]], '-pdf'); %,'-transparent'
         close all;
@@ -660,17 +712,17 @@ for i_BrArea = 1: length(fieldnames(Out))
         hold on;
         
         xf = [min(out.quantSNR), max(out.quantSNR)];
-        [p,S] = polyfit(out.quantSNR,out.FR_ModIndex_AllUnits2,1); %
+        [p,S] = polyfit(out.quantSNR,out.FR_ModIndex_AllUnits_PcS,1); %
         [y_fit,delta] = polyval(p,out.quantSNR,S);
-        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits2, 'rows','complete') ;
+        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits_PcS, 'rows','complete') ;
         if i_tsk == 1
-           scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0.4 0.3 0.99])
+           scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0.4 0.3 0.99])
 
             plot(out.quantSNR, y_fit,'LineWidth', 2, 'Color', 'b');
             text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
-            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits2(~idx_sig), 'filled', 'MarkerFaceColor',[0 0.4 1])
+            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0 0.4 1])
 
             plot(out.quantSNR, y_fit,'LineWidth', 2, 'Color', 'r');
             text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
@@ -786,11 +838,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         xlabel('Signal-to-Noise','fontsize',14 );        axis square; box on; 
         title(Ana_TargetBrainArea{i_BrArea})
         set(gca,'xlim',[0, 25]);
-        
-        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
-
+        set(gca,'ylim',[0, 80]);
         hold on;
         
         xf = [min(out.quantSNR), max(out.quantSNR)];
@@ -823,9 +871,8 @@ for i_BrArea = 1: length(fieldnames(Out))
         xlabel('Signal-to-Noise','fontsize',14 );        axis square;box on; 
         title(Ana_TargetBrainArea{i_BrArea}); 
         set(gca,'xlim',[0, 25]);
-         if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
+        set(gca,'ylim',[0, 80]);
+
         hold on;
         
         xf = [min(out.quantSNR(idx_sig)), max(out.quantSNR(idx_sig))];
@@ -844,7 +891,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         end
     end
 end
-    filename= ['ModulationIndex'];
+    filename= ['ModulationIndex_Npsc'];
 
     if savePlot;
         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
@@ -874,78 +921,220 @@ for i_BrArea = 1: length(fieldnames(Out))
         %% Modulation Index
         ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
         % all not significant & NaN units
-        scatter(out.quantSNR(idx_sig) , out.FR_Modulation(idx_sig), 'filled', 'MarkerFaceColor',Color)
-        ylabel('Modulation index (%)','fontsize',14 );
-        xlabel('Signal-to-Noise','fontsize',14 );        axis square; box on; 
+        scatter(out.quantSNR(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Modulation index (spike/s)','fontsize',14 );
+        xlabel('Signal-to-Noise ratio (mV)','fontsize',14 );        axis square; box on; 
         title(Ana_TargetBrainArea{i_BrArea})
         set(gca,'xlim',[0, 25]);
-        
-        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
+        set(gca,'ylim',[0, 15]);
+
 
         hold on;
         
         xf = [min(out.quantSNR), max(out.quantSNR)];
-        [p,S] = polyfit(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)),out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_PcS)),1); %
-        [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)),S);
-        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits_PcS, 'rows','complete') ;
+        [p,S] = polyfit(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),out.FR_ModIndex_AllUnits_SubtrSDP(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),1); %
+        [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),S);
+        [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits_SubtrSDP, 'rows','complete') ;
         if i_tsk == 1
-            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
+            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
-            plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
-            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
+            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
-            plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
-        
-        Dat = [];
-        ModIndex = out.FR_Modulation(idx_sig);
-        SNR =  out.quantSNR(idx_sig);
-        Dat = table(ModIndex, SNR);
+
         
         ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
         
-        scatter(out.quantSNR(idx_sig) , out.FR_Modulation(idx_sig), 'filled', 'MarkerFaceColor',Color)
-        ylabel('Modulation index(%)','fontsize',14 );
-        xlabel('Signal-to-Noise','fontsize',14 );        axis square;box on; 
+        scatter(out.quantSNR(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Modulation index(spike/s)','fontsize',14 );
+        xlabel('Signal-to-Noise ratio (mV)','fontsize',14 );        axis square;box on; 
         title(Ana_TargetBrainArea{i_BrArea}); 
         set(gca,'xlim',[0, 25]);
-         if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
+
+        set(gca,'ylim',[0, 15]);
+ 
+  
         hold on;
         
         xf = [min(out.quantSNR(idx_sig)), max(out.quantSNR(idx_sig))];
-        [p,S] = polyfit(SNR,ModIndex,1); %
-        [y_fit,delta] = polyval(p,SNR,S);
-        [coef, pval] = corr(SNR,ModIndex) ;
+        [p,S] = polyfit(out.quantSNR(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),1); %
+        [y_fit,delta] = polyval(p,out.quantSNR(idx_sig),S);
+        
+        [coef, pval] = corr(out.quantSNR(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig)) ;
         if i_tsk == 1
             
-            plot(SNR, y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            plot(out.quantSNR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',6)
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
-            plot(SNR, y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            plot(out.quantSNR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r' ,'fontsize',6)
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
 end
-    filename= ['ModulationIndex'];
+    filename= ['ModulationIndex_NSubtr'];
 
     if savePlot;
         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
         close all;
     end
-    
-    
-%% MODULATION STRENGTH - FR 
+ 
+        %% MODULATION STRENGTH - compare both Normalizations ... SDP subtraction
+hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+for i_BrArea = 1: length(fieldnames(Out))
+    for i_tsk = 1: numel(TaskTyp)
+        
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        % from all nicht NAN units - how many were significant?
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+        
+        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        if i_tsk == 1
+
+        Color = [0 0 1];
+        else
+        Color = [1 0 0];
+
+        end
+        
+        
+        %% Modulation Index
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+        % all not significant & NaN units
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)              
+        ylabel('Modulation index (spike/s)','fontsize',14 );
+        xlabel('Modulation index(%pSc)','fontsize',14 );        axis square; box on; 
+        title(Ana_TargetBrainArea{i_BrArea})
+        set(gca,'xlim',[0, 80]);
+        set(gca,'ylim',[0, 15]);
+
+
+        hold on;
+        
+        xf = [min(out.quantSNR), max(out.quantSNR)];
+        [p,S] = polyfit(out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),out.FR_ModIndex_AllUnits_SubtrSDP(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),1); %
+        [y_fit,delta] = polyval(p,out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),S);
+        [coef, pval] = corr(out.FR_ModIndex_AllUnits_PcS,out.FR_ModIndex_AllUnits_SubtrSDP, 'rows','complete') ;
+        if i_tsk == 1
+            scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
+
+            plot(out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',14)
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
+
+            plot(out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r','fontsize',14)
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+
+        
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;        
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Modulation index(spike/s)','fontsize',14 );
+        xlabel('Modulation index(%pSc)','fontsize',14 );        axis square;box on; 
+        title(Ana_TargetBrainArea{i_BrArea}); 
+        set(gca,'xlim',[0, 80]);
+
+        set(gca,'ylim',[0, 15]);
+ 
+  
+        hold on;
+        
+        xf = [min(out.FR_ModIndex_AllUnits_PcS(idx_sig)), max(out.quantSNR(idx_sig))];
+        [p,S] = polyfit(out.FR_ModIndex_AllUnits_PcS(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),1); %
+        [y_fit,delta] = polyval(p,out.FR_ModIndex_AllUnits_PcS(idx_sig),S);
+        
+        [coef, pval] = corr(out.FR_ModIndex_AllUnits_PcS(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig)) ;
+        if i_tsk == 1
+            
+            plot(out.FR_ModIndex_AllUnits_PcS(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',14)
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            plot(out.FR_ModIndex_AllUnits_PcS(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r' ,'fontsize',14)
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+    end
+end
+    filename= ['ModulationIndex_Cmp_Npsc_NSubtr'];
+
+    if savePlot;
+        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+        close all;
+    end
+
+    %% MODULATION STRENGTH - FR as explanation - compare both Normalizations ... SDP subtraction
+    hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+for i_BrArea = 1: length(fieldnames(Out))
+    for i_tsk = 1: numel(TaskTyp)
+        
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        % from all nicht NAN units - how many were significant?
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+        
+        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        
+        %% Modulation Index
+        if i_tsk == 1
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+        % all not significant & NaN units
+       % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR(idx_sig)/max(out.FR) , 'filled')
+        %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')   
+
+        colorbar(); 
+        colormap jet
+        ylabel('Modulation index (spike/s)','fontsize',14 );
+        xlabel('Modulation index(%pSc)','fontsize',14 );        axis square; box on; 
+        title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]); 
+        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
+                    set(gca,'xlim',[0, 60]);
+        end
+        set(gca,'ylim',[0, 15]);
+        end
+        if i_tsk == 2
+        ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + 4));        hold on;
+        % all not significant & NaN units
+       % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR(idx_sig)/max(out.FR) , 'filled')
+       % scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')   
+
+        colorbar
+        colormap jet
+        ylabel('Modulation index (spike/s)','fontsize',14 );
+        xlabel('Modulation index(%pSc)','fontsize',14 );        axis square; box on; 
+        title([ (TaskTyp{i_tsk}),Ana_TargetBrainArea{i_BrArea}]); 
+       % set(gca,'xlim',[0, 25]);
+        set(gca,'ylim',[0, 15]);
+        colorbar(); 
+        colormap jet
+        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
+                    set(gca,'xlim',[0, 60]);
+        end
+        end
+
+    end
+end
+    filename= ['ModulationIndex_Compare_NpSc_Subtr_WithFR_ONLYSignificantUnits'];
+
+    if savePlot;
+        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+        close all;
+    end
+%% MODULATION STRENGTH pSC- FR 
     hf = figure('Name',sprintf('ModulationIndex_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 for i_BrArea = 1: length(fieldnames(Out))
     for i_tsk = 1: numel(TaskTyp)
@@ -974,12 +1163,8 @@ for i_BrArea = 1: length(fieldnames(Out))
         title(Ana_TargetBrainArea{i_BrArea})
         set(gca,'xlim',[0, 200]);
         
-        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        else
-                    set(gca,'ylim',[0, 250]);
-
-        end
+        set(gca,'ylim',[0, 80]);
+       
 
         hold on;
         
@@ -1007,11 +1192,8 @@ for i_BrArea = 1: length(fieldnames(Out))
         xlabel('average Firing rate','fontsize',14 );        axis square;box on; 
         title(Ana_TargetBrainArea{i_BrArea}); 
         set(gca,'xlim',[0, 200]);
-         if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-                     else
-                    set(gca,'ylim',[0, 250]);
-        end
+        set(gca,'ylim',[0, 80]);
+
         hold on;
         
         xf = [min(out.FR(idx_sig)), max(out.quantSNR(idx_sig))];
@@ -1030,13 +1212,185 @@ for i_BrArea = 1: length(fieldnames(Out))
         end
     end
 end
-    filename= ['ModulationIndex_FiringRate'];
+    filename= ['ModulationIndex_Npsc_FiringRate'];
 
     if savePlot;
         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
         close all;
     end
 
+%% Correlation between SNR - FR 
+        hf = figure('Name',sprintf('Correlation_SNR_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+for i_BrArea = 1: length(fieldnames(Out))
+    for i_tsk = 1: numel(TaskTyp)
+        
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        % from all nicht NAN units - how many were significant?
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+        
+        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        if i_tsk == 1
+
+        Color = [0 0 1];
+        else
+        Color = [1 0 0];
+
+        end
+        
+        
+        %% Modulation Index
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+        % all not significant & NaN units
+        scatter(out.FR(idx_sig) , out.quantSNR(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Signal-to-Noise ratio','fontsize',14 );
+        xlabel('average Firing rate','fontsize',14 );        axis square; box on; 
+        title(Ana_TargetBrainArea{i_BrArea})
+        set(gca,'xlim',[0, 200]);
+        set(gca,'ylim',[0, 25]);
+        hold on;
+        
+        xf = [min(out.FR), max(out.quantSNR)];
+        [p,S] = polyfit(out.FR(~isnan(out.quantSNR)),out.quantSNR(~isnan(out.quantSNR)),1); %
+        [y_fit,delta] = polyval(p,out.FR(~isnan(out.quantSNR)),S);
+        [coef, pval] = corr(out.FR,out.quantSNR, 'rows','complete') ;
+        if i_tsk == 1
+            scatter(out.FR(~idx_sig) , out.quantSNR(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
+
+            plot(out.FR(~isnan(out.quantSNR)), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,15, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            scatter(out.FR(~idx_sig) , out.quantSNR(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
+
+            plot(out.FR(~isnan(out.quantSNR)), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,20, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+   ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
+        
+        scatter(out.FR(idx_sig) , out.quantSNR(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Signal-to-Noise ratio','fontsize',14 );
+        xlabel('average Firing rate','fontsize',14 );        axis square;box on; 
+        title(Ana_TargetBrainArea{i_BrArea}); 
+        set(gca,'xlim',[0, 200]);
+
+        set(gca,'ylim',[0, 25]);
+
+        hold on;
+        
+        xf = [min(out.FR(idx_sig)), max(out.quantSNR(idx_sig))];
+        [p,S] = polyfit(out.FR(idx_sig),out.quantSNR(idx_sig),1); %
+        [y_fit,delta] = polyval(p,out.FR(idx_sig),S);
+        [coef, pval] = corr(out.FR(idx_sig),out.quantSNR(idx_sig)) ;
+        if i_tsk == 1
+            
+            plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,15, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,20, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+    end
+end
+    filename= ['SNR_FiringRate'];
+
+    if savePlot;
+        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+        close all;
+    end
+   
+    %% MODULATION STRENGTH - substractiveNormalization - FR 
+    % Shows that higher average firing rate is related to a higher
+    % modulation index
+    hf = figure('Name',sprintf('ModulationIndex_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+for i_BrArea = 1: length(fieldnames(Out))
+    for i_tsk = 1: numel(TaskTyp)
+        
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+        % from all nicht NAN units - how many were significant?
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+        
+        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        if i_tsk == 1
+
+        Color = [0 0 1];
+        else
+        Color = [1 0 0];
+
+        end
+        
+        
+        %% Modulation Index
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+        % all not significant & NaN units
+        scatter(out.FR(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Modulation index (%)','fontsize',14 );
+        xlabel('average Firing rate','fontsize',14 );        axis square; box on; 
+        title(Ana_TargetBrainArea{i_BrArea})
+        set(gca,'xlim',[0, 200]);
+        set(gca,'ylim',[0, 15]);
+
+
+
+        hold on;
+        
+        xf = [min(out.FR), max(out.FR)];
+        [p,S] = polyfit(out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),out.FR_ModIndex_AllUnits_SubtrSDP(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),1); %
+        [y_fit,delta] = polyval(p,out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)),S);
+        [coef, pval] = corr(out.FR,out.FR_ModIndex_AllUnits_SubtrSDP, 'rows','complete') ;
+        if i_tsk == 1
+            scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
+
+            plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
+
+            plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,12, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+        
+        
+        ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
+        
+        scatter(out.FR(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+        ylabel('Modulation index(%)','fontsize',14 );
+        xlabel('average Firing rate','fontsize',14 );        axis square;box on; 
+        title(Ana_TargetBrainArea{i_BrArea}); 
+        set(gca,'xlim',[0, 200]);        set(gca,'ylim',[0, 15]);
+
+        hold on;
+        
+        xf = [min(out.FR(idx_sig)), max(out.FR(idx_sig))];
+        [p,S] = polyfit(out.FR(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),1); %
+        [y_fit,delta] = polyval(p,out.FR(idx_sig),S);
+        [coef, pval] = corr(out.FR(idx_sig),out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig)) ;
+        if i_tsk == 1
+            
+            plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
+            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
+        else
+            plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
+            text(8,12, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+        end
+    end
+end
+    filename= ['ModulationIndex_NSubt_FR'];
+
+    if savePlot;
+        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+        close all;
+    end
+    
+    
     %% MODULATION STRENGTH -  Bin size
     hf = figure('Name',sprintf('ModulationIndex_BinSize'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 for i_BrArea = 1: length(fieldnames(Out))
@@ -1064,11 +1418,9 @@ for i_BrArea = 1: length(fieldnames(Out))
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('Bin size of sig. Interval','fontsize',14 );        axis square; box on; 
         title(Ana_TargetBrainArea{i_BrArea})
-        set(gca,'xlim',[0, 50]);
-        
-        if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
+        set(gca,'xlim',[0, 30]);
+        set(gca,'ylim',[0, 60]);
+
 
         hold on;
         
@@ -1095,10 +1447,9 @@ for i_BrArea = 1: length(fieldnames(Out))
         ylabel('Modulation index(%)','fontsize',14 );
         xlabel('Bin size of sig. Interval','fontsize',14 );        axis square;box on; 
         title(Ana_TargetBrainArea{i_BrArea}); 
-        set(gca,'xlim',[0, 50]);
-         if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
-                    set(gca,'ylim',[0, 60]);
-        end
+        set(gca,'xlim',[0, 30]);
+        set(gca,'ylim',[0, 80]);
+
         hold on;
         
         xf = [min(out.sig_n_bins(idx_sig)), max(out.quantSNR(idx_sig))];
@@ -1117,7 +1468,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         end
     end
 end
-    filename= ['ModulationIndex_Binsize'];
+    filename= ['ModulationIndex_Nspc_Binsize'];
 
     if savePlot;
         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
@@ -1127,51 +1478,115 @@ end
 hf = figure('Name',sprintf('BarPlot'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 for i_BrArea = 1: length(fieldnames(Out))
     for i_tsk = 1: numel(TaskTyp)
+            
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+            Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+            Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+            idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+            
+            if i_tsk == 1
+                Pc_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+                Nb_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;
+                Pc_SignFR_rest2(i_BrArea,:) = round(([sum(idx_sig), (sum(~idx_sig) -Idx_Units_NaN)] / sum(Idx_Units_NonNaN)) *100);
+                % sum(Nb_SignFR_rest, 2)
+            else
+                Pc_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+                Nb_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;
+                Pc_SignFR_task2(i_BrArea,:) = round(([sum(idx_sig),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100);
+                % sum(Nb_SignFR_task, 2)
+            end  
         
-        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
-        % from all nicht NAN units - how many were significant?
-        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
-        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
-        
-        idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
-        %idx_sig = double(idx_sig);
-        
-        
-        if i_tsk == 1
-            Pc_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;            
-            Nb_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;            
-            Pc_SignFR_rest2(i_BrArea,:) = round(([sum(idx_sig), (sum(~idx_sig) -Idx_Units_NaN)] / sum(Idx_Units_NonNaN)) *100);            
-        % sum(Nb_SignFR_rest, 2)
-        else
-            Pc_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;            
-            Nb_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;            
-            Pc_SignFR_task2(i_BrArea,:) = round(([sum(idx_sig),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100);            
-        % sum(Nb_SignFR_task, 2)
-        end
     end
 end
-        ha1 = subplot(1,2,1);% pie plot how many
-        barpairs =  [Pc_SignFR_rest];
-        b = bar(barpairs,'stacked', 'Facecolor','flat' );
-        title('Rest: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
-        set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
-        
-        ha1 = subplot(1,2,2);% pie plot how many
-        barpairs =  [Pc_SignFR_task];
-        b = bar(barpairs,'stacked', 'Facecolor','flat' );
-        title('Task: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
-        set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
-        
+ha1 = subplot(1,2,1);% pie plot how many
+barpairs =  [Pc_SignFR_rest];
+b = bar(barpairs,'stacked', 'Facecolor','flat' );
+title('Rest: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
 
-            
+ha1 = subplot(1,2,2);% pie plot how many
+barpairs =  [Pc_SignFR_task];
+b = bar(barpairs,'stacked', 'Facecolor','flat' );
+title('Task: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
+
         
-    filename= ['Pc_CardiacRelatedUnits'];
+filename= ['Pc_CardiacRelatedUnits'];
 
-    if savePlot;
-        export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
-        close all;
-    end 
+if savePlot;
+    export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+    close all;
+end
 
+    %% overview about all units - change to include the 
+%             ThreeTiming = {'T<-50', '-50>T<50', 'T>50'} ;
+% 
+%         hf = figure('Name',sprintf('BarPlot'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+%         for i_BrArea = 1: length(fieldnames(Out))
+%                 for i_tsk = 1: numel(TaskTyp)
+%                     for i_Time = 1: length(ThreeTiming)
+%                         
+%                         
+%                         out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
+%                         % from all nicht NAN units - how many were significant?
+%                         Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+%                         Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+%                         
+%                         idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+%                 idx_SigDec      = (out.sig_sign == -1);
+%                 idx_SigInc      = (out.sig_sign == 1);
+%                 idx_SigTime_BeforeMinus50 = (out.sig_time < -50 );
+%                 idx_SigTime_Around0       = (out.sig_time > -50 ) & (out.sig_time < 50) ;
+%                 idx_SigTime_After50       = (out.sig_time > 50);
+%                 idx_Time = []; 
+%                 switch i_Time
+%                     case 1 %{ 'BeforeMinus50'}
+%                         idx_Time_Before = (idx_SigTime_BeforeMinus50 & idx_SigInc)+  (idx_SigTime_After50 & idx_SigDec) ;
+%                          
+%                     case 2 %'Around0'
+%                         idx_Time_During = idx_SigTime_Around0 ;
+%                         
+%                     case 3 %'After50'
+%                         idx_Time_End = (idx_SigTime_BeforeMinus50 & idx_SigDec)+  (idx_SigTime_After50 & idx_SigInc) ;
+%                         
+%                 end
+%        
+%                         if i_tsk == 1
+%                             Pc_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig & idx_Time) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+%                             Nb_SignFR_rest(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;
+%                             Pc_SignFR_rest2(i_BrArea,:) = round(([sum(idx_sig), (sum(~idx_sig) -Idx_Units_NaN)] / sum(Idx_Units_NonNaN)) *100);
+%                             % sum(Nb_SignFR_rest, 2)
+%                         else
+%                             Pc_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+%                             Nb_SignFR_task(i_BrArea,:) = ([sum(out.sig_sign(idx_sig) == 1) ,sum(out.sig_sign(idx_sig) == -1),(sum(~idx_sig) -Idx_Units_NaN),] ) ;
+%                             Pc_SignFR_task2(i_BrArea,:) = round(([sum(idx_sig),(sum(~idx_sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100);
+%                             % sum(Nb_SignFR_task, 2)
+%                         end
+%                         
+%                     end
+%                 end
+%             end
+%         ha1 = subplot(1,2,1);% pie plot how many
+%         barpairs =  [Pc_SignFR_rest];
+%         b = bar(barpairs,'stacked', 'Facecolor','flat' );
+%         title('Rest: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+%         set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
+%         
+%         ha1 = subplot(1,2,2);% pie plot how many
+%         barpairs =  [Pc_SignFR_task];
+%         b = bar(barpairs,'stacked', 'Facecolor','flat' );
+%         title('Task: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+%         set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
+%         
+% 
+%             
+%         
+%     filename= ['Pc_CardiacRelatedUnits'];
+% 
+%     if savePlot;
+%         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+%         close all;
+%     end 
 %% Decrease and Increase grouped for brain region
 hf = figure('Name',sprintf('CardiacRelated_Change_FR'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 
@@ -1293,7 +1708,7 @@ end
     
     
     
-    %%
+    %% Decrease and Increase grouped for brain region 
     hf = figure('Name',sprintf('CardiacRelated_ChangeFR_Time'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     
     Color_BrainArea = [[0 0 0];  colors(7,:);     colors(13,:); colors(21,:)  ];  %[0 0.9 0.4] %[0 0.6 0] [0.8 0.3 0.1]
@@ -1452,7 +1867,7 @@ end
     end 
 
     %% 
-        hf = figure('Name',sprintf('CardiacRelated_ChangeFR_Time'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+    hf = figure('Name',sprintf('CardiacRelated_ChangeFR_Time'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     
     Color_BrainArea = [[0 0 0];  colors(7,:);     colors(13,:); colors(21,:)  ];  %[0 0.9 0.4] %[0 0.6 0] [0.8 0.3 0.1]
     ThreeTiming = {'T<-50', '-50>T<50', 'T>50'} ;
@@ -1550,7 +1965,7 @@ end
         end
       end
     
-   filename= ['Suppression_Enhancement_SeparatedForTime2'];
+   filename= ['Suppression_Enhancement_SeparatedForTime_GroupedAccordingTo'];
 
     if savePlot;
         export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'

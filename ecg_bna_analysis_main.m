@@ -44,12 +44,21 @@ for v = 1:length(versions)
     
     % loop through each session to process
             SPK_PSTH = []; 
+% 
+%     for i = 1:length(sessions_info)
+%         
+%     
+%         % name of session = [Monkey name '_' Recording date]
+%         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
+%         colormap gray;
+%         cmp = colormap; 
+%                
+%         ecg_histogram(sessions_info(i),ecg_bna_cfg, cmp(i,:));
+% 
+%    end
+        %% ECG spike histogram per session..
+        for i = 1:length(sessions_info)
 
-    for i = 1:length(sessions_info)
-        % name of session = [Monkey name '_' Recording date]
-        session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        
-        %% ECG spike histogram per session...
         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram')) %% not quite sure yet where to put seed
             seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat'];
             if exist(seed_filename,'file');
@@ -87,13 +96,16 @@ for v = 1:length(versions)
                 continue;
             end
         else
+            disp('!!comment out - bug- KK')
             % load session ecg for the session
-            session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' session_name '.mat']);
-            if exist(session_ecg_filename, 'file')
-                load(session_ecg_filename, 'session_ecg');
-            else
-                continue;
-            end
+%             session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).session_name '.mat']);
+%             %session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).Date '.mat']);
+% 
+%             if exist(session_ecg_filename, 'file')
+%                 load(session_ecg_filename, 'session_ecg');
+%             else
+%                 continue;
+%             end
         end
          if ecg_bna_cfg.process_LFP
         
