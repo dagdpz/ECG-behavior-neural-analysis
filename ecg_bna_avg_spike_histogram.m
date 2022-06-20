@@ -276,15 +276,21 @@ end
  Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).FR(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40)
  mean(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).SDP(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40,:))
 
+ %% How much does the surrogate and mean firing divergate
  hf = figure('Name',sprintf('Surrogate_MeanFr'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
  for i_BrArea = 1: length(fieldnames(Out))
      for i_tsk = 1: numel(TaskTyp)
          out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
          
+        if i_tsk == 1 ; %: numel(TaskTyp)
+            Color  = [0 0 1]; 
+        else
+            Color  = [1 0 0]; 
+        end
          ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
          % all not significant & NaN units
          % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
-         scatter(out.FR , nanmean(out.SDP,2), 'filled', 'k')  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
+         scatter(out.FR , nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',Color)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
          %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
          
          %colorbar();
@@ -292,6 +298,19 @@ end
          ylabel('mean surrogate','fontsize',14 );
          xlabel('average Firing rate','fontsize',14 );        axis square; box on;
          title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
+         
+         
+          ha1 = subplot(2,length(fieldnames(Out)), (i_BrArea + length(fieldnames(Out))));        hold on;
+         % all not significant & NaN units
+         % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
+         scatter(nanmean(out.SD,2) , nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',Color)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
+         %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
+         
+         %colorbar();
+         %colormap jet
+         ylabel('mean surrogate','fontsize',14 );
+         xlabel('average Firing rate of ECG-triggeerd Average','fontsize',14 );        axis square; box on;
+         title([  Ana_TargetBrainArea{i_BrArea}]);
          
      end
  end

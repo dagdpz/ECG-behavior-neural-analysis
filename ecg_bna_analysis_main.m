@@ -96,16 +96,13 @@ for v = 1:length(versions)
                 continue;
             end
         else
-            disp('!!comment out - bug- KK')
-            % load session ecg for the session
-%             session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).session_name '.mat']);
-%             %session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).Date '.mat']);
-% 
-%             if exist(session_ecg_filename, 'file')
-%                 load(session_ecg_filename, 'session_ecg');
-%             else
-%                 continue;
-%             end
+            session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).session_name '.mat']);
+
+            if exist(session_ecg_filename, 'file')
+                load(session_ecg_filename, 'session_ecg');
+            else
+                continue;
+            end
         end
          if ecg_bna_cfg.process_LFP
         
@@ -154,11 +151,11 @@ for v = 1:length(versions)
          end
 
          
-         path_population=[sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'];
-         if ~exist(path_population,'dir')
-             mkdir(path_population);
-         end
-         save([sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'],'SPK_PSTH')
+%          path_population=[sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'];
+%          if ~exist(path_population,'dir')
+%              mkdir(path_population);
+%          end
+       %  save([sessions_info(1).SPK_fldr filesep 'Population' filesep 'SPK_PSTH'],'SPK_PSTH')
          
     end
 
