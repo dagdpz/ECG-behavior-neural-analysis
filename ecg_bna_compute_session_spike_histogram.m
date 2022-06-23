@@ -91,6 +91,7 @@ for u=1:numel(population)
         condition(tasktype).unit(u).trial(T+1:T+numel(sorted))=sorted;
         condition(tasktype).unit(u).Nr_RPEAK_ts = length(RPEAK_ts(2:end)); 
         condition(tasktype).unit(u).FR = mean(SD_full_block); 
+        condition(tasktype).unit(u).RPEAKS_intervals = diff(RPEAK_ts); 
         %% make surrogates
         for p=1:ecg_bna_cfg.n_permutations
 %             RPEAKS_intervals_p = [RPEAK_ts(1)+(rand(1)-0.5)*ecg_R2Rt_mean RPEAKS_intervals RPEAKS_intervals(randperm(length(RPEAKS_intervals)))]; % shifting entire intervals, but keeping internal structure
@@ -110,7 +111,8 @@ for u=1:numel(population)
             end
             sorted=sort_by_rpeaks_temp(RPEAK_ts_perm(2:end),SD_full_block,trial_onsets,trial_ends,ecg_bna_cfg,remove_ini);
             condition(tasktype).unit(u).permuations(p).trial(T+1:T+numel(sorted))=sorted;
-            condition(tasktype).unit(u).permuations(p).Nr_RPEAK_ts = length(RPEAK_ts_perm(2:end)); 
+            condition(tasktype).unit(u).permuations(p).Nr_RPEAK_ts = length(RPEAK_ts_perm(2:end));
+            condition(tasktype).unit(u).permuations(p).RPEAKS_intervals = diff(RPEAK_ts_perm);  
         end
         
         %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
@@ -185,9 +187,10 @@ for u=1:numel(population)
     Output.Task.unit_ID{u}         = unit_ID;
     Output.Task.target{u}          = target;
     
+    
     if savePlot
-        figure;
-        title([unit_ID,'__',target ],'interpreter','none');
+        figure; %% PSTH
+        title(['PSTH_' unit_ID,'__',target ],'interpreter','none');
         hold on
         
         lineProps={'color','b','linewidth',1};
@@ -200,29 +203,68 @@ for u=1:numel(population)
         lineProps={'color','r','linewidth',1,'linestyle',':'};
         shadedErrorBar(BINS,Output.Task.SDP(u,:),[Output.Task.SDPCu(u,:);Output.Task.SDPCL(u,:)],lineProps,1);
         
-        y_lims=get(gca,'ylim');
-        offset=NaN;factor=NaN;
-        if Output.Rest.sig_sign(u,:);
-            offset=mean(y_lims);
-            factor=diff(y_lims)/3;
+        ypos=NaN;
+        if Output.Rest.sig_sign(u,:)==-1;
+            ypos=min(Output.Rest.SD(u,:))*-1;
+        elseif Output.Rest.sig_sign(u,:)==1;
+            ypos=max(Output.Rest.SD(u,:));
         end
         to_plot=Output.Rest.sig(u,:);to_plot(to_plot==0)=NaN;
-        plot(BINS,to_plot*factor+offset,'b','linewidth',5);
-        offset=NaN;factor=NaN;
-        if Output.Task.sig_sign(u,:);
-            offset=mean(y_lims);
-            factor=diff(y_lims)/3;
+        plot(BINS,to_plot*ypos,'b','linewidth',5);
+        ypos=NaN;
+        if Output.Task.sig_sign(u,:)==-1;
+            ypos=min(Output.Task.SD(u,:))*-1;
+        elseif Output.Task.sig_sign(u,:)==1;
+            ypos=max(Output.Task.SD(u,:));
         end
         to_plot=Output.Task.sig(u,:);to_plot(to_plot==0)=NaN;
-        plot(BINS,to_plot*factor+offset,'r','linewidth',5);
+        plot(BINS,to_plot*ypos,'r','linewidth',5);
         
-        text(BINS(10),max([Output.Task.SD(u,:), Output.Rest.SD(u,:)])+0.3, ['Task: trials = ' ,num2str(Output.Task.NrTrials(u,:)), '  events = ' ,num2str(Output.Task.NrEvents(u,:)) ],'Color','red')
-        text(BINS(10),max([Output.Task.SD(u,:), Output.Rest.SD(u,:)]), ['Rest: trials = ' ,num2str(Output.Rest.NrTrials(u,:)), '  events = ' ,num2str(Output.Rest.NrEvents(u,:)) ],'Color','blue')
+        y_lims=get(gca,'ylim');
+        text(BINS(10),y_lims(1)+diff(y_lims)*9/10, ['Task: trials = ' ,num2str(Output.Task.NrTrials(u,:)), '  events = ' ,num2str(Output.Task.NrEvents(u,:)) ],'Color','red')
+        text(BINS(10),y_lims(1)+diff(y_lims)*8/10, ['Rest: trials = ' ,num2str(Output.Rest.NrTrials(u,:)), '  events = ' ,num2str(Output.Rest.NrEvents(u,:)) ],'Color','blue')
                 
-        filename= [unit_ID, '__' target]; 
+        filename= ['PSTH_' unit_ID, '__' target]; 
         print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
         close(gcf);
+        
+        figure; %% interval distribution
+        title(['Rpeak_intervals_' unit_ID,'__',target ],'interpreter','none');
+        if numel(condition(1).unit)>=u
+            subplot(2,1,1);
+            hold on
+            BINS=0.2:0.02:0.8;
+            H=hist(condition(1).unit(u).RPEAKS_intervals,BINS);
+            plot(BINS,H,'linewidth',2,'color','b');
+            for p=1:numel(condition(1).unit(u).permuations)
+                H(p,:)=hist(condition(1).unit(u).permuations(p).RPEAKS_intervals,BINS);
+            end
+            lineProps={'color','k','linewidth',1,'linestyle',':'};
+            shadedErrorBar(BINS,mean(H,1),std(H,1),lineProps,1);
+        end
+        
+        if numel(condition(2).unit)>=u
+            subplot(2,1,2);
+            hold on
+            BINS=0.2:0.02:0.8;
+            H=hist(condition(2).unit(u).RPEAKS_intervals,BINS);
+            plot(BINS,H,'linewidth',2,'color','r');
+            for p=1:numel(condition(2).unit(u).permuations)
+                H(p,:)=hist(condition(2).unit(u).permuations(p).RPEAKS_intervals,BINS);
+            end
+            lineProps={'color','k','linewidth',1,'linestyle',':'};
+            shadedErrorBar(BINS,mean(H,1),std(H,1),lineProps,1);
+        end
+        filename= ['Rpeak_intervals_' unit_ID, '__' target];
+        print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
+        close(gcf);
+        
+
     end % pdf by run
+    
+     condition(1).unit(u).permuations=struct();
+     condition(2).unit(u).permuations=struct(); 
+    
 end 
 %% save output
 save([basepath_to_save, filesep, session_info.session],'Output')

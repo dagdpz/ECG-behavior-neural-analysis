@@ -14,6 +14,9 @@ keys.kernel_type='gaussian';
 keys.gaussian_kernel=0.02;
 
 basepath_to_save=[session_info(1).SPK_fldr filesep 'Population'];
+if ~exist(basepath_to_save,'dir')
+    mkdir(basepath_to_save);
+end
 
 TaskTyp = {'Rest', 'Task'};
 
