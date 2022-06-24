@@ -201,6 +201,11 @@ for i_BrArea = 1: length(fieldnames(Out))
     end
 end
 
+save([basepath_to_save,filesep , 'Table_excludedUnits' ],'Tab_ExcludedUnits');
+filename = [basepath_to_save,filesep , 'Table_excludedUnits.xlsx' ];  
+writetable(Tab_ExcludedUnits,filename,'Sheet',1,  'Range' ,'A1' )
+disp(['SAVED   ', basepath_to_save,filesep , 'Table_excludedUnits' ])
+
 
 %%  Calculations
 for i_BrArea = 1: length(fieldnames(Out))
@@ -210,8 +215,9 @@ for i_BrArea = 1: length(fieldnames(Out))
         idx_sig =  ~isnan(out.sig_FR_diff);
         
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP                     =   out.SD - out.SDP;
-        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized          =   ((out.SD - out.SDP) ./ out.SDP *100);
         
+        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized          =   ((out.SD - out.SDP) ./ out.SDP *100);
+        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_perECGTriggeredAverage          = nanmean(out.SD,2); 
         % mean(SD - SDP)
         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDmean          =   nanmean(out.SD - out.SDP);
         % standard error of the SDmean
@@ -261,23 +267,6 @@ end
 
 
 
-    %% IDentify problems 
-    % IDENTIFY specific units
- Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
- Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).unit_ID(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
- Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
- Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR(Out.(Ana_TargetBrainArea{2}).(TaskTyp{1}).FR_ModIndex_AllUnits_PcS > 100)
-
-  %   'Bac_20220224_34' - problem
- Out.(Ana_TargetBrainArea{3}).(TaskTyp{2}).unit_ID(Out.(Ana_TargetBrainArea{3}).(TaskTyp{2}).sig_n_bins > 20)
-%     'Bac_20210803_13' -problem
-%     'Bac_20210903_08' ok
- Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).unit_ID(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40)
-%     'Bac_20220222_29'  ok
-%     'Bac_20220222_30'  ok
-%     'Bac_20220310_41' -problem - 
- Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).FR(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40)
- mean(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).SDP(Out.(Ana_TargetBrainArea{4}).(TaskTyp{2}).sig_n_bins > 40,:))
 
  %% How much does the surrogate and mean firing divergate
  hf = figure('Name',sprintf('Surrogate_MeanFr'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
@@ -291,26 +280,22 @@ end
             Color  = [1 0 0]; 
         end
          ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
-         % all not significant & NaN units
-         % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
          scatter(out.FR , nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',Color)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
-         %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
-         
-         %colorbar();
-         %colormap jet
+         set(gca,'ylim',[0,max(out.FR)]);
+         set(gca,'xlim',[0,max(out.FR)]);
+         x = linspace(0,max(out.FR)); y = linspace(0,max(out.FR)); hold on; 
+            plot(x,y, 'k');
          ylabel('mean surrogate','fontsize',14 );
          xlabel('average Firing rate','fontsize',14 );        axis square; box on;
          title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
          
          
           ha1 = subplot(2,length(fieldnames(Out)), (i_BrArea + length(fieldnames(Out))));        hold on;
-         % all not significant & NaN units
-         % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
          scatter(nanmean(out.SD,2) , nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',Color)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
-         %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
-         
-         %colorbar();
-         %colormap jet
+         set(gca,'ylim',[0,max(nanmean(out.SD,2))]);
+         set(gca,'xlim',[0,max(nanmean(out.SD,2))]);
+         x = linspace(0,max(nanmean(out.SD,2))); y = linspace(0,max(nanmean(out.SD,2))); hold on; 
+            plot(x,y, 'k');
          ylabel('mean surrogate','fontsize',14 );
          xlabel('average Firing rate of ECG-triggeerd Average','fontsize',14 );        axis square; box on;
          title([  Ana_TargetBrainArea{i_BrArea}]);
@@ -1112,9 +1097,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         %% Modulation Index
         if i_tsk == 1
         ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);        hold on;
+        
+        
         % all not significant & NaN units
        % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
-        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR(idx_sig)/max(out.FR) , 'filled')
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR_perECGTriggeredAverage(idx_sig)/max(out.FR_perECGTriggeredAverage(idx_sig)) , 'filled')
         %scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')   
 
         colorbar(); 
@@ -1131,7 +1118,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + 4));        hold on;
         % all not significant & NaN units
        % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
-        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR(idx_sig)/max(out.FR) , 'filled')
+        scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR_perECGTriggeredAverage(idx_sig)/max(out.FR_perECGTriggeredAverage(idx_sig)) , 'filled')
        % scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')   
 
         colorbar
