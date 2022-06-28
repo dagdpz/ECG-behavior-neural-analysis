@@ -44,6 +44,19 @@ for v = 1:length(versions)
     
     % loop through each session to process
     SPK_PSTH = [];
+    
+%     for i = 1:length(sessions_info)
+%         
+%     
+%         % name of session = [Monkey name '_' Recording date]
+%         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
+%         colormap gray;
+%         cmp = colormap; 
+%         
+%                %VPL 7
+%         ecg_histogram(sessions_info(i),ecg_bna_cfg, cmp(i*3,:));
+% 
+%    end
     %% ECG spike histogram per session..
     for i = 1:length(sessions_info)
         
