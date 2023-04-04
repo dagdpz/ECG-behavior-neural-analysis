@@ -1,7 +1,7 @@
 function ecg_bna_avg_spike_histogram(SPK_PSTH,session_info)
 % Here comes some sort of across population plot i assume?
 
-savePlot = 0;
+savePlot = 1;
 saveTable= 0;
 OnlyUnits_withRestANDTask = 0;
 Graph_SelectionCriterion = 0; 
@@ -214,8 +214,8 @@ for i_BrArea = 1: length(fieldnames(Out))
             ValidUnits_AfterExclusion  = repmat(ValidUnits_AfterExclusion, length(InVal_idx), 1);
 
              
-            ExcludedUnits = table(NanUnits_BeforeExclusion,NanUnits_AfterExclusion, ValidUnits_BeforeExclusion, ValidUnits_AfterExclusion, Criterium_SpkPerSec,Nr_InVal_idx1, FR, Criterium_NrCardiacCycles, Nr_InVal_idx2, TaskType,BrainArea, InVal_unit_ID,InVal_idx,InVal_Nr  );
-            Tab_ExcludedUnits = [Tab_ExcludedUnits;ExcludedUnits ];
+%             ExcludedUnits = table(NanUnits_BeforeExclusion,NanUnits_AfterExclusion, ValidUnits_BeforeExclusion, ValidUnits_AfterExclusion, Criterium_SpkPerSec,Nr_InVal_idx1, FR, Criterium_NrCardiacCycles, Nr_InVal_idx2, TaskType,BrainArea, InVal_unit_ID,InVal_idx,InVal_Nr  );
+%             Tab_ExcludedUnits = [Tab_ExcludedUnits;ExcludedUnits ];
           
         end
     end
@@ -224,7 +224,7 @@ end
 if saveTable == 1
 save([basepath_to_save,filesep , 'Table_excludedUnits' ],'Tab_ExcludedUnits');
 filename = [basepath_to_save,filesep , 'Table_excludedUnits2.xlsx' ];  
-writetable(Tab_ExcludedUnits,filename,'Sheet',1,  'Range' ,'A1' )
+% writetable(Tab_ExcludedUnits,filename,'Sheet',1,  'Range' ,'A1' )
 disp(['SAVED   ', basepath_to_save,filesep , 'Table_excludedUnits' ])
 end
 
@@ -414,7 +414,8 @@ end
  
  
 %% Example for 
-i_BrArea = 3; 
+if false
+i_BrArea = 3; %%% 3
     for i_tsk = 1: numel(TaskTyp)   
   hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 
@@ -448,10 +449,10 @@ i_BrArea = 3;
         [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_AllUnits_PcS, 'rows','complete') ;
           if i_tsk == 1 ; 
         plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
-        text(8,25, ['coef, p ', num2str([round(coef,2), round(pval,4)])], 'Color', 'b')
+        text(8,25, ['coef, p ', num2str([roundto(coef,2), roundto(pval,4)])], 'Color', 'b')
           else
         plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
-        text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,4)])], 'Color', 'r')
+        text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,4)])], 'Color', 'r')
           end
 
         ha1 = subplot(2,4,[2]);        hold on;
@@ -519,6 +520,7 @@ i_BrArea = 3;
         close all;
     end
     end
+end
 
 if Graph_SelectionCriterion
     %%  normalizing the Firing rate calcuations
@@ -729,13 +731,15 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             text(-400,-10, ['Rest: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ],'Color','b');
             for i = find(idx_sig)
-                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1 0.2],'LineWidth', 1); hold on;
+                %line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1 0.2],'LineWidth', 1); hold on;
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[0 0 1],'LineWidth', 1); hold on;
             end
         else
             text(-400,-12, ['Task: units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN))  ],'Color','r')
             
             for i = find(idx_sig)
-                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0 0.2] ,'LineWidth', 1);hold on;
+                %line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0 0.2] ,'LineWidth', 1);hold on;
+                line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0] ,'LineWidth', 1);hold on;
             end
         end
         SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :))/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :)))) ;
@@ -828,13 +832,13 @@ for i_BrArea = 1: length(fieldnames(Out))
            scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0.4 0.3 0.99])
 
             plot(out.quantSNR, y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2),roundto(pval,3)])], 'Color', 'b') % LS commented
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',[0 0.4 1])
 
             plot(out.quantSNR, y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2),roundto(pval,3)])], 'Color', 'r')  % LS commented
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
         
@@ -843,7 +847,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         Dat = [];
         ModIndex = out.FR_Modulation(idx_sig);
         SNR =  out.quantSNR(idx_sig);
-        Dat = table(ModIndex, SNR);
+        %Dat = table(ModIndex, SNR);
         
         ha1 = subplot(2,4,[7]);        hold on;
         
@@ -859,12 +863,12 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2),roundto(pval,3)])], 'Color', 'b') % LS commented
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
-            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2),roundto(pval,3)])], 'Color', 'r') % LS commented
+            % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-') 
         end
         
         
@@ -893,11 +897,11 @@ for i_BrArea = 1: length(fieldnames(Out))
 %         if i_tsk == 1
 %             
 %             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'b');
-%             text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+%             text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
 %             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
 %         else
 %             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'r');
-%             text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+%             text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
 %             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
 %         end
         
@@ -958,20 +962,20 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
         
         Dat = [];
         ModIndex = out.FR_Modulation(idx_sig);
         SNR =  out.quantSNR(idx_sig);
-        Dat = table(ModIndex, SNR);
+        %Dat = table(ModIndex, SNR);
         
         ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
         
@@ -991,11 +995,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(SNR, y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1048,13 +1052,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.quantSNR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.quantSNR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,8, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
 
@@ -1080,11 +1084,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.quantSNR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',6)
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b','fontsize',6)
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.quantSNR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r' ,'fontsize',6)
+            text(8,8, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r' ,'fontsize',6)
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1137,13 +1141,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',14)
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b','fontsize',14)
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.FR_ModIndex_AllUnits_PcS(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.FR_ModIndex_AllUnits_PcS(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r','fontsize',14)
+            text(8,8, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r','fontsize',14)
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
 
@@ -1168,11 +1172,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.FR_ModIndex_AllUnits_PcS(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b','fontsize',14)
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b','fontsize',14)
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.FR_ModIndex_AllUnits_PcS(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,8, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r' ,'fontsize',14)
+            text(8,8, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r' ,'fontsize',14)
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1217,7 +1221,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         set(gca,'ylim',[0, 15]);
         end
         if i_tsk == 2
-        ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + 4));        hold on;
+        ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + length(fieldnames(Out))));        hold on;
         % all not significant & NaN units
        % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
         scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig),30, out.FR_perECGTriggeredAverage(idx_sig)/max(out.FR_perECGTriggeredAverage(idx_sig)) , 'filled')
@@ -1277,7 +1281,7 @@ for i_BrArea = 1: length(fieldnames(Out))
         set(gca,'xlim',[0, 25]);
         end
         if i_tsk == 2
-        ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + 4));        hold on;
+        ha1 = subplot(2,length(fieldnames(Out)),(i_BrArea + length(fieldnames(Out))));        hold on;
         % all not significant & NaN units
        % scatter(out.FR_ModIndex_AllUnits_PcS(idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)                
         scatter(out.quantSNR(idx_sig),out.FR_ModIndex_AllUnits_PcS(idx_sig) , 30, out.FR_perECGTriggeredAverage(idx_sig)/max(out.FR_perECGTriggeredAverage(idx_sig)) , 'filled')
@@ -1344,13 +1348,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
    ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
@@ -1371,11 +1375,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1426,13 +1430,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter( out.quantSNR(~idx_sig),out.FR_perECGTriggeredAverage(~idx_sig) , 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.FR_perECGTriggeredAverage(~isnan(out.FR_perECGTriggeredAverage)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,15, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,15, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter( out.quantSNR(~idx_sig),out.FR_perECGTriggeredAverage(~idx_sig) , 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.FR_perECGTriggeredAverage(~isnan(out.FR_perECGTriggeredAverage)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,20, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,20, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
    ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
@@ -1454,11 +1458,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.FR_perECGTriggeredAverage(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,15, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,15, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.FR_perECGTriggeredAverage(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,20, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,20, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1514,13 +1518,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.FR(~idx_sig) , out.FR_ModIndex_AllUnits_SubtrSDP(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.FR(~isnan(out.FR_ModIndex_AllUnits_SubtrSDP)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,12, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,12, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
         
@@ -1542,11 +1546,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,10, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,10, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.FR(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,12, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,12, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1600,13 +1604,13 @@ for i_BrArea = 1: length(fieldnames(Out))
             scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(11,:))   
 
             plot(out.sig_n_bins(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             scatter(out.sig_n_bins(~idx_sig) , out.FR_ModIndex_AllUnits_PcS(~idx_sig), 'filled', 'MarkerFaceColor',colors(16,:))   
 
             plot(out.sig_n_bins(~isnan(out.FR_ModIndex_AllUnits_PcS)), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
    ha1 = subplot(2,length(fieldnames(Out)),i_BrArea +length(fieldnames(Out)));        hold on;
@@ -1627,11 +1631,11 @@ for i_BrArea = 1: length(fieldnames(Out))
         if i_tsk == 1
             
             plot(out.sig_n_bins(idx_sig), y_fit,'LineWidth', 2, 'Color', 'b');
-            text(8,35, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'b')
+            text(8,35, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'b')
             % plot(SNR,y_fit+2*delta,'r--',SNR,y_fit-2*delta,'r--')
         else
             plot(out.sig_n_bins(idx_sig), y_fit,'LineWidth', 2, 'Color', 'r');
-            text(8,30, ['coef, p ', num2str([round(coef,2), round(pval,3)])], 'Color', 'r')
+            text(8,30, ['coef, p ', num2str([roundto(coef,2), roundto(pval,3)])], 'Color', 'r')
             % plot(SNR,y_fit+2*delta,'b-',SNR,y_fit-2*delta,'b-')
         end
     end
@@ -1916,8 +1920,8 @@ switch i_Time
                
                    %% Calculate the Modulatioin index 
       
-                Table_Units = table(Ana_TargetBrainArea(i_BrArea),TaskTyp(i_tsk),{'sigINCREASE'}, ThreeTiming(i_Time),  sum(idx_SigInc & idx_sig & idx_Time), round(MI_groups,2) ); 
-                Table_NrUnits = [Table_NrUnits; Table_Units];             
+%                 Table_Units = table(Ana_TargetBrainArea(i_BrArea),TaskTyp(i_tsk),{'sigINCREASE'}, ThreeTiming(i_Time),  sum(idx_SigInc & idx_sig & idx_Time), roundto(MI_groups,2) ); 
+%                 Table_NrUnits = [Table_NrUnits; Table_Units];             
 
                    
                    %%                
@@ -1949,8 +1953,8 @@ switch i_Time
                 
                 
 
-                Table_Units = table(Ana_TargetBrainArea(i_BrArea),TaskTyp(i_tsk),{'sigDECREASE'}, ThreeTiming(i_Time),  sum(idx_SigDec & idx_sig & idx_Time), round(MI_groups,2)  ); 
-                Table_NrUnits = [Table_NrUnits; Table_Units]; 
+%                 Table_Units = table(Ana_TargetBrainArea(i_BrArea),TaskTyp(i_tsk),{'sigDECREASE'}, ThreeTiming(i_Time),  sum(idx_SigDec & idx_sig & idx_Time), roundto(MI_groups,2)  ); 
+%                 Table_NrUnits = [Table_NrUnits; Table_Units]; 
                 
                 set(gca,'ylim',[-15, 15]);
                 title([(TaskTyp{i_tsk}), ' sig.DECREASE ', ThreeTiming(i_Time)],'interpreter','none');
@@ -2141,3 +2145,9 @@ switch i_Time
     %% Graph for units having rest & task
     
  end
+end
+
+    function rounded=roundto(unrounded,n)
+        factor= 10^n;
+        rounded=round(unrounded*factor)/factor;
+    end

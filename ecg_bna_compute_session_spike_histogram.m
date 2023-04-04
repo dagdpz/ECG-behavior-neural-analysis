@@ -225,7 +225,10 @@ for u=1:numel(population)
         text(BINS(10),y_lims(1)+diff(y_lims)*8/10, ['Rest: trials = ' ,num2str(Output.Rest.NrTrials(u,:)), '  events = ' ,num2str(Output.Rest.NrEvents(u,:)) ],'Color','blue')
                 
         filename= ['PSTH_' unit_ID, '__' target]; 
-        print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
+        %print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
+        ylabel('Firing rate');
+        xlabel('time to Rpeak');
+        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
         close(gcf);
         
         figure; %% interval distribution
@@ -241,6 +244,9 @@ for u=1:numel(population)
             end
             lineProps={'color','k','linewidth',1,'linestyle',':'};
             shadedErrorBar(BINS,mean(H,1),std(H,1),lineProps,1);
+        ylabel('N');
+        xlabel('Rpeak interval');
+        title('grey is mean and std of surrogates');
         end
         
         if numel(condition(2).unit)>=u
@@ -254,9 +260,13 @@ for u=1:numel(population)
             end
             lineProps={'color','k','linewidth',1,'linestyle',':'};
             shadedErrorBar(BINS,mean(H,1),std(H,1),lineProps,1);
+        ylabel('N');
+        xlabel('Rpeakinterval');
+        title('grey is mean and std of surrogates');
         end
         filename= ['Rpeak_intervals_' unit_ID, '__' target];
-        print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
+        %print(gcf,[basepath_to_save, filesep, filename '.pdf'],'-dpdf','-r0');
+        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
         close(gcf);
         
 

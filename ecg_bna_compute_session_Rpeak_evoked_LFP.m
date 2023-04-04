@@ -188,7 +188,7 @@ for i = 1:nsites
                         sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).state_name = state_evoked.state_name;
                     end
                     
-                end
+               end
                 
             end
             
@@ -196,7 +196,7 @@ for i = 1:nsites
         
         % plots
         % Evoked LFP
-        if condition_valid && ~isempty([sites_evoked(i).condition(cn).hs_tuned_evoked.lfp])
+        if condition_valid && ~isempty(fieldnames(sites_evoked(i).condition(cn).hs_tuned_evoked)) % &&~isempty([sites_evoked(i).condition(cn).hs_tuned_evoked.lfp])
             plottitle = ['Site ID: ', sites_evoked(i).site_ID ', Target = ' sites_evoked(i).target '(ref_' ecg_bna_cfg.ref_hemisphere '), '  site_conditions(cn).label '), '];
             if site_conditions(cn).choice == 0
                 plottitle = [plottitle 'Instructed trials'];

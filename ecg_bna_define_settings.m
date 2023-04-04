@@ -1,4 +1,4 @@
-function ecg_bna_cfg = ecg_bna_define_settings(project,version)
+function ecg_bna_cfg = ecg_bna_define_settings(github_folder,project,version)
 %ecg_bna_define_settings - Function to define ECG related bahvior and
 %neural analysis settings  
 %
@@ -29,23 +29,17 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
     % this has to be done by user since his path will be different
     %addpath('C:\Users\snair\Documents\GitHub\LFP_timefrequency_analysis');
     
-    % add external functions to path
-    addpath(genpath('./external'));
+%     % add external functions to path
+%     addpath(genpath('./external'));
     
     % define state IDs
     lfp_tfa_global_define_states;    
 
-    % load the specified settings file
-    % previously we had: keys=ph_general_settings(project,keys); where the
-    user=getUserName;
-    if strcmp(user, 'kkaduk')
-    run(['C:\Users\' user '\Desktop\Kristin\GitHub\Settings\' project '\ECG_bna\' version '.m']); 
-    else     
-    run(['C:\Users\' user '\GitHub\Settings\' project '\ECG_bna\' version '.m']);
-    end
-    
+    % load the specified settings file    
+    run([github_folder filesep 'Settings' filesep project filesep 'ECG_bna' filesep version '.m']);
+
     % read info excel file (Sorted neurons file)
-    ecg_bna_cfg.sites_info = lfp_tfa_read_info_file(ecg_bna_cfg);
+    %ecg_bna_cfg.sites_info = lfp_tfa_read_info_file(ecg_bna_cfg);
      
     % create a root folder to save results of the analysis
     % root_results_folder = [ecg_tfa_cfg.results_folder,
@@ -83,12 +77,9 @@ function ecg_bna_cfg = ecg_bna_define_settings(project,version)
         ecg_bna_cfg.session_info(i).session             = [ecg_bna_cfg.session_info(i).Monkey, '_', ecg_bna_cfg.session_info(i).Date];
         ecg_bna_cfg.session_info(i).proc_ecg_fldr       = ecg_bna_cfg.proc_ecg_folder;
         ecg_bna_cfg.session_info(i).analyse_ecg_fldr    = ecg_bna_cfg.analyse_ecg_folder;
-        %         if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || ...
-        %                 any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
         ecg_bna_cfg.session_info(i).analyse_lfp_fldr    =  ecg_bna_cfg.analyse_lfp_folder;
         ecg_bna_cfg.session_info(i).proc_lfp_fldr       =  ecg_bna_cfg.proc_lfp_folder;
         ecg_bna_cfg.session_info(i).SPK_fldr            =  ecg_bna_cfg.SPK_root_results_fldr;
-        %        end
     end
     % save settings struct
     save(fullfile(ecg_bna_cfg.ECG_root_results_fldr, ['ecg_bna_settings_' num2str(ecg_bna_cfg.version) '.mat']), 'ecg_bna_cfg');

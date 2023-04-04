@@ -69,6 +69,11 @@ if ~isempty(ecg_triggered_evoked.lfp)
     arr_state_lfp = vertcat(ecg_triggered_evoked.lfp{:});
     ecg_triggered_evoked.mean = nanmean(arr_state_lfp, 1);
     ecg_triggered_evoked.std = nanstd(arr_state_lfp, 0, 1);
+else
+    
+    ecg_triggered_evoked.lfp_time = [];
+    ecg_triggered_evoked.mean = [];
+    ecg_triggered_evoked.std = [];
 end
 end
 

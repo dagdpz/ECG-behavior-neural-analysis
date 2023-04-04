@@ -64,13 +64,11 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
     for i = 1:length(consec_start_idx)
         consec_chunk_start_idx = ECG_idx_valid_consec(consec_start_idx(i)) - 1;
         if i < length(consec_start_idx)
-            consec_chunk_end_idx =  ...
-                ECG_idx_valid_consec(consec_start_idx(i+1)-1);
+            consec_chunk_end_idx = ECG_idx_valid_consec(consec_start_idx(i+1)-1);
         else
             consec_chunk_end_idx = ECG_idx_valid_consec(end);
         end
-        block_ecg_validsamples(ECG_R2Rsamples(consec_chunk_start_idx)...
-            :ECG_R2Rsamples(consec_chunk_end_idx)) = true;        
+        block_ecg_validsamples(ECG_R2Rsamples(consec_chunk_start_idx):ECG_R2Rsamples(consec_chunk_end_idx)) = true;        
     end
     
     ECG_peaksamples = round(ECG_timestamps/ts) + 1;
@@ -174,14 +172,10 @@ function [ session_ecg ] = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpe
                 'VerticalAlignment', 'middle');
             delete(ax_text);
             
-%             uiwait(gcf);
-            
             if t == 1
                 disp('Press any key to continue! To abort, press Ctrl+C');
             end
             pause;
         end
     end
-
-
 end    

@@ -91,10 +91,10 @@ for t = 1:length(ecg_bna_cfg.compare.targets)
                         if all(isnan(Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean))
                             continue;
                         end
-                        sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions = sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions + 1;
-                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).time = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).time;
-                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
-                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial = [sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean];
+                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).nsessions  = sessions_avg(t).condition(cn).hs_tuned_evoked(st, hs).nsessions + 1;
+                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).time       = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).time;
+                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).hs_label   = Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).hs_label;
+                        sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial      = [sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).mean];
                         
                         %% subtract or plot extra ?
                         sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled = [sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled, Rpeak_evoked_LFP.session(i).session_avg(k).condition(cn).hs_tuned_evoked(st, hs).shuffled_mean];
@@ -114,8 +114,8 @@ for t = 1:length(ecg_bna_cfg.compare.targets)
                 sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).mean = mean(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial, 1);
                 
                 %% remove if subtraction
-                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).shuffled_std  = std(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled, 0, 1);              
-                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).shuffled_mean = mean(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled, 1);
+                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).shuffled_std  = std(vertcat(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled{:}), 0, 1);              
+                sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).shuffled_mean = mean(vertcat(sessions_avg(t).condition(cn).hs_tuned_evoked(st,hs).trial_shuffled{:}), 1);
                 
             end
         end
