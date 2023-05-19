@@ -42,10 +42,6 @@ end
 
 if isfield(session_info, 'Input_ECG')
     block_ECG = load(session_info.Input_ECG);
-    %         if exist('out', 'var')
-    %             block_ECG = out;
-    %             clear out;
-    %         end
 end
 
 % prepare results folder
@@ -54,33 +50,14 @@ if ~exist(results_fldr, 'dir')
     mkdir(results_fldr);
 end
 
-
-
-% for future use
-%     usable_sites_table = table;
-%     if ~isempty(ecg_bna_cfg.sites_info)
-%        usable_sites_table = ecg_bna_cfg.sites_info;
-%     end
 comp_trial = 0; % iterator for completed trials
 
 % save data inside struct
 % first loop through each site
 for i = 1:(length(combined_sites{1}))
     
-    % get info about site
-    % for future use
-    % find if this site's entry is available in usable_sites_table
-    %         if isempty(usable_sites_table(strcmp(usable_sites_table.Site_ID, ...
-    %                 sites(i).site_ID),:))
-    %             continue;
-    %         end
     fprintf('=============================================================\n');
     fprintf('Processing site, %s\n', sites(i).site_ID);
-    % for future use
-    % get 'Set' entry from usable_sites_table
-    %         site_lfp.dataset = usable_sites_table(...
-    %             strcmp(usable_sites_table.Site_ID, sites(i).site_ID), :).Set(1);
-
 % struct to save data for a site - SCARY this was outside the loop, causing
 % trials to accumulate and be taken over for next site (in case of less
 % trials for next site!)
@@ -114,12 +91,6 @@ site_lfp = struct();
             dataset = sites(i).trial(t).dataset;
             completed = sites(i).trial(t).completed;
             success = sites(i).trial(t).success;
-            % for future use
-            % check if the block is usable
-            %                 if isempty(usable_sites_table(strcmp(usable_sites_table.Site_ID, ...
-            %                         sites(i).site_ID) && usable_sites_table.Block == block))
-            %                     continue;
-            %                 end
             choice_trial = sites(i).trial(t).choice;
             reach_hand = sites(i).trial(t).reach_hand; % 1 = left, 2 = right
             

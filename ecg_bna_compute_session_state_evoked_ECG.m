@@ -1,5 +1,5 @@
 function [ session_evoked_ecg ] = ...
-    ecg_bna_compute_session_evoked_ECG( session_ecg, session_info, analyse_states, ecg_bna_cfg )
+    ecg_bna_compute_session_state_evoked_ECG( session_ecg, session_info, analyse_states, ecg_bna_cfg )
 
 % ecg_bna_compute_session_evoked_ECG  - compute average evoked ECG for
 % different conditions for each session. A condition is a combination of
@@ -58,7 +58,7 @@ function [ session_evoked_ecg ] = ...
 warning ('off', 'MATLAB:hg:willberemoved');
 
 % make a folder to save figures
-results_folder_evoked = fullfile(session_info.analyse_ecg_fldr, 'Rpeak_evoked_ECG');
+results_folder_evoked = fullfile(session_info.analyse_ecg_fldr, 'State_evoked_ECG');
 if ~exist(results_folder_evoked, 'dir')
     mkdir(results_folder_evoked);
 end
@@ -89,21 +89,24 @@ sites_evoked(i).session = session_ecg(i).session;
 sites_evoked(i).use_for_avg = 1;
 
 
-%% shuffle ECG peaks across all trials!
-if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
-    nshuffles = 100;
-    if isfield(ecg_bna_cfg, 'n_shuffles')
-        nshuffles = ecg_bna_cfg.n_shuffles;
-    end
-    shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak(session_ecg(i).trials, nshuffles);
-end
+%% shuffle STATE ONSETS across all trials!
+% if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
+%     nshuffles = 100;
+%     if isfield(ecg_bna_cfg, 'n_shuffles')
+%         nshuffles = ecg_bna_cfg.n_shuffles;
+%     end
+%     shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak(session_ecg(i).trials, nshuffles);
+% end
 
 % loop through conditions
 for cn = 1:length(site_conditions)
     
     % hand-space tuning of LFP
     hs_labels = site_conditions(cn).hs_labels;
-        
+    
+    % num sites
+    nsites = length(session_ecg);
+    
     % store details of analysed condition
     sites_evoked(i).condition(cn).label = site_conditions(cn).label;
     sites_evoked(i).condition(cn).cfg_condition = site_conditions(cn);
@@ -139,33 +142,33 @@ for cn = 1:length(site_conditions)
             sites_evoked(i).use_for_avg = 0;
         end
         
-        if any(cond_trials)
+       if any(cond_trials)
             cond_trials_ecg = session_ecg(i).trials(cond_trials);
         else
             continue;
-        end
+       end
         
         
         % loop through time windows around the states to analyse
         for st = 1:size(analyse_states, 1)
-%            if strcmp(analyse_states{st, 1}, 'ecg')
-                state_evoked = ecg_bna_get_Rpeak_based_STA(cond_trials_ecg, session_ecg.session, analyse_states(st, :), 'ecg');
+                %cond_trials_ecg = ecg_bna_get_state_onset_indexes(cond_trials_ecg, analyse_states{st, 1});
+                state_evoked = ecg_bna_get_state_evoked_ECG(cond_trials_ecg, session_ecg.session, analyse_states(st, :), 'ecg',analyse_states{st, 1});
                 
-                %shuffled_Rpeak_evoked.trial =zeros(size(state_evoked.mean));
-                shuffled_Rpeak_evoked.mean=zeros(size(state_evoked.mean));
-                shuffled_Rpeak_evoked.std =zeros(size(state_evoked.std));
-                if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
-                    for shuff=1:nshuffles
-                        cond_trials_shuffled=shuffled_Rpeaks(shuff,cond_trials);
-                        [cond_trials_ecg.ECG_spikes]=cond_trials_shuffled.ECG_spikes;
-                        shuffled_evoked(shuff) = ecg_bna_get_Rpeak_based_STA(cond_trials_ecg, session_ecg.session, analyse_states(st, :), 'ecg');
-                    end
-                    
-                    %shuffled_Rpeak_evoked.lfp = {shuffled_evoked.mean}; %% this aint right...
-                    shuffled_Rpeak_evoked.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
-                    shuffled_Rpeak_evoked.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
-                end
-                
+%                 %shuffled_Rpeak_evoked.trial =zeros(size(state_evoked.mean));
+%                 shuffled_Rpeak_evoked.mean=zeros(size(state_evoked.mean));
+%                 shuffled_Rpeak_evoked.std =zeros(size(state_evoked.std));
+%                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
+%                     for shuff=1:nshuffles
+%                         cond_trials_shuffled=shuffled_Rpeaks(shuff,cond_trials);
+%                         [cond_trials_ecg.ECG_spikes]=cond_trials_shuffled.ECG_spikes;
+%                         shuffled_evoked(shuff) = ecg_bna_get_Rpeak_based_STA(cond_trials_ecg, session_ecg.session, analyse_states(st, :), 'ecg');
+%                     end
+%                     
+%                     %shuffled_Rpeak_evoked.lfp = {shuffled_evoked.mean}; %% this aint right...
+%                     shuffled_Rpeak_evoked.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
+%                     shuffled_Rpeak_evoked.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
+%                 end
+            
             if ~isempty(state_evoked.trial)
                 
                 % save evoked ECG
@@ -174,9 +177,9 @@ for cn = 1:length(site_conditions)
                 sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).std = state_evoked.std;
                 sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).time = state_evoked.time;
                                     
-                %sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_trial = shuffled_Rpeak_evoked.trial;
-                sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_mean  = shuffled_Rpeak_evoked.mean;
-                sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_std   = shuffled_Rpeak_evoked.std;
+                %%%sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_trial = shuffled_Rpeak_evoked.trial;
+%                 sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_mean  = shuffled_Rpeak_evoked.mean;
+%                 sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).shuffled_std   = shuffled_Rpeak_evoked.std;
                 
                 sites_evoked(i).condition(cn).hs_tuned_evoked(st, hs).trial_idx = find(cond_trials);
                 if strfind(state_evoked.dimord, 'npeaks')
@@ -204,8 +207,8 @@ for cn = 1:length(site_conditions)
         elseif site_conditions(cn).choice == 1
             plottitle = [plottitle 'Choice trials'];
         end
-        result_file = fullfile(site_results_folder, ['ECG_Evoked_' sites_evoked(i).session '_' site_conditions(cn).label]);        
-        ecg_bna_plot_evoked_lfp (sites_evoked(i).condition(cn).hs_tuned_evoked, ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
+        result_file = fullfile(site_results_folder, ['State_evoked_ECG_' sites_evoked(i).session '_' site_conditions(cn).label]);        
+        ecg_bna_plot_evoked_ECG (sites_evoked(i).condition(cn).hs_tuned_evoked, ecg_bna_cfg, plottitle, result_file, 'ylabel', 'ECG amplitude');
     end    
 end
 
@@ -239,7 +242,5 @@ site_evoked_ecg = sites_evoked(i);
 save(fullfile(site_results_folder, ['ECG_evoked_' sites_evoked(i).session '.mat']), 'site_evoked_ecg');
 % save to a mother struct
 session_evoked_ecg = site_evoked_ecg;
-%end
-
 end
 

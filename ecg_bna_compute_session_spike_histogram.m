@@ -22,6 +22,10 @@ load(session_info.Input_ECG);
 load(session_info.Input_spikes);
 Output = [];
     
+%% compute surrogates first!(?)
+shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak_fast(session_proc_lfp(i).trials, nshuffles);
+
+
 for u=1:numel(population)
     pop=population(u);
     unit_ID=population(u).unit_ID;

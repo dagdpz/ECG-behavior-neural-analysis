@@ -1,4 +1,4 @@
-function session_ecg = ecg_bna_read_preproc_ECG( session_info, plottrials )
+function session_ecg = ecg_bna_read_preproc_ECG_simple( session_info, plottrials )
 
 % ecg_bna_read_preproc_ECG - function to read in the processed ECG and
 % compute the time frequency spectrogram for each trial
@@ -48,6 +48,32 @@ else
     for s = 1:length(combined_Blocks)
         % Read input ECG file
         load(session_info.Input_ECG_preproc{s}, 'by_block');
+
+        % quick but hopefully soon no more necessary fix of same block being
+        % split (should be fixed in spike analysis, reason is we have split
+        % blocks in combined monkeypsych and TDT files)
+        for b=1:numel(by_block)
+        all_blocks(b)=by_block(b).trial(1).block;
+        end
+        multiple_blocks=fliplr(find([0 diff(all_blocks)==0])); % flip cause we wanna go backwards in the loop ahead
+        for b=multiple_blocks
+            for t=1:numel(by_block(b).trial)
+                by_block(b).trial(t).n=by_block(b).trial(t).n+by_block(b-1).trial(end).n;
+                by_block(b).trial(t).run_onset_time=by_block(b).trial(t).n+by_block(b-1).trial(end).run_onset_time;
+                if isfield(by_block(b).trial(t),'TDT_ECG1_t0_from_rec_start')
+                    by_block(b).trial(t).TDT_ECG1_t0_from_rec_start=by_block(b).trial(t).n+by_block(b-1).trial(end).TDT_ECG1_t0_from_rec_start;
+                end
+                if isfield(by_block(b).trial(t),'TDT_ECG4_t0_from_rec_start')
+                    by_block(b).trial(t).TDT_ECG4_t0_from_rec_start=by_block(b).trial(t).n+by_block(b-1).trial(end).TDT_ECG4_t0_from_rec_start;
+                end
+                if isfield(by_block(b).trial(t),'TDT_LFPx_t0_from_rec_start')
+                    by_block(b).trial(t).TDT_LFPx_t0_from_rec_start=by_block(b).trial(t).n+by_block(b-1).trial(end).TDT_LFPx_t0_from_rec_start;
+                end
+            end
+            [by_block(b-1).trial]=[by_block(b-1).trial by_block(b).trial];
+        end
+        by_block(multiple_blocks)=[];
+        
         combined_Blocks{s} = by_block;
     end
 end
@@ -58,28 +84,9 @@ if ~exist(results_fldr, 'dir')
     mkdir(results_fldr);
 end
 
-if isfield(session_info, 'Input_ECG')
-    if ~exist(session_info.Input_ECG, 'file')
-        fprintf('No file found \n%s\n', session_info.Input_ECG_raw);
-        return;
-    end
-    load(session_info.Input_ECG);
-    if exist('out', 'var')
-        block_Rpeaks = out;
-        clear out;
-    end
-end
 
-comp_trial = 0; % iterator for completed trials
+T = 0; % iterator for completed trials
 
-% fix block assignment (LS 2022)
-for b=1:numel(block_Rpeaks)
-    if isempty(block_Rpeaks(b).nrblock_combinedFiles)
-        block_nrcombined(b)= NaN;
-    else
-        block_nrcombined(b)= block_Rpeaks(b).nrblock_combinedFiles;
-    end
-end
 
 % save data inside struct
 % first loop through each file
@@ -87,16 +94,8 @@ for i_Files = 1:length(combined_Blocks)
     by_block_ECG = combined_Blocks{i_Files};
     for b = 1:length(by_block_ECG)
         % get info about site
-        % check if ECG peaks exists for this block
-        block_Rpeak = block_Rpeaks(block_nrcombined==by_block_ECG(b).trial(1).block);
-        if isempty(block_Rpeak) || isempty(block_Rpeak.Rpeak_t)
-            continue;
-        end
         
-        % block ECG timestamps
-        block_ecg_timestamps = [];
         trial_ecg_timestamps = [];
-        
         session_ecg.session = session_info.session;
         
         trial = by_block_ECG(b).trial;
@@ -106,7 +105,7 @@ for i_Files = 1:length(combined_Blocks)
         end
         
         fprintf('=============================================================\n');
-        fprintf('Reading ECG for block, %g\n', trial(1).block);
+        fprintf('Reading ECG for block %g\n', trial(1).block);
         fprintf('Number of trials %g\n', length(trial));
                 
         % now loop through each trial for this site
@@ -157,37 +156,37 @@ for i_Files = 1:length(combined_Blocks)
             else
                 trial_ecg_timestamps = timestamps - timestamps(1);
             end
-            %                         block_ecg_timestamps = [block_ecg_timestamps, trial_ecg_timestamps];
             % save retrieved data into struct
-            comp_trial = comp_trial + 1;
-            session_ecg.trials(comp_trial).time_from_rec_start = timestamps+trial(t).TDT_ECG1_t0_from_rec_start; %% LS 20220328 THIS IS FROM REC ONSET
-            session_ecg.trials(comp_trial).completed = completed;
-            session_ecg.trials(comp_trial).type = type;
-            session_ecg.trials(comp_trial).effector = effector;
-            session_ecg.trials(comp_trial).run = run;
-            session_ecg.trials(comp_trial).block = block;
-            session_ecg.trials(comp_trial).dataset = [];
-            session_ecg.trials(comp_trial).choice_trial = choice_trial;
-            session_ecg.trials(comp_trial).success = success;
-            session_ecg.trials(comp_trial).reach_hand = 0;
-            session_ecg.trials(comp_trial).reach_space = 0;
-            session_ecg.trials(comp_trial).fix_pos = fix_pos;
-            session_ecg.trials(comp_trial).eye_pos = tar_pos + sac_off;
-            session_ecg.trials(comp_trial).hndspc_lbl  = [];
-            session_ecg.trials(comp_trial).time = timestamps;
-            session_ecg.trials(comp_trial).ecg_data = ECG;
-            session_ecg.trials(comp_trial).fsample  = fs;
-            session_ecg.trials(comp_trial).tsample = ts;
-            session_ecg.trials(comp_trial).tstart = start_time;
-            session_ecg.trials(comp_trial).trialperiod = [trial_ecg_timestamps(1) trial_ecg_timestamps(end)];
-            session_ecg.trials(comp_trial).perturbation  = perturbation;
-            session_ecg.trials(comp_trial).n  = original_trial_n;
+            T = T + 1;
+            %session_ecg.trials(T).time_from_rec_start = timestamps+trial(t).TDT_ECG1_t0_from_rec_start; %% LS 20220328 THIS IS FROM REC ONSET
+            session_ecg.trials(T).t0_from_rec_start = trial(t).TDT_ECG1_t0_from_rec_start; %% LS 20220328 THIS IS FROM REC ONSET
+            session_ecg.trials(T).completed = completed;
+            session_ecg.trials(T).type = type;
+            session_ecg.trials(T).effector = effector;
+            session_ecg.trials(T).run = run;
+            session_ecg.trials(T).block = block;
+            session_ecg.trials(T).dataset = [];
+            session_ecg.trials(T).choice_trial = choice_trial;
+            session_ecg.trials(T).success = success;
+            session_ecg.trials(T).reach_hand = 0;
+            session_ecg.trials(T).reach_space = 0;
+            session_ecg.trials(T).fix_pos = fix_pos;
+            session_ecg.trials(T).eye_pos = tar_pos + sac_off;
+            session_ecg.trials(T).hndspc_lbl  = [];
+            %session_ecg.trials(T).time = timestamps;
+            session_ecg.trials(T).ecg_data = ECG;
+            session_ecg.trials(T).fsample  = fs;
+            session_ecg.trials(T).tsample = ts;
+            session_ecg.trials(T).tstart = start_time;
+            session_ecg.trials(T).trialperiod = [trial_ecg_timestamps(1) trial_ecg_timestamps(end)];
+            session_ecg.trials(T).perturbation  = perturbation;
+            session_ecg.trials(T).n  = original_trial_n;
             
             % flag to mark noisy trials
-            session_ecg.trials(comp_trial).noisy = ~completed;
+            session_ecg.trials(T).noisy = ~completed;
             
             % get state onset times and onset samples - test and delete
-            session_ecg.trials(comp_trial).states = struct();
+            session_ecg.trials(T).states = struct();
             st_idx = 0;
             for st = 1:length(trial(t).states)
                 % get state ID
@@ -196,18 +195,15 @@ for i_Files = 1:length(combined_Blocks)
                 % get state onset time
                 state_onset = trial(t).states_onset(trial(t).states == state_id);
                 % get sample number of state onset time
-                state_onset_sample = find(abs(timestamps - state_onset(1)) == min(abs(timestamps - state_onset(1))), 1);
+                %state_onset_sample = find(abs(timestamps - state_onset(1)) == min(abs(timestamps - state_onset(1))), 1);
                 % save into struct
-                session_ecg.trials(comp_trial).states(st_idx).id = state_id;
-                session_ecg.trials(comp_trial).states(st_idx).onset_t  = state_onset(1);
-                session_ecg.trials(comp_trial).states(st_idx).onset_s  = state_onset_sample;
+                session_ecg.trials(T).states(st_idx).id = state_id;
+                session_ecg.trials(T).states(st_idx).onset_t  = state_onset(1);
+                %session_ecg.trials(T).states(st_idx).onset_s  = state_onset_sample;
             end
         end
         
-        session_ecg = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpeak, block, plottrials, results_fldr );
-        
-        %%% Noise rejection - should this be included within processing check this? %%%
-        %state_filt_lfp(i) = ecg_bna_reject_noisy_lfp( state_lfp(i), ecg_bna_cfg.noise );
+        %session_ecg = ecg_bna_get_block_Rpeak_times( session_ecg, block_Rpeak, block, plottrials, results_fldr );
     end
     
     results_mat = fullfile(results_fldr, ['session_ecg_' session_info.session '.mat']);

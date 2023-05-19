@@ -1,4 +1,4 @@
-function shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak(trials_lfp, nshuffles )
+function shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak_fast(trials_lfp, nshuffles )
 % ecg_bna_get_shuffled_Rpeak_evoked_ECG - computes the evoked LFP for
 % a specified  time window around randomly shuffled triggers for given
 % trials (usually trials belonging to a condition) in a session. The random
@@ -95,9 +95,9 @@ for b=u_blocks
         T=T+1;
         nsamples=numel(trials_lfp(t).ECG_spikes);
 %        [shuffled_Rpeaks(:,T).ECG_spikes]=deal(shuffled_ecg_peaks{:}(start_sample:start_sample+nsamples-1));
-        for i = 1:nshuffles %% this part here takes a bit too long...
-            shuffled_Rpeaks(i,T).ECG_spikes=shuffled_ecg_peaks(i,start_sample:start_sample+nsamples-1);
-        end
+ %       for i = 1:nshuffles %% this part here takes a bit too long...
+            shuffled_Rpeaks{T}=shuffled_ecg_peaks(:,start_sample:start_sample+nsamples-1);
+ %       end
         start_sample=start_sample+nsamples;
     end
 end

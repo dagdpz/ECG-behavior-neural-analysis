@@ -29,9 +29,7 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
     nhandlabels = length(ecg_bna_cfg.compare.reach_hands);
     nspacelabels = length(ecg_bna_cfg.compare.reach_spaces);
     nhandspacelabels = nhandlabels * nspacelabels;
-    
     colors = ['b'; 'r'; 'g'; 'y'; 'm'; 'c'; 'k'];
-    
     
     % loop through handspace
     for hs = 1:size(Rpeak_evoked_states, 2)
@@ -104,7 +102,6 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                     ylabel('Rpeak phase[°]');
                 end
                 
-                
                 for cn = 1:length(Rpeak_evoked_states(st, hs).abs_timeprob)    
                     if isempty(Rpeak_evoked_states(st, hs).abs_timeprob(cn).prob)
                         continue;
@@ -139,7 +136,7 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                 if isfield(Rpeak_evoked_states(st, hs), 'legend')
                     legend(Rpeak_evoked_states(st, hs).legend);
                 end
-                set(gca, 'XLim', ecg_bna_cfg.analyse_Rpeak_states{st, 3});
+                set(gca, 'XLim', [ecg_bna_cfg.analyse_Rpeak_states{st, 3:4}]);
                 box on;
                 % line at Rpeak onset
                 line([0 0], ylim, 'Color', 'k', 'LineStyle', '--');
@@ -171,13 +168,8 @@ function ecg_bna_plot_Rpeak_ref_state_onsets( Rpeak_evoked_states, ecg_bna_cfg, 
                             nanstd(Rpeak_evoked_states(st, hs).abs_timeprob(cn).prob, 1), '--', ...
                             'Color', plot_color);
                     end
-                    
                 end
-                
-                
-                
             end
-            
         end
     end
     
