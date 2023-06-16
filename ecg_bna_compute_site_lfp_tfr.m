@@ -99,6 +99,8 @@ for r = (unique([site_lfp.trials.run]))
     
     frequency_bands=cfg.tfr.frequency_bands;
     for f=1:size(frequency_bands,1)
+
+%% think about how to use good filters without causing errors for short periods
 %         fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
 %         fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
 %         
