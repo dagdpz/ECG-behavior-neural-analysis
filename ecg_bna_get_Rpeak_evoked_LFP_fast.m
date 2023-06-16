@@ -1,4 +1,4 @@
-function ecg_triggered_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast( trials_lfp, state )
+function ecg_triggered_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast( site_lfp, state )
 % ecg_bna_get_Rpeak_evoked_LFP - computes the Rpeak evoked LFP for a specified 
 % time window around the Rpeak onset for given trials (usually trials
 % belonging to a condition) in a session 
@@ -19,6 +19,8 @@ function ecg_triggered_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast( trials_lfp, s
 
 state_name = state{2};
 width = state{4} - state{3};
+
+trials_lfp=site_lfp.trials;
 
 n_shuffles=size(trials_lfp(1).ECG_spikes,1);
 [ecg_triggered_evoked(1:n_shuffles).time] = deal({}); % timestamps
@@ -67,8 +69,7 @@ end
 if isvalid
     % crop each lfp to same number of samples
     nsamples = min(cellfun('length', ecg_triggered_evoked(1).lfp));%% question here really is what happens if some shuffles do not contain an RPeak in one of hte trials
-    
-    
+   
     for sh=1:n_shuffles
         for k = 1:length(ecg_triggered_evoked(sh).lfp)
             ecg_triggered_evoked(sh).lfp{k} = ecg_triggered_evoked(sh).lfp{k}(1:nsamples);

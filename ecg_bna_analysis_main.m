@@ -47,7 +47,8 @@ for v = 1:length(versions)
     %% per session processing..
     for i = 1:length(sessions_info)
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        %% MAYBE first make seed and ecg shuffles, then use those shuffles for all subfunctions
+        
+        % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
         if exist(seed_filename,'file');
             load(seed_filename);
@@ -108,40 +109,16 @@ for v = 1:length(versions)
             fprintf('Analysing for session %s\n', session_name);
             
             % Read LFP data
-            if isfield(sessions_info(i), 'Input_LFP') && ~isempty(sessions_info(i).Input_LFP) && ecg_bna_cfg.process_LFP
-                %sessions_info(i) = ecg_bna_process_combined_LFP_ECG(sessions_info(i), ecg_bna_cfg); %this one should be fixed
-                sessions_info(i).Input=sessions_info(i).Input_LFP{1}; %% this means only one site file per session...
-                sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
-                sessions_info(i) = lfp_tfa_process_LFP( sessions_info(i), ecg_bna_cfg );
-            end
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-                ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
-                ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
-                % read the processed lfp mat files for all sites of this session
-                sites_lfp_files = dir(fullfile(sessions_info(i).proc_lfp_fldr, ['site_lfp_pow_' sessions_info(i).Monkey(1:3) '_' sessions_info(i).Date '*.mat']));
-                session_proc_lfp = [];
-                for file = {sites_lfp_files.name}
-                    %fprintf('Reading processed LFP for site %s\n', file{1});
-                    if ~isempty(strfind(file{1}, 'site_lfp_'))
-                        fprintf('Reading processed LFP for %s\n', file{:});
-                        load(fullfile(sessions_info(i).proc_lfp_fldr, file{1}))
-                        session_proc_lfp = [session_proc_lfp site_lfp];
-                    end
-                end
-            end
+            sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
+            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP( sessions_info(i), ecg_bna_cfg ); %% session_proc_lfp AS OUTPUT!
+            
+            ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
+            ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
             
             session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
-                ecg_bna_compute_session_Rpeak_evoked_LFP_split( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % this one is pretty fixed
-                % ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % this one is pretty fixed
-            end
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-                ecg_bna_compute_session_Rpeak_evoked_TFS_split( session_proc_lfp,session_ecg, ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % there is no shuffling here yet
-            end
+            ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg );
             
             clear session_proc_lfp;
-            
-            % tfs_ecg.session(i) = lfp_tfa_plot_session_tfs_ECG( session_ecg, sessions_info(i), lfp_tfa_cfg.event_triggers, lfp_tfa_cfg );
         end
         
     end

@@ -35,7 +35,7 @@ for b=blocks
     % ECG_R2Rvalid = block_Rpeak.R2R_valid;
     % ECG_R2Rvalid_bpm = block_Rpeak.R2R_valid_bpm;
     
-    trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod);
+    trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod); %% uhmmmmmmmm doublecheck this
     if nargin<3
     ts = session_ecg.trials(trials_idx(1)).tsample;
     end

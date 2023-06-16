@@ -41,6 +41,9 @@ state_name = state{2};
 width = state{4} - state{3};
 
 ecg_triggered_tfs.powspctrm = {}; % power spectrogram
+ecg_triggered_tfs.phasespctrm = {}; % power spectrogram
+ecg_triggered_tfs.phaseBP = {}; % power spectrogram
+
 ecg_triggered_tfs.time = {}; % timebins fo spectrogram
 ecg_triggered_tfs.freq = {}; % freq bins
 ecg_triggered_tfs.state = NaN;%[];
@@ -51,6 +54,8 @@ for t = 1:numel(site_lfp.trials)
     
     % get the LFP samples and timestamps between start and end states
     lfp_tfs_pow = site_lfp.trials(t).tfs.powspctrm;
+    lfp_tfs_phs = site_lfp.trials(t).tfs.phase;
+    lfp_tfs_pBP = site_lfp.trials(t).tfs.phase_bandpassed;
     lfp_tfs_time = site_lfp.trials(t).tfs.time;
     lfp_tfs_freq = site_lfp.trials(t).tfs.freq;
     
@@ -60,7 +65,7 @@ for t = 1:numel(site_lfp.trials)
     ecg_peak_times = lfp_time(ecg_peaks(1:min(numel(ecg_peaks),numel(lfp_time))));
     
     % lfp sample indices
-    lfp_timebin_idx = 1:length(lfp_tfs_time);
+    % lfp_timebin_idx = 1:length(lfp_tfs_time);
     % width of each time bin
     lfp_ts = 1/site_lfp.trials(t).fsample;
     tbin_width = ecg_bna_cfg.tfr.timestep * lfp_ts;
@@ -68,7 +73,7 @@ for t = 1:numel(site_lfp.trials)
     % number fo time bins in the window
     ntbins_window = round(width/tbin_width);
     
-    ecg_triggered_tfs.cfg = site_lfp.trials(t).tfs.cfg;
+    %ecg_triggered_tfs.cfg = site_lfp.trials(t).tfs.cfg;
     
     % now get the midpoint of windows around ECG peak
     window_mid_idx = [];
@@ -84,42 +89,50 @@ for t = 1:numel(site_lfp.trials)
         if window_mid_idx(w) - round(ntbins_window/2) < 1 || window_mid_idx(w) + round(ntbins_window/2) > length(lfp_tfs_time)
             continue;
         end
+        window=window_mid_idx(w) - round(ntbins_window/2):window_mid_idx(w) + round(ntbins_window/2);
         % power spectrum for this window
-        ecg_triggered_tfs.powspctrm = [ecg_triggered_tfs.powspctrm, ...
-            lfp_tfs_pow(:, :, window_mid_idx(w) - round(ntbins_window/2):...
-             window_mid_idx(w) + round(ntbins_window/2))];
+        ecg_triggered_tfs.powspctrm = [ecg_triggered_tfs.powspctrm, lfp_tfs_pow(:,:,window)];
+        % phase spectrum for this window
+        ecg_triggered_tfs.phasespctrm = [ecg_triggered_tfs.phasespctrm, lfp_tfs_phs(:,:,window)];
+        % bandpassed phase spectrum for this window
+        ecg_triggered_tfs.phaseBP = [ecg_triggered_tfs.phaseBP, lfp_tfs_pBP(:,:,window)];
+        
+        
         % timestamps
-        ecg_triggered_tfs.time = ...
-            lfp_tfs_time(window_mid_idx(w) - round(ntbins_window/2):...
-             window_mid_idx(w) + round(ntbins_window/2));
+        ecg_triggered_tfs.time = lfp_tfs_time(window);
         % set mid-timestamp to zero
-        ecg_triggered_tfs.time = ecg_triggered_tfs.time - ...
-            ecg_triggered_tfs.time(round(length(ecg_triggered_tfs.time)/2));
-
+        ecg_triggered_tfs.time = ecg_triggered_tfs.time - ecg_triggered_tfs.time(round(length(ecg_triggered_tfs.time)/2));
         ecg_triggered_tfs.freq = lfp_tfs_freq;
     end
-       
 end
 
 
 % find number of time bins in power spectrogram
 ntimebins = min(cellfun('size', ecg_triggered_tfs.powspctrm, 3));
-nfreqbins = numel(ecg_triggered_tfs.freq);
 % crop each tfs to the ntimebins
 for k = 1:length(ecg_triggered_tfs.powspctrm)
-    ecg_triggered_tfs.powspctrm{k} = ecg_triggered_tfs.powspctrm{k}(1,:,1:ntimebins);
-    
+    ecg_triggered_tfs.powspctrm{k} = ecg_triggered_tfs.powspctrm{k}(1,:,1:ntimebins);    
+    ecg_triggered_tfs.phasespctrm{k} = ecg_triggered_tfs.phasespctrm{k}(1,:,1:ntimebins);   
 end
 ecg_triggered_tfs.time = ecg_triggered_tfs.time(1:ntimebins);
 
 % average power spectrum for each state
-arr_state_pow = zeros(1, nfreqbins, ntimebins);
+% arr_state_pow = zeros(1, nfreqbins, ntimebins);
 
 if ~isempty(ecg_triggered_tfs.powspctrm)
 
     % find the average TFS for each state
     arr_state_pow = cat(1, ecg_triggered_tfs.powspctrm{:});
+    arr_state_phase = cat(1,ecg_triggered_tfs.phasespctrm{:});
+    arr_state_phaseBP = cat(1,ecg_triggered_tfs.phaseBP{:});
     ecg_triggered_tfs.powspctrm_rawmean = nanmean(arr_state_pow, 1);
+    ecg_triggered_tfs.powspctrm_rawstd  = nanstd(arr_state_pow, 1);
+    
+    
+    ecg_triggered_tfs.phasespctrm_rawmean   = abs(nanmean(exp(1i*arr_state_phase), 1));
+    ecg_triggered_tfs.phasespctrm_rawstd    = nanstd(abs(mean(exp(1i*arr_state_phase), 1)), 0, 2);
+    ecg_triggered_tfs.phaseBP_rawmean = mean(arr_state_phaseBP, 1);
+    ecg_triggered_tfs.phaseBP_rawstd  = std(mean(arr_state_phaseBP, 1), 0, 2);
 
     % baseline normalization
     cfg_baseline.method = ecg_bna_cfg.baseline_method;
