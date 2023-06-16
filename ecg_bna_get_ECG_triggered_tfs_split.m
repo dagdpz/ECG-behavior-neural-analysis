@@ -136,6 +136,8 @@ if ~isempty(ecg_triggered_tfs.powspctrm)
 
     % baseline normalization
     cfg_baseline.method = ecg_bna_cfg.baseline_method;
+
+    %% BASELINE 
     if ~strcmp(cfg_baseline.method, 'none')
         
         baseline_cnd_idx=...
@@ -144,6 +146,7 @@ if ~isempty(ecg_triggered_tfs.powspctrm)
         find_conditon(site_lfp,ecg_bna_cfg,'type','baseline_use_type') & ...
         find_conditon(site_lfp,ecg_bna_cfg,'effector','baseline_use_effector');
         
+        %% We can not pre-calculate baseline (for ITPC!), we need to calculate it AFTER triggering, so somewhere here.
         cfg_baseline.mean = nanmean(vertcat(site_lfp.baseline(baseline_cnd_idx).pow_mean),1);
         cfg_baseline.std  = nanmean(vertcat(site_lfp.baseline(baseline_cnd_idx).pow_std),1);
         ecg_triggered_tfs.powspctrm_normmean = lfp_tfa_baseline_normalization(ecg_triggered_tfs.powspctrm_rawmean, cfg_baseline); 

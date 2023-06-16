@@ -145,8 +145,14 @@ for i = 1:nsites
                 
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     [cond_LFP.trials.ECG_spikes]=session_ecg.trials(trial_idx).ECG_spikes_shuffled;
+                    
+                    %% add possibility of shuffled power spectra, ITPC spectra and bandpassed ITPC
+                    %  the same way as in ecg_bna_get_Rpeak_evoked_LFP_fast
+                    %shuffled_tfs    = ecg_bna_get_ECG_triggered_tfs_split(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
+                    
                     shuffled_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
-                    %shuffled_Rpeak_evoked.lfp = {shuffled_evoked.mean}; %% this aint right...
+                    
+                    %% add here means and std for power and ITPC
                     shuffled_Rpeak_evoked.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
                     shuffled_Rpeak_evoked.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
                     
@@ -164,13 +170,18 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).hs_label = hs_labels(hs);                    
                 end
                 
+
+                %% use shuffled Rpeak results to normalize data-shuffle_predictor_mean ..... zscore(data)-zscore(shuffle_predictor) ?
                 if ~isempty(state_tfs.powspctrm)
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm = state_tfs.powspctrm_normmean;
+                    %sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm = state_tfs.powspctrm_normmean;
+                    sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm = state_tfs.phasespctrm_rawmean;
                     sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm_raw = state_tfs.powspctrm;
                     sites_data(i).condition(cn).state_hs(st, hs).freq.phasespctrm = state_tfs.phasespctrm_rawmean;
                     sites_data(i).condition(cn).state_hs(st, hs).freq.phasesBP = state_tfs.phaseBP_rawmean;
                     sites_data(i).condition(cn).state_hs(st, hs).freq.time = state_tfs.time;
                     sites_data(i).condition(cn).state_hs(st, hs).freq.freq = state_tfs.freq;
+
+                    %% takeover also shuffled power/ITPC/BP mean and STD
                 end
                 
                 if ~isempty(state_evoked.lfp)
