@@ -1,5 +1,5 @@
 function ecg_triggered_tfs = ecg_bna_get_ECG_triggered_tfs_split( site_lfp, cond_ecg, state, ecg_bna_cfg )
-% ecg_bna_get_ECG_triggered_tfs - gets the LFP time frequency spectrogram
+% ecg_bna_get_ECG_triggered_tfs_split - gets the LFP time frequency spectrogram
 % for a specified time window around the Rpeak onset for a single site for
 % given trials (usually trials belonging to a condition) in a session
 %
@@ -41,8 +41,8 @@ state_name = state{2};
 width = state{4} - state{3};
 
 ecg_triggered_tfs.powspctrm = {}; % power spectrogram
-ecg_triggered_tfs.phasespctrm = {}; % power spectrogram
-ecg_triggered_tfs.phaseBP = {}; % power spectrogram
+ecg_triggered_tfs.phasespctrm = {}; % phase spectrogram
+ecg_triggered_tfs.phaseBP = {}; % bandpassed phase
 
 ecg_triggered_tfs.time = {}; % timebins fo spectrogram
 ecg_triggered_tfs.freq = {}; % freq bins
@@ -70,7 +70,7 @@ for t = 1:numel(site_lfp.trials)
     lfp_ts = 1/site_lfp.trials(t).fsample;
     tbin_width = ecg_bna_cfg.tfr.timestep * lfp_ts;
     
-    % number fo time bins in the window
+    % number for time bins in the window
     ntbins_window = round(width/tbin_width);
     
     %ecg_triggered_tfs.cfg = site_lfp.trials(t).tfs.cfg;
@@ -131,8 +131,8 @@ if ~isempty(ecg_triggered_tfs.powspctrm)
     
     ecg_triggered_tfs.phasespctrm_rawmean   = abs(nanmean(exp(1i*arr_state_phase), 1));
     ecg_triggered_tfs.phasespctrm_rawstd    = nanstd(abs(mean(exp(1i*arr_state_phase), 1)), 0, 2);
-    ecg_triggered_tfs.phaseBP_rawmean = mean(arr_state_phaseBP, 1);
-    ecg_triggered_tfs.phaseBP_rawstd  = std(mean(arr_state_phaseBP, 1), 0, 2);
+    ecg_triggered_tfs.phaseBP_rawmean = abs(nanmean(exp(1i*arr_state_phaseBP), 1));
+    ecg_triggered_tfs.phaseBP_rawstd  = nanstd(abs(mean(exp(1i*arr_state_phaseBP), 1)), 0, 2);
 
     % baseline normalization
     cfg_baseline.method = ecg_bna_cfg.baseline_method;
