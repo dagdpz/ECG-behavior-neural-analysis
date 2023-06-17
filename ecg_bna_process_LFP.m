@@ -54,7 +54,7 @@ function [session_info, allsites_lfp]= ecg_bna_process_LFP( session_info, lfp_tf
 
 close all;
 
-load(session_info.Input, 'sites');
+load(session_info.Input_LFP{:}, 'sites');
 
 % prepare results folder
 results_fldr = fullfile(session_info.proc_results_fldr);

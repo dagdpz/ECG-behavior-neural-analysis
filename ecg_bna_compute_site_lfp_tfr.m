@@ -105,7 +105,7 @@ for r = (unique([site_lfp.trials.run]))
 %         fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
 %         
         [b, a]=butter(3, frequency_bands(f,1)*ts); % low-pass filter
-        fltered_data = filtfilt(b,a,concat_LFP);
+        fltered_data = filtfilt(b,a,double(concat_LFP));
         [b, a]=butter(3, frequency_bands(f,2)*ts,'high'); % hgh-pass filter
         fltered_data = filtfilt(b,a,fltered_data);
         
