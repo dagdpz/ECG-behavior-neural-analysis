@@ -154,15 +154,16 @@ for i = 1:nsites
                     shuffled_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
                     
                     %% means and std over all shuffled lfp, power, ITPC, and BP_ITPC:
+                    
                     shuffled_Rpeak_evoked.lfp.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
                     shuffled_Rpeak_evoked.lfp.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
-%                     shuffled_Rpeak_evoked.power.mean
-%                     shuffled_Rpeak_evoked.power.std
-%                     shuffled_Rpeak_evoked.phase.mean
-%                     shuffled_Rpeak_evoked.phase.std
-%                     shuffled_Rpeak_evoked.phaseBP.mean
-%                     shuffled_Rpeak_evoked.phaseBP.std
-%                                         
+                    shuffled_Rpeak_evoked.power.mean = nanmean(cat(1,shuffled_tfs.powspctrm_rawmean),1);
+                    shuffled_Rpeak_evoked.power.std = nanstd(cat(1,shuffled_tfs.powspctrm_rawstd),0,1);
+                    shuffled_Rpeak_evoked.phase.mean = nanmean(cat(1,shuffled_tfs.phasespctrm_rawmean),1);
+                    shuffled_Rpeak_evoked.phase.std = nanstd(cat(1,shuffled_tfs.phasespctrm_rawstd),0,1);
+                    shuffled_Rpeak_evoked.phaseBP.mean = nanmean(cat(1, shuffled_tfs.phaseBP_rawmean),1);
+                    shuffled_Rpeak_evoked.phaseBP.std = nanstd(cat(1,shuffled_tfs.phaseBP_rawstd),0,1);
+                                        
                 end
                 %end
                 if ~isempty(state_tfs.powspctrm) || ~isempty(state_evoked.lfp)
