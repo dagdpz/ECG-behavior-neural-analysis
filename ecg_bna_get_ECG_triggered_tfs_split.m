@@ -1,5 +1,5 @@
 function ecg_triggered_tfs = ecg_bna_get_ECG_triggered_tfs_split( site_lfp, cond_ecg, state, ecg_bna_cfg )
-% ecg_bna_get_ECG_triggered_tfs_split - gets the LFP time frequency spectrogram
+% ecg_bna_get_ECG_triggered_tfs_split - gets the time frequency spectrogram
 % for a specified time window around the Rpeak onset for a single site for
 % given trials (usually trials belonging to a condition) in a session
 %
@@ -130,9 +130,11 @@ if ~isempty(ecg_triggered_tfs.powspctrm)
     
     
     ecg_triggered_tfs.phasespctrm_rawmean   = abs(nanmean(exp(1i*arr_state_phase), 1));
-    ecg_triggered_tfs.phasespctrm_rawstd    = nanstd(abs(mean(exp(1i*arr_state_phase), 1)), 0, 2);
+    ecg_triggered_tfs.phasespctrm_rawstd    = nanstd(abs(mean(exp(1i*arr_state_phase), 1)), 0, 3);
+    % should we caclculate std over all time points in each freq (?)
     ecg_triggered_tfs.phaseBP_rawmean = abs(nanmean(exp(1i*arr_state_phaseBP), 1));
-    ecg_triggered_tfs.phaseBP_rawstd  = nanstd(abs(mean(exp(1i*arr_state_phaseBP), 1)), 0, 2);
+    ecg_triggered_tfs.phaseBP_rawstd  = nanstd(abs(mean(exp(1i*arr_state_phaseBP), 1)), 0, 3);
+    % should we caclculate std over all time points in each freq (?)
 
     % baseline normalization
     cfg_baseline.method = ecg_bna_cfg.baseline_method;

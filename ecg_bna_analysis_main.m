@@ -50,7 +50,7 @@ for v = 1:length(versions)
         
         % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
-        if exist(seed_filename,'file');
+        if exist(seed_filename,'file')
             load(seed_filename);
             rng(seed);
         else
@@ -118,7 +118,7 @@ for v = 1:length(versions)
             session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
             ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg );
             
-            clear session_proc_lfp;
+%             clear session_proc_lfp;
         end
         
     end

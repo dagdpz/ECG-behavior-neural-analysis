@@ -1,12 +1,12 @@
 function [ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp, session_ecg,analyse_states, ecg_bna_cfg )
-% ecg_bna_compute_session_Rpeak_evoked_LFP  - compute average Rpeak evoked
-% ECG for different conditions for each site of a session.
+% ecg_bna_compute_session_Rpeak_triggered_variables  - compute evoked_LFP,
+% Powspctrm, ITPC, and phaseBP variables for different conditions for each site of a session.
 % A condition is a combination of
 % possibly hand-space tuning (for consitency with LFP analysis),
 % control/inactivation, choice/instructed, type-effector values.
 %
 % USAGE:
-%	[ session_data ] = ecg_bna_compute_session_Rpeak_evoked_LFP(
+%	[ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables(
 %	session_proc_lfp, analyse_states, ecg_bna_cfg )
 %
 % INPUTS:
@@ -140,24 +140,29 @@ for i = 1:nsites
                 %if strcmp(analyse_states{st, 1}, 'ecg') % honestly, this needs to go inside the triggering functions
                 state_tfs    = ecg_bna_get_ECG_triggered_tfs_split(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
                 state_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
-                shuffled_Rpeak_evoked.mean=zeros(size(state_evoked.mean));
-                shuffled_Rpeak_evoked.std =zeros(size(state_evoked.std));
+                
+                % mean and std of non-shuffled data set to Zero! (?)
+                shuffled_Rpeak_evoked.lfp.mean=zeros(size(state_evoked.mean));
+                shuffled_Rpeak_evoked.lfp.std =zeros(size(state_evoked.std));
                 
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     [cond_LFP.trials.ECG_spikes]=session_ecg.trials(trial_idx).ECG_spikes_shuffled;
                     
-                    %% add possibility of shuffled power spectra, ITPC spectra and bandpassed ITPC
-                    %  the same way as in ecg_bna_get_Rpeak_evoked_LFP_fast
-                    %shuffled_tfs    = ecg_bna_get_ECG_triggered_tfs_split(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
+                    %% compute shuffled power spectra, ITPC spectra and bandpassed ITPC:
+                    shuffled_tfs    = ecg_bna_get_ECG_triggered_tfs_split_shuffled(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
                     
                     shuffled_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
                     
-                    %% add here means and std for power and ITPC
-                    shuffled_Rpeak_evoked.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
-                    shuffled_Rpeak_evoked.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
-                    
-                    %% also get shuffled tfs/ITPC
-                    %shuffled_tfs =ecg_bna_get_ECG_triggered_tfs_split(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
+                    %% means and std over all shuffled lfp, power, ITPC, and BP_ITPC:
+                    shuffled_Rpeak_evoked.lfp.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
+                    shuffled_Rpeak_evoked.lfp.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
+%                     shuffled_Rpeak_evoked.power.mean
+%                     shuffled_Rpeak_evoked.power.std
+%                     shuffled_Rpeak_evoked.phase.mean
+%                     shuffled_Rpeak_evoked.phase.std
+%                     shuffled_Rpeak_evoked.phaseBP.mean
+%                     shuffled_Rpeak_evoked.phaseBP.std
+%                                         
                 end
                 %end
                 if ~isempty(state_tfs.powspctrm) || ~isempty(state_evoked.lfp)
@@ -189,8 +194,8 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).mean = state_evoked.mean;
                     sites_data(i).condition(cn).state_hs(st, hs).std  = state_evoked.std;
                     sites_data(i).condition(cn).state_hs(st, hs).time = state_evoked.lfp_time;
-                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean = shuffled_Rpeak_evoked.mean;
-                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_std = shuffled_Rpeak_evoked.std;                    
+                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean = shuffled_Rpeak_evoked.lfp.mean;
+                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_std = shuffled_Rpeak_evoked.lfp.std;                    
                 end
             end
         end
