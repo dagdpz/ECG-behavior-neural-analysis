@@ -1,17 +1,17 @@
 function ecg_bna_plots_per_session( sites_data, site_conditions,cfg, varargin )
 
 
-%lfp_tfa_plot_hs_tuned_tfr_multiple_img  - Plots the LFP time frequency spectrogram
-%averages for different hand-space conditions to be compared
+% ecg_bna_plots_per_session  - Plots the Evoked LFP, power and phase
+% spectogram averages for different hand-space conditions to be compared
 %
 % USAGE:
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file )
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file, cm )
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file, cm, plot_significant )
+%   ecg_bna_plots_per_session( sites_data, cfg, plottitle, results_file )
+%   ecg_bna_plots_per_session( sites_data, cfg, plottitle, results_file, cm )
+%   ecg_bna_plots_per_session( sites_data, cfg, plottitle, results_file, cm, plot_significant )
 %
 %
 % INPUTS:
-%       avg_tfr         - average LFP time frequency response for different
+%       sites_data         - contains the average evoked LFP, and power and phase time frequency response for different
 %       hand-space conditions to be compared
 %		cfg     - struct containing the required settings
 %           Required Fields: see settings/lfp_tfa_settings_example
@@ -62,6 +62,9 @@ elseif strcmp(cfg.baseline_method, 'subtraction')
     imscale = [0 1e-8];
 elseif strcmp(cfg.baseline_method, 'relchange')
     cbtitle = '(P - \mu) / \mu';
+    imscale = [-1, 1];
+elseif strcmp(baseline_method, 'none')
+    cbtitle = 'not-Normalized';
     imscale = [-1, 1];
 end
 
@@ -179,10 +182,19 @@ for cn= 1:numel(sites_data.condition)
                 end
             end
             
+            % Smoothing of the evoked LFP here:
+            jnk = [];
+            win = cfg.smoothWin;
+            for k=1:size(avg_tfr.mean,1)
+                jnk(k,:)=conv(avg_tfr.mean(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+            end
+            avg_tfr_mean_smooth = jnk(:,win:size(avg_tfr.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+            
+            % evoked LFP subplot:
             figure(h(4));
             subplot(nhandlabels, nspacelabels, hs);
             hold on;
-            plot(avg_tfr.time, avg_tfr.mean) %, 'Color', colors(i,:));
+            plot(avg_tfr.time, avg_tfr_mean_smooth) %, 'Color', colors(i,:));
             
             %             if ploterr
             %                 for i = 1:size(evoked_lfp(1, hs).mean, 1)
