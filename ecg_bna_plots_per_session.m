@@ -212,9 +212,20 @@ for cn= 1:numel(sites_data.condition)
             shadedErrorBar(avg_tfr.time, avg_tfr.shuffled_mean,avg_tfr.shuffled_std,lineprops,1);
             %                 end
             %             end
+
+            
+            % Smoothing of the PhaseBP plots here:
+            jnk = [];
+            win = cfg.smoothWin;
+            for k=1:size(state_lfp_phasesBP,1)
+                jnk(k,:)=conv(state_lfp_phasesBP(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+            end
+            state_lfp_phasesBP_smooth = jnk(:,win:size(state_lfp_phasesBP,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+            
+            %
             figure(h(3));
             subplot(nhandlabels, nspacelabels, hs);
-            plot(avg_tfr.freq.time, state_lfp_phasesBP)
+            plot(avg_tfr.freq.time, state_lfp_phasesBP_smooth)
             legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
             hold on;
             
