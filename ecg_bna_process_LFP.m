@@ -96,7 +96,7 @@ for i = 1:length(sites)
     
     sites(i)=ph_LR_to_CI(lfp_tfa_cfg,sites(i));  %% convert... 
     
-    %% now loop through each trial for this site
+    %% now loop through each trial for this site to do what exactly?
     for t = 1:length(sites(i).trial)
         % convert hand and space information into string labels (for some reason)
         hf=sites(i).trial(t).hemifield;
@@ -194,7 +194,7 @@ for i = 1:length(sites)
     site_lfp = lfp_tfa_reject_noisy_lfp_trials( site_lfp, lfp_tfa_cfg.noise );
     
     % Baseline power calculation - this needs to move to somewhere entirely different (?)
-    site_lfp = lfp_tfa_compute_site_baseline( site_lfp, session_info, lfp_tfa_cfg );
+    % site_lfp = lfp_tfa_compute_site_baseline( site_lfp, session_info, lfp_tfa_cfg );
     
     allsites_lfp = [allsites_lfp, site_lfp];    
 end

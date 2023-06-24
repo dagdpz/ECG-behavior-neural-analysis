@@ -1,4 +1,4 @@
-function ecg_bna_plots_per_session( sites_data, site_conditions,cfg, varargin )
+function ecg_bna_plots_per_session( data, con_info,cfg, varargin )
 
 
 %lfp_tfa_plot_hs_tuned_tfr_multiple_img  - Plots the LFP time frequency spectrogram
@@ -63,6 +63,7 @@ elseif strcmp(cfg.baseline_method, 'subtraction')
 elseif strcmp(cfg.baseline_method, 'relchange')
     cbtitle = '(P - \mu) / \mu';
     imscale = [-1, 1];
+    imscale = [0 1e-8];
 end
 
 % number of subplots required
@@ -71,187 +72,163 @@ nspacelabels = length(cfg.compare.reach_spaces);
 
 
 %% loop through conditions
-for cn= 1:numel(sites_data.condition)    
-    if isempty(fieldnames(sites_data.condition(cn))) || isempty(fieldnames(sites_data.condition(cn).state_hs)) % &&~isempty([sites_data(i).condition(cn).state_hs.lfp])
+for cn= 1:numel(data.condition)    
+    if isempty(fieldnames(data.condition(cn))) || isempty(fieldnames(data.condition(cn).state_hs)) % &&~isempty([sites_data(i).condition(cn).state_hs.lfp])
         continue
     end    
-    if site_conditions(cn).perturbation == 0
+    if con_info(cn).perturbation == 0
         injection = 'Pre';
-    elseif site_conditions(cn).perturbation == 1
+    elseif con_info(cn).perturbation == 1
         injection = 'Post';
     else
         injection = 'Any';
     end
-    plottitle = ['LFP (' injection '): Site ' sites_data.site_ID ', Target ' sites_data.target '(ref_' cfg.ref_hemisphere '), '  site_conditions(cn).label];
-    if site_conditions(cn).choice == 0
+    plottitle = ['LFP (' injection '): Site ' data.site_ID ', Target ' data.target '(ref_' cfg.ref_hemisphere '), '  con_info(cn).label];
+    if con_info(cn).choice == 0
         plottitle = [plottitle 'Instructed trials'];
-    elseif site_conditions(cn).choice == 1
+    elseif con_info(cn).choice == 1
         plottitle = [plottitle 'Choice trials'];
     end
     
-    % create 3 figures with handles
-    plot_names={'LFP_TFR','LFP_PHA','LFP_PBP','LFP_Evoked'};
+    % create figures with handles
+    plot_names={'POW','ITPC','ITPC_BP','LFP_Evoked'};
     results_folders={[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_TFS'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_PHA'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_PHABP'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_LFP']};
     for f=1:numel(plot_names)
-        h(f) = figure;
-        set(h, 'position', [100, 100,900, 675]);
+        h(f) = figure('Name',plot_names{f});
+        %set(h(f), 'position', [100, 100,900, 675]);
         hold on
     end
     
-    avg_tfr=sites_data.condition(cn).state_hs;
+    con_data=data.condition(cn).state_hs;
     states_valid=[];
+    collim{1}=[];
+    collim{2}=[];
     % loop through handspace
-    for hs = 1:size(avg_tfr, 2)
-        freq =  cat(2, avg_tfr(:, hs).freq);
-        if isempty(cat(3, freq.powspctrm)) % this is a strange break condition to be honest
+    for hs = 1:size(con_data, 2)
+        %freq =  cat(2, con_data(:, hs).freq);
+        if isempty(cat(3, con_data(:, hs).pow.mean)) % this is a strange break condition to be honest
             continue;
         end
         % concatenate tfs for different state windows for plotting
-        concat_states_tfs.powspctrm = [];
-        concat_states_tfs.phasespctrm = [];
-        concat_states_tfs.state_time = [];
-        concat_states_tfs.freq = avg_tfr(1, hs).freq.freq; %% this is actually in the settings...
-        concat_states_tfs.label = avg_tfr(1, hs).hs_label; %% this is in the settings too        
+        concat.pow = [];
+        concat.itpc = [];
+        concat.itpcbp = [];
+        concat.lfp = [];
+        concat.tfr_time = [];
+        concat.lfp_time = [];
+        
+        concat.freq = con_data(1, hs).freq; %% this is actually in the settings...
+        concat.label = con_data(1, hs).hs_label; %% this is in the settings too        
         
         state_info = struct();
-        for st = 1:size(avg_tfr, 1)
+        for st = 1:size(con_data, 1)
             % state timing information
             % state onset sample number
-            state_info(st).onset_s = find(avg_tfr(st, hs).freq.time <= 0, 1, 'last');
+            con=con_data(st, hs);
+            state_info(st).onset_s = find(con.tfr_time <= 0, 1, 'last');
             % state onset time
             state_info(st).onset_t = 0;
             % start start sample
             state_info(st).start_s = 1;
             % state start time
-            state_info(st).start_t = avg_tfr(st, hs).freq.time(1);
+            state_info(st).start_t = con.tfr_time(1);
             % start finish sample
-            state_info(st).finish_s = length(avg_tfr(st, hs).freq.time);
+            state_info(st).finish_s = length(con.tfr_time);
             % start end sample
-            state_info(st).finish_t = avg_tfr(st, hs).freq.time(end);
+            state_info(st).finish_t = con.tfr_time(end);
             
             % state onset, start and finish samples for further states offset from previous state window
             if st > 1
-                state_info(st).start_s  = length(concat_states_tfs.state_time) + state_info(st).start_s;
-                state_info(st).finish_s = length(concat_states_tfs.state_time) + state_info(st).finish_s;
-                state_info(st).onset_s  = length(concat_states_tfs.state_time) + state_info(st).onset_s;
+                state_info(st).start_s  = length(concat.state_time) + state_info(st).start_s;
+                state_info(st).finish_s = length(concat.state_time) + state_info(st).finish_s;
+                state_info(st).onset_s  = length(concat.state_time) + state_info(st).onset_s;
             end
+            
+            
+            con.pow.mean(isnan(con.pow.mean))=0;
+            con.itpc.mean(isnan(con.itpc.mean))=0;
+            con.itpcbp.mean(isnan(con.itpcbp.mean))=0;
+%             phasesBP = nanmean(con.itpcbp.mean, 1);
+%             phasesBP = squeeze(phasesBP);
+            %% i think this part is for differences plots... not sure what to do here with
+            if plot_significant && isfield(con, 'stat_test') && ~isempty(con.stat_test.h)
+                con.stat_test.h(isnan(con.stat_test.h))=0;
+                powspctrm = powspctrm .* con.stat_test.h;
+            end
+            
             % concatenate across states with a NaN separation in between
-            concat_states_tfs.powspctrm     = cat(3, concat_states_tfs.powspctrm,       avg_tfr(st, hs).freq.powspctrm,   nan(size(avg_tfr(st, hs).freq.powspctrm, 1), length(concat_states_tfs.freq), 100/25));
-            concat_states_tfs.phasespctrm   = cat(3, concat_states_tfs.phasespctrm,     avg_tfr(st, hs).freq.phasespctrm, nan(size(avg_tfr(st, hs).freq.phasespctrm, 1), length(concat_states_tfs.freq), 100/25));
-            concat_states_tfs.state_time    = [concat_states_tfs.state_time, avg_tfr(st, hs).freq.time, nan(1, 100/25)];
+            concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
+            concat.itpc     = cat(3, concat.itpc,  con.itpc.mean, nan(size(con.itpc.mean, 1), size(con.itpc.mean, 2), 100/25));
+            concat.itpcbp   = cat(3, concat.itpcbp,con.itpcbp.mean,    nan(size(con.itpcbp.mean, 1),    size(con.itpcbp.mean, 2),    100));
+            concat.lfp      = cat(2, concat.lfp,   con.lfp.mean,     nan(size(con.lfp.mean, 1),        100));
+            concat.tfr_time = [concat.tfr_time, con.tfr_time, nan(1, 100/25)];
+            concat.lfp_time = [concat.lfp_time, con.time,     nan(1, 100)];
             
             % somehow needed for (not) labelling not existing alignments
-            if ~all(isnan(avg_tfr(st, hs).freq.time))
+            if ~all(isnan(con.tfr_time))
                 states_valid=[states_valid st];
             end
             
-            %% i think this part is for differences plots... not sure what to do here with
-            avg_tfr(st, hs).freq.powspctrm(isnan(avg_tfr(st, hs).freq.powspctrm))=0;
-            avg_tfr(st, hs).freq.phasespctrm(isnan(avg_tfr(st, hs).freq.phasespctrm))=0;
-            avg_tfr(st, hs).freq.phasesBP(isnan(avg_tfr(st, hs).freq.phasesBP))=0;
-            state_lfp_powspctrm = nanmean(avg_tfr(st, hs).freq.powspctrm, 1);
-            state_lfp_phasespctrm = nanmean(avg_tfr(st, hs).freq.phasespctrm, 1);
-            state_lfp_phasesBP = nanmean(avg_tfr(st, hs).freq.phasesBP, 1);
-            state_lfp_phasesBP = squeeze(state_lfp_phasesBP);
-            if plot_significant && isfield(avg_tfr(st, hs).freq, 'stat_test') && ~isempty(avg_tfr(st, hs).freq.stat_test.h)
-                avg_tfr(st, hs).freq.stat_test.h(isnan(avg_tfr(st, hs).freq.stat_test.h))=0;
-                state_lfp_powspctrm = state_lfp_powspctrm .* avg_tfr(st, hs).freq.stat_test.h;
-            end
-            toplot={state_lfp_powspctrm,state_lfp_phasespctrm};
-            for figr=1:2 % frequency spectra
-                figure(h(figr));
-                subplot(nhandlabels, nspacelabels, hs);
-                hold on;
-                imagesc(...
-                    linspace(state_info(st).start_s, state_info(st).finish_s, ...
-                    state_info(st).finish_s - state_info(st).start_s + 1), ...
-                    linspace(1, length(avg_tfr(st, hs).freq.freq), ...
-                    length(avg_tfr(st, hs).freq.freq)), ...
-                    squeeze(toplot{figr}) , imscale);
-                
-                % horizontal lines to separate frequency bands
-                fbandstart = [2, 4, 8, 12, 18, 32, 80];
-                fbandstart_idx = zeros(size(fbandstart));
-                for f = fbandstart
-                    f_idx = find(abs(avg_tfr(st, hs).freq.freq - f) == min(abs(avg_tfr(st, hs).freq.freq - f)), 1, 'first');
-                    line([state_info(st).start_s state_info(st).finish_s], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
-                    fbandstart_idx(fbandstart == f) = f_idx;
-                end
-            end
-            
-            figure(h(4));
-            subplot(nhandlabels, nspacelabels, hs);
-            hold on;
-            plot(avg_tfr.time, avg_tfr.mean) %, 'Color', colors(i,:));
-            
-            %             if ploterr
-            %                 for i = 1:size(evoked_lfp(1, hs).mean, 1)
-            %                     plot(evoked_lfp(1, hs).time, evoked_lfp(1, hs).mean(i, :) + evoked_lfp(1, hs).std(i, :), [colors(mod(i, length(colors))) ':']);
-            %                     plot(evoked_lfp(1, hs).time, evoked_lfp(1, hs).mean(i, :) - evoked_lfp(1, hs).std(i, :), [colors(mod(i, length(colors))) ':']);
-            %                 end
-            %             end
-            
-            %             if isfield(evoked_lfp(1, hs), 'shuffled_mean') && isfield(evoked_lfp(1, hs), 'shuffled_std')
-            %                 for i = 1:size(evoked_lfp(1, hs).shuffled_mean, 1)
-%             plot(avg_tfr.time, avg_tfr.shuffled_mean) %, 'Color', colors(i),'linestyle','-.');
-%             plot(avg_tfr.time, avg_tfr.shuffled_mean + avg_tfr.shuffled_std) %, [colors(mod(i, length(colors))) ':']);
-%             plot(avg_tfr.time, avg_tfr.shuffled_mean - avg_tfr.shuffled_std) %, [colors(mod(i, length(colors))) ':']);
-            lineprops={};
-            shadedErrorBar(avg_tfr.time, avg_tfr.shuffled_mean,avg_tfr.shuffled_std,lineprops,1);
-            %                 end
-            %             end
-            figure(h(3));
-            subplot(nhandlabels, nspacelabels, hs);
-            plot(avg_tfr.freq.time, state_lfp_phasesBP)
-            legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
-            hold on;
+%             powspctrm = nanmean(con.pow.mean, 1);
+%             phasespctrm = nanmean(con.itpc.mean, 1);
             
             
         end
-        %concat_states_tfs.time = 1:1:size(concat_states_tfs.powspctrm, 3);
         
-        %% format figure
-        state_onsets = find(concat_states_tfs.state_time == 0);
-        states_names={avg_tfr(states_valid, hs).state_name};
+        %% plot
+        
+        state_onsets = find(concat.tfr_time == 0);
+        states_names={con_data(states_valid, hs).state_name};
         state_samples = sort([state_info.start_s, state_info.onset_s, state_info.finish_s]);
         
-        subplottitle = concat_states_tfs.label{1};
-        if isfield(avg_tfr(1, hs), 'nsessions')
-            subplottitle = [subplottitle ' (nsessions = ' num2str(avg_tfr(1, hs).nsessions) ')'];
-        elseif isfield(avg_tfr(1, hs), 'nsites')
-            subplottitle = [subplottitle ' (nsites = ' num2str(avg_tfr(1, hs).nsites) ')'];
-        elseif isfield(avg_tfr(1, hs), 'ntrials') && ~isempty(avg_tfr(1, hs).ntrials)
-            subplottitle = [subplottitle ' (ntrials = ' num2str(avg_tfr(1, hs).ntrials) ')'];
+        subplottitle = concat.label{1};
+        if isfield(con_data(1, hs), 'nsessions')
+            subplottitle = [subplottitle ' (nsessions = ' num2str(con_data(1, hs).nsessions) ')'];
+        elseif isfield(con_data(1, hs), 'nsites')
+            subplottitle = [subplottitle ' (nsites = ' num2str(con_data(1, hs).nsites) ')'];
+        elseif isfield(con_data(1, hs), 'ntrials') && ~isempty(con_data(1, hs).ntrials)
+            subplottitle = [subplottitle ' (ntrials = ' num2str(con_data(1, hs).ntrials) ')'];
         end
         
-        
+        toplot={concat.pow,concat.itpc};
         for figr=1:2 % frequency spectra
             figure(h(figr));
-            subplot(nhandlabels, nspacelabels, hs);
-            %subplot(nhandlabels, nspacelabels, hs)
-            %imagesc(concat_states_tfs.time, [1:numel(concat_states_tfs.freq)], squeeze(concat_states_tfs.powspctrm), [-1 1]);
-            %axis xy, 
-            cb = colorbar;
-            set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
+            sph{figr}(hs)=subplot(nhandlabels, nspacelabels, hs);
+%             imagesc(1:size(toplot{figr},3), con.freq, squeeze(toplot{figr}));
+            image(1:size(toplot{figr},3), 1:numel(con.freq), squeeze(toplot{figr}),'CDataMapping','scaled');
+            hold on;
+
+            nonnan=toplot{figr};nonnan(isnan(nonnan))=[];
+            collim{figr}=[min([collim{figr}(:); nonnan(:)]) max([collim{figr}(:); nonnan(:)])];
+
+            % horizontal lines to separate frequency bands
+            fbandstart = [2, 4, 8, 12, 18, 32, 80];
+            fbandstart_idx = zeros(size(fbandstart));
+            for f = fbandstart
+                f_idx = find(abs(con.freq - f) == min(abs(con.freq - f)), 1, 'first');
+                line([state_info(st).start_s state_info(st).finish_s], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                fbandstart_idx(fbandstart == f) = f_idx;
+            end
+            
             set(gca,'TickDir','out')
             % log y axis ticks
             %set(gca, 'ytick', ([1:8:numel(concat_states_tfs.freq)]));
-            set(gca, 'ytick', (fbandstart_idx));
+            set(gca, 'ytick', fbandstart_idx);
             set(gca, 'yticklabel', fbandstart);
+            % add 0.5 at end since the time value is the center of the bin
+            % add 0 at beginning to make x-axis visible
+            set(gca, 'ylim', [0.5,numel(con.freq) + 0.5]);
             %round(concat_states_tfs.freq([1:8:numel(concat_states_tfs.freq)])));
             for so = state_onsets
                 line([so so], ylim, 'color', 'k');
-                if isfield(avg_tfr(state_onsets == so, hs), 'state_name') && ~isempty(states_names(state_onsets == so))
+                if isfield(con_data(state_onsets == so, hs), 'state_name') && ~isempty(states_names(state_onsets == so))
                     state_name = states_names{state_onsets == so};
                     text(so+1, 10, state_name, 'fontsize', 8);
                 end
             end
             
-            % add 0.5 at end since the time value is the center of the bin
-            % add 0 at beginning to make x-axis visible
-            set(gca, 'ylim', [0 numel(avg_tfr(st, hs).freq.freq) + 0.5]);
             % mark state onsets
-            state_ticks=round(concat_states_tfs.state_time(state_samples), 1);
+            state_ticks=round(concat.tfr_time(state_samples), 1);
             set(gca,'xtick',state_samples(~isnan(state_ticks)))
             set(gca,'xticklabels', state_ticks(~isnan(state_ticks)), 'fontsize', 8)
             set(gca, 'xticklabelrotation', 45)
@@ -263,30 +240,68 @@ for cn= 1:numel(sites_data.condition)
             
             title(subplottitle);
             
-            %change aspect ratio if only 2 conditions
-%             if size(avg_tfr, 2) < 3
-%                 set(gca,'DataAspectRatio', [1 0.6 1]);
-%             end
+            
         end
         
-        % evoked LFP
-        figure(h(3));
-        hold on
+        figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
+        hold on;
+        plot(con.time, con.lfp.mean) %, 'Color', colors(i,:));
+        lineprops={};
+        shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
         line([0 0], ylim, 'color', 'k');
-        title(subplottitle);
-        
+        title(subplottitle);        
         xlabel('Time(s)');
-        %ylabel(yaxislabel);
+        
+        figure(h(3));
+        subplot(nhandlabels, nspacelabels, hs);
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(concat.itpcbp)')
+        legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
+        hold on;
+        
+        
+        %concat_states_tfs.time = 1:1:size(concat_states_tfs.powspctrm, 3);
+        
+        
+        
+%         
+%         for figr=1:2 % frequency spectra
+%             figure(h(figr));
+%             subplot(nhandlabels, nspacelabels, hs);
+%             %subplot(nhandlabels, nspacelabels, hs)
+%             %imagesc(concat_states_tfs.time, [1:numel(concat_states_tfs.freq)], squeeze(concat_states_tfs.powspctrm), [-1 1]);
+%             %axis xy, 
+%             
+%             %change aspect ratio if only 2 conditions
+% %             if size(avg_tfr, 2) < 3
+% %                 set(gca,'DataAspectRatio', [1 0.6 1]);
+% %             end
+%         end
+%         
+%         % evoked LFP
+%         figure(h(3));
+%         hold on
+%         subplot(nhandlabels, nspacelabels, hs);
+%         %ylabel(yaxislabel);
     end
     
+    %% format spectra colors
     for figr=1:2
         figure(h(figr));
-        cm = colormap('jet'); 
+        
+        %set(gcf,'CLim',collim{figr})
+        for hs = 1:size(con_data, 2)
+            subplot(sph{figr}(hs));
+            set(gca,'CLim',collim{figr})
+            %clim(collim{figr});
+        end
+        
+        cm = colormap('jet');
         if nargin > 3
             cm = colormap(varargin{1});
-            colorbar;
         end
+            cb = colorbar;
+            set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
         colormap(cm);
     end
     
@@ -296,7 +311,7 @@ for cn= 1:numel(sites_data.condition)
         if ~exist(fldr,'dir')
            mkdir(cfg.sites_lfp_fldr,PRTS);
         end
-        results_file = fullfile(fldr, [plot_names '_' sites_data.site_ID '_' site_conditions(cn).label]);   
+        results_file = fullfile(fldr, [plot_names '_' data.site_ID '_' con_info(cn).label]);   
         mtit(plottitle)
         export_fig(h(figr), results_file, '-pdf');
     end

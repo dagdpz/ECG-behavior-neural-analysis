@@ -1,6 +1,6 @@
-function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ts)
+function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ts,cfg)
 
-n_shuffles=100;   %% here we reduce the shuffled Rpeaks becasue it would get way too big with 100 permutations
+n_shuffles=cfg.n_permutations;
 
 Rpeak_blocks=[Rpeaks.block];
 session_blocks=unique([session_ecg.trials.block]);
@@ -37,7 +37,7 @@ for b=blocks
     
     trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod); %% uhmmmmmmmm doublecheck this
     if nargin<3
-    ts = session_ecg.trials(trials_idx(1)).tsample;
+        ts = session_ecg.trials(trials_idx(1)).tsample;
     end
     session_ecg.tsample=ts;
     block_ecg_timestamps = (0:ts:round(trials_time(end)/ts)*ts);

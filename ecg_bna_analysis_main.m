@@ -61,7 +61,7 @@ for v = 1:length(versions)
             Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
         end
         if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            ecg_bna_compute_session_spike_histogram_fast(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
+            ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
         end
         
         if ecg_bna_cfg.process_ECG
@@ -110,12 +110,12 @@ for v = 1:length(versions)
             
             % Read LFP data
             sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
-            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP( sessions_info(i), ecg_bna_cfg ); %% session_proc_lfp AS OUTPUT!
+            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg); 
             
             ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
             ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
             
-            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
+            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample,ecg_bna_cfg); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
             ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg );
             
             clear session_proc_lfp;

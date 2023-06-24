@@ -53,24 +53,29 @@ for r = (unique([site_lfp.trials.run]))
     fprintf('Computing TFR for run %g\n-----------------------\n', r);
     % concatenate all trials for this run
     trials_idx = find([site_lfp.trials.run] == r);
-    concat_LFP = [site_lfp.trials(trials_idx).lfp_data];
-    ts = site_lfp.trials(trials_idx(1)).tsample; %sample time
+    
+    concat_raw = double([site_lfp.trials(trials_idx).lfp_data]);
+    concat_TFR = single(resample(concat_raw,1,cfg.tfr.timestep));   % this one is resampled! --> think of a better way
+    
+    ts_original = site_lfp.trials(trials_idx(1)).tsample;           % original time step
+    ts = ts_original*cfg.tfr.timestep;                              % resampled time step
+
         
     N_cycles=cfg.tfr.n_cycles;
-    frequencies = cfg.tfr.foi; %logspace(log10(min_freq),log10(max_freq),num_frex);
+    frequencies = cfg.tfr.foi; 
     morlet_borders=1/min(frequencies)*N_cycles/2;
     time = -morlet_borders:1*ts:morlet_borders;
     s = N_cycles./(2*pi*frequencies);
     
     % fT parameters (use next-power-of-2)
     n_wavelet     = length(time); 
-    n_data        = size(concat_LFP,2);
-    n_convolution = n_wavelet+n_data-1;
+    n_data        = size(concat_TFR,2);
+    n_convolution = n_wavelet+n_data;
     n_conv_pow2   = pow2(nextpow2(n_convolution));
     half_wavelet_len = ceil(length(time)/2);
         
-    % get fT of data
-    dataft = fft(concat_LFP,n_conv_pow2);
+    % get ft of data
+    dataft = fft(concat_TFR,n_conv_pow2);
     
     for f=1:length(frequencies)
         % create wavelet
@@ -82,14 +87,20 @@ for r = (unique([site_lfp.trials.run]))
         
         % now reshape to the original number of trials:
         n_sample_start=1;
+        remainder=0;
         for t = trials_idx
-            n_sample_end = n_sample_start + numel(site_lfp.trials(t).lfp_data)-1;
+            %% for some reason, last trial is 2 samples short (thats 50 ms!)
+            n_smpls=numel(site_lfp.trials(t).lfp_data)/cfg.tfr.timestep+remainder;
+            n_samples=round(n_smpls);
+            remainder=n_smpls-n_samples;
+            t_start_sample=ceil(cfg.tfr.timestep*(1/2-remainder));
+            n_sample_end =n_sample_start + n_samples-1;
             % extract phase values of reshaped data:
             site_lfp.trials(t).tfs.phase(1,f,:)= angle(datconv(n_sample_start:n_sample_end));
             % extracted Power of each trial
-            site_lfp.trials(t).tfs.powspctrm(1,f,:)= abs(datconv(n_sample_start:n_sample_end)).^2;
+            site_lfp.trials(t).tfs.powspctrm(1,f,:)= abs(datconv(n_sample_start:n_sample_end));%.^2;
             % time ( :(, only cause needed in this format in other bits)
-            site_lfp.trials(t).tfs.time= site_lfp.trials(t).time;
+            site_lfp.trials(t).tfs.time= site_lfp.trials(t).time(t_start_sample:cfg.tfr.timestep:end);
             site_lfp.trials(t).tfs.freq=frequencies;
             
             n_sample_start = n_sample_end +1;
@@ -104,9 +115,9 @@ for r = (unique([site_lfp.trials.run]))
 %         fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
 %         fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
 %         
-        [b, a]=butter(3, frequency_bands(f,1)*ts); % low-pass filter
-        fltered_data = filtfilt(b,a,double(concat_LFP));
-        [b, a]=butter(3, frequency_bands(f,2)*ts,'high'); % hgh-pass filter
+        [b, a]=butter(3, frequency_bands(f,1)*ts_original); % low-pass filter
+        fltered_data = filtfilt(b,a,concat_raw);
+        [b, a]=butter(3, frequency_bands(f,2)*ts_original,'high'); % hgh-pass filter
         fltered_data = filtfilt(b,a,fltered_data);
         
         phase_data = angle(hilbert(fltered_data));
@@ -115,7 +126,7 @@ for r = (unique([site_lfp.trials.run]))
         for t = trials_idx
             n_sample_end = n_sample_start + numel(site_lfp.trials(t).lfp_data)-1;
             % extract phase values of reshaped data:
-            site_lfp.trials(t).tfs.phase_bandpassed(1,f,:) = phase_data(n_sample_start:n_sample_end);
+            site_lfp.trials(t).phase_bandpassed(1,f,:) = phase_data(n_sample_start:n_sample_end);
             n_sample_start = n_sample_end +1;
         end
     end

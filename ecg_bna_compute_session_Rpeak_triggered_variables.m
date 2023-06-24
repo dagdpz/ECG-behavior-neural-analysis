@@ -138,65 +138,63 @@ for i = 1:nsites
                 [cond_LFP.trials.ECG_spikes] = session_ecg.trials(trial_idx).ECG_spikes;     
                 
                 %if strcmp(analyse_states{st, 1}, 'ecg') % honestly, this needs to go inside the triggering functions
-                state_tfs    = ecg_bna_get_ECG_triggered_tfs_split(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
-                state_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
+                %end
+                real_tfs    = ecg_bna_get_ECG_triggered_tfr(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
+                real_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
                 
-                % mean and std of non-shuffled data set to Zero! (?)
-                shuffled_Rpeak_evoked.lfp.mean=zeros(size(state_evoked.mean));
-                shuffled_Rpeak_evoked.lfp.std =zeros(size(state_evoked.std));
                 
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
+                    %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
                     [cond_LFP.trials.ECG_spikes]=session_ecg.trials(trial_idx).ECG_spikes_shuffled;
-                    
-                    %% compute shuffled power spectra, ITPC spectra and bandpassed ITPC:
-                    shuffled_tfs    = ecg_bna_get_ECG_triggered_tfs_split_shuffled(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
-                    
-                    shuffled_evoked = ecg_bna_get_Rpeak_evoked_LFP_fast(cond_LFP, analyse_states(st, :));
-                    
-                    %% means and std over all shuffled lfp, power, ITPC, and BP_ITPC:
-                    
-                    shuffled_Rpeak_evoked.lfp.mean = nanmean(cat(1, shuffled_evoked.mean), 1);
-                    shuffled_Rpeak_evoked.lfp.std = nanstd(cat(1, shuffled_evoked.mean), 0, 1);
-                    shuffled_Rpeak_evoked.power.mean = nanmean(cat(1,shuffled_tfs.powspctrm_rawmean),1);
-                    shuffled_Rpeak_evoked.power.std = nanstd(cat(1,shuffled_tfs.powspctrm_rawstd),0,1);
-                    shuffled_Rpeak_evoked.phase.mean = nanmean(cat(1,shuffled_tfs.phasespctrm_rawmean),1);
-                    shuffled_Rpeak_evoked.phase.std = nanstd(cat(1,shuffled_tfs.phasespctrm_rawstd),0,1);
-                    shuffled_Rpeak_evoked.phaseBP.mean = nanmean(cat(1, shuffled_tfs.phaseBP_rawmean),1);
-                    shuffled_Rpeak_evoked.phaseBP.std = nanstd(cat(1,shuffled_tfs.phaseBP_rawstd),0,1);
-                                        
+                    shuffled_tfs    = ecg_bna_get_ECG_triggered_tfr(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
+                    shuffled_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
+
+                    tmp=[shuffled_tfs.itpc];
+                    shuffled_mean.itpc.mean=mean(cat(1,tmp.mean),1);
+                    shuffled_mean.itpc.std=std(cat(1,tmp.mean),1); % mean of std OR std of mean?
+                    tmp=[shuffled_tfs.pow];
+                    shuffled_mean.pow.mean=mean(cat(1,tmp.mean),1);
+                    shuffled_mean.pow.std=std(cat(1,tmp.mean),1);   % is this std per pixel?
+                    tmp=[shuffled_evoked.lfp];
+                    shuffled_mean.lfp.mean=mean(cat(1,tmp.mean),1);
+                    shuffled_mean.lfp.std=std(cat(1,tmp.mean),1);
+                    tmp=[shuffled_evoked.itpcbp];
+                    shuffled_mean.itpcbp.mean=mean(cat(1,tmp.mean),1);
+                    shuffled_mean.itpcbp.std=std(cat(1,tmp.mean),1);
+                else % some sort of dummies
+                    shuffled_evoked.lfp.mean=zeros(size(real_evoked.lfp.mean));
+                    shuffled_evoked.lfp.std =zeros(size(real_evoked.lfp.std));
+                    shuffled_evoked.itpcbp.mean=zeros(size(real_evoked.itpcbp.mean));
+                    shuffled_evoked.itpcbp.std =zeros(size(real_evoked.itpcbp.std));
                 end
-                %end
-                if ~isempty(state_tfs.powspctrm) || ~isempty(state_evoked.lfp)
-                    if isfield(state_tfs, 'state') && isfield(state_tfs, 'state_name')
-                        sites_data(i).condition(cn).state_hs(st, hs).state = state_tfs.state;
-                        sites_data(i).condition(cn).state_hs(st, hs).state_name = state_tfs.state_name;
+                if ~isempty(real_tfs.pow.mean) || ~isempty(real_evoked.lfp.mean)
+                    if isfield(real_tfs, 'state') && isfield(real_tfs, 'state_name')
+                        sites_data(i).condition(cn).state_hs(st, hs).state = real_tfs.state;
+                        sites_data(i).condition(cn).state_hs(st, hs).state_name = real_tfs.state_name;
                     end
                     sites_data(i).condition(cn).state_hs(st, hs).trials = cond_trials(cix); %find(cond_trials);
                     sites_data(i).condition(cn).state_hs(st, hs).ntrials = sum(cix);
                     sites_data(i).condition(cn).state_hs(st, hs).hs_label = hs_labels(hs);                    
-                end
-                
+                end                
 
+                    %% this could be the simplest possibl correction
+                    %real_tfs.pow.mean=real_tfs.pow.mean-shuffled_mean.pow.mean;
                 %% use shuffled Rpeak results to normalize data-shuffle_predictor_mean ..... zscore(data)-zscore(shuffle_predictor) ?
-                if ~isempty(state_tfs.powspctrm)
-                    %sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm = state_tfs.powspctrm_normmean;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm = state_tfs.phasespctrm_rawmean;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.powspctrm_raw = state_tfs.powspctrm;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.phasespctrm = state_tfs.phasespctrm_rawmean;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.phasesBP = state_tfs.phaseBP_rawmean;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.time = state_tfs.time;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq.freq = state_tfs.freq;
-
-                    %% takeover also shuffled power/ITPC/BP mean and STD
+                if ~isempty(real_tfs.pow.mean)
+                    %sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled_mean.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc       = real_tfs.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled_mean.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real_tfs.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).freq       = real_tfs.freq;
                 end
-                
-                if ~isempty(state_evoked.lfp)
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp  = state_evoked.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).mean = state_evoked.mean;
-                    sites_data(i).condition(cn).state_hs(st, hs).std  = state_evoked.std;
-                    sites_data(i).condition(cn).state_hs(st, hs).time = state_evoked.lfp_time;
-                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean = shuffled_Rpeak_evoked.lfp.mean;
-                    sites_data(i).condition(cn).state_hs(st, hs).shuffled_std = shuffled_Rpeak_evoked.lfp.std;                    
+                if ~isempty(real_evoked.lfp.mean)
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp            = real_evoked.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled_mean.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real_evoked.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled_mean.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).time           = real_evoked.time;               
                 end
             end
         end
@@ -204,9 +202,8 @@ for i = 1:nsites
     end
     
     % plots
+    close all
     ecg_bna_plots_per_session( sites_data(i), site_conditions, ecg_bna_cfg) % per site!
-    
-    
     
     % difference between conditions
     sites_data(i).difference = [];
