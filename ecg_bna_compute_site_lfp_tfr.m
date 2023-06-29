@@ -56,7 +56,9 @@ for r = (unique([site_lfp.trials.run]))
     
     concat_raw = double([site_lfp.trials(trials_idx).lfp_data]);
     concat_TFR = single(resample(concat_raw,1,cfg.tfr.timestep));   % this one is resampled! --> think of a better way
-    
+%     % SS idea :
+%     concat_TFR2 = single(nanmean(reshape([concat_raw,nan(1,cfg.tfr.timestep-mod(size(concat_raw,2), cfg.tfr.timestep))],cfg.tfr.timestep,[]),1));
+%     
     ts_original = site_lfp.trials(trials_idx(1)).tsample;           % original time step
     ts = ts_original*cfg.tfr.timestep;                              % resampled time step
 
@@ -98,7 +100,7 @@ for r = (unique([site_lfp.trials.run]))
             % extract phase values of reshaped data:
             site_lfp.trials(t).tfs.phase(1,f,:)= angle(datconv(n_sample_start:n_sample_end));
             % extracted Power of each trial
-            site_lfp.trials(t).tfs.powspctrm(1,f,:)= abs(datconv(n_sample_start:n_sample_end));%.^2;
+            site_lfp.trials(t).tfs.powspctrm(1,f,:)= abs(datconv(n_sample_start:n_sample_end)).^2;
             % time ( :(, only cause needed in this format in other bits)
             site_lfp.trials(t).tfs.time= site_lfp.trials(t).time(t_start_sample:cfg.tfr.timestep:end);
             site_lfp.trials(t).tfs.freq=frequencies;
