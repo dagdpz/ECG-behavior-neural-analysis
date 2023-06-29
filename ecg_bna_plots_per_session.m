@@ -64,6 +64,9 @@ elseif strcmp(cfg.baseline_method, 'relchange')
     cbtitle = '(P - \mu) / \mu';
     imscale = [-1, 1];
     imscale = [0 1e-8];
+    elseif strcmp(baseline_method, 'none')
+    cbtitle = 'not-Normalized';
+    imscale = [-1, 1];
 end
 
 % number of subplots required
@@ -243,19 +246,36 @@ for cn= 1:numel(data.condition)
             
         end
         
+        % Smoothing of the evoked LFP here:
+        jnk = [];
+        win = cfg.smoothWin;
+        for k=1:size(con.lfp.mean,1)
+            jnk(k,:)=conv(con.lfp.mean(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+        end
+        con_lfp_mean_smooth = jnk(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        
+        
         figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
         hold on;
-        plot(con.time, con.lfp.mean) %, 'Color', colors(i,:));
+        plot(con.time, con_lfp_mean_smooth) %, 'Color', colors(i,:));
         lineprops={};
         shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
         line([0 0], ylim, 'color', 'k');
         title(subplottitle);        
         xlabel('Time(s)');
         
+        % Smoothing of the itpcbp here:
+        jnk = [];
+        win = cfg.smoothWin;
+        for k=1:size(concat.itpcbp,1)
+            jnk(k,:)=conv(concat.itpcbp(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+        end
+        con_itpcbp_smooth = jnk(:,win:size(concat.itpcbp,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        
         figure(h(3));
         subplot(nhandlabels, nspacelabels, hs);
-        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(concat.itpcbp)')
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
         legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
         hold on;
         
@@ -312,7 +332,7 @@ for cn= 1:numel(data.condition)
            mkdir(cfg.sites_lfp_fldr,PRTS);
         end
         results_file = fullfile(fldr, [plot_names '_' data.site_ID '_' con_info(cn).label]);   
-        mtit(plottitle)
+        mtit(plottitle,'interpreter','none')
         export_fig(h(figr), results_file, '-pdf');
     end
     close all

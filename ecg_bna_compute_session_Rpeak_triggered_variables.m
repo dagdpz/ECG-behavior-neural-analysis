@@ -1,4 +1,4 @@
-function [ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp, session_ecg,analyse_states, ecg_bna_cfg )
+function [ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp , session_ecg,analyse_states, ecg_bna_cfg )
 % ecg_bna_compute_session_Rpeak_triggered_variables  - compute evoked_LFP,
 % Powspctrm, ITPC, and phaseBP variables for different conditions for each site of a session.
 % A condition is a combination of
