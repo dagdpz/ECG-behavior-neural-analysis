@@ -268,8 +268,10 @@ for cn= 1:numel(data.condition)
         % Smoothing of the itpcbp here:
         jnk = [];
         win = cfg.smoothWin;
-        for k=1:size(concat.itpcbp,2)
-            jnk(:,k,:)=conv(concat.itpcbp(:,k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+        for m = 1: size(concat.itpcbp,1)
+            for k=1:size(concat.itpcbp,2)
+                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+            end
         end
         con_itpcbp_smooth = jnk(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
         

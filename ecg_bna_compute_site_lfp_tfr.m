@@ -102,6 +102,11 @@ for r = (unique([site_lfp.trials.run]))
             remainder=n_smpls-n_samples;
             t_start_sample=ceil(cfg.tfr.timestep*(1/2-remainder));
             n_sample_end =n_sample_start + n_samples-1;
+            
+            if n_sample_end > numel(datconv)
+                n_sample_end = numel(datconv);
+            end
+            
             % extract phase values of reshaped data:
             site_lfp.trials(t).tfs.phase(1,f,:)= angle(datconv(n_sample_start:n_sample_end));
             % extracted Power of each trial
