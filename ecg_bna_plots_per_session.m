@@ -258,7 +258,7 @@ for cn= 1:numel(data.condition)
         figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
         hold on;
-        plot(con.time, con_lfp_mean_smooth) %, 'Color', colors(i,:));
+        plot(con.time(win:size(con.lfp.mean,2)-win), con_lfp_mean_smooth) %, 'Color', colors(i,:));
         lineprops={};
         shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
         line([0 0], ylim, 'color', 'k');
@@ -268,14 +268,14 @@ for cn= 1:numel(data.condition)
         % Smoothing of the itpcbp here:
         jnk = [];
         win = cfg.smoothWin;
-        for k=1:size(concat.itpcbp,1)
-            jnk(k,:)=conv(concat.itpcbp(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+        for k=1:size(concat.itpcbp,2)
+            jnk(:,k,:)=conv(concat.itpcbp(:,k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
         end
-        con_itpcbp_smooth = jnk(:,win:size(concat.itpcbp,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        con_itpcbp_smooth = jnk(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
         figure(h(3));
         subplot(nhandlabels, nspacelabels, hs);
-        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+        plot(repmat(concat.lfp_time(win:size(concat.itpcbp,3)-win),size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
         legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
         hold on;
         
