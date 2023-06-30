@@ -53,31 +53,33 @@ for r = (unique([site_lfp.trials.run]))
     fprintf('Computing TFR for run %g\n-----------------------\n', r);
     % concatenate all trials for this run
     trials_idx = find([site_lfp.trials.run] == r);
-    
+
     concat_raw = double([site_lfp.trials(trials_idx).lfp_data]);
-    concat_TFR = single(resample(concat_raw,1,cfg.tfr.timestep));   % this one is resampled! --> think of a better way
-%     % SS idea :
-%     concat_TFR2 = single(nanmean(reshape([concat_raw,nan(1,cfg.tfr.timestep-mod(size(concat_raw,2), cfg.tfr.timestep))],cfg.tfr.timestep,[]),1));
-%     
+% %     concat_TFR = single(resample(concat_raw,1,cfg.tfr.timestep));   % this one is resampled! --> think of a better way
+% 
+% % ========> unComment this part if we want to resample before Convolution.
+%     % SS: a better way :
+%     concat_TFR = single(mean(reshape(concat_raw(1:end-mod(size(concat_raw,2), cfg.tfr.timestep)),cfg.tfr.timestep,[]),1));
+
     ts_original = site_lfp.trials(trials_idx(1)).tsample;           % original time step
-    ts = ts_original*cfg.tfr.timestep;                              % resampled time step
+%     ts = ts_original*cfg.tfr.timestep;                              % resampled time step
 
         
     N_cycles=cfg.tfr.n_cycles;
     frequencies = cfg.tfr.foi; 
     morlet_borders=1/min(frequencies)*N_cycles/2;
-    time = -morlet_borders:1*ts:morlet_borders;
+    time = -morlet_borders:1*ts_original:morlet_borders; % ts_orginal should be replace with ts if want to resample before Conv.
     s = N_cycles./(2*pi*frequencies);
     
     % fT parameters (use next-power-of-2)
     n_wavelet     = length(time); 
-    n_data        = size(concat_TFR,2);
+    n_data        = size(concat_raw,2); %size(concat_TFR,2);
     n_convolution = n_wavelet+n_data;
     n_conv_pow2   = pow2(nextpow2(n_convolution));
     half_wavelet_len = ceil(length(time)/2);
         
-    % get ft of data
-    dataft = fft(concat_TFR,n_conv_pow2);
+    % get fT of data
+    dataft = fft(concat_raw,n_conv_pow2); %fft(concat_TFR,n_conv_pow2);
     
     for f=1:length(frequencies)
         % create wavelet
@@ -85,7 +87,10 @@ for r = (unique([site_lfp.trials.run]))
         % convolution
         datconv = ifft(fft(wavelet,n_conv_pow2).*dataft);
         datconv = datconv(1:n_convolution);
-        datconv = datconv(half_wavelet_len:end-half_wavelet_len);
+        datconv = datconv(half_wavelet_len+1:end-half_wavelet_len); % +1 is for one overlap point at the start
+
+        % resample here:
+        datconv = mean(reshape(datconv(1:end-mod(size(datconv,2), cfg.tfr.timestep)),cfg.tfr.timestep,[]),1);
         
         % now reshape to the original number of trials:
         n_sample_start=1;
