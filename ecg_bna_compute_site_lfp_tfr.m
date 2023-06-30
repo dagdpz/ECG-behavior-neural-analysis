@@ -103,7 +103,7 @@ for r = (unique([site_lfp.trials.run]))
             t_start_sample=ceil(cfg.tfr.timestep*(1/2-remainder));
             n_sample_end =n_sample_start + n_samples-1;
             
-            if n_sample_end > numel(datconv)
+            if n_sample_end == numel(datconv)+1
                 n_sample_end = numel(datconv);
             end
             

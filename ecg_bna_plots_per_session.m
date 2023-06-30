@@ -333,7 +333,7 @@ for cn= 1:numel(data.condition)
         if ~exist(fldr,'dir')
            mkdir(cfg.sites_lfp_fldr,PRTS);
         end
-        results_file = fullfile(fldr, [plot_names '_' data.site_ID '_' con_info(cn).label]);   
+        results_file = fullfile(fldr, [plot_names{figr} '_' data.site_ID '_' con_info(cn).label]);   
         mtit(plottitle,'interpreter','none')
         export_fig(h(figr), results_file, '-pdf');
     end
