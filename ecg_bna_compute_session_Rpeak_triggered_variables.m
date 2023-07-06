@@ -177,23 +177,49 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).hs_label = hs_labels(hs);                    
                 end                
 
-                    %% this could be the simplest possibl correction
-                    %real_tfs.pow.mean=real_tfs.pow.mean-shuffled_mean.pow.mean;
+                %% this could be the simplest possibl correction
+                %real_tfs.pow.mean=real_tfs.pow.mean-shuffled_mean.pow.mean;
+                %
+                % new subfunction to do the normalization:
+%                 % approach one:
+%                 if ~isempty(shuffled_mean)
+%                     out_norm = ecg_bna_compute_shufflePredictor_normalization(real_tfs,real_evoked,shuffled_mean,ecg_bna_cfg);
+%                 end
+                % approach two:
+                if ~isempty(shuffled_mean)
+                    tmp.real = real_tfs.pow;
+                    tmp.shuffled_mean = shuffled_mean.pow;
+                    out_norm.pow = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+                    tmp.real = real_tfs.itpc;
+                    tmp.shuffled_mean = shuffled_mean.itpc;
+                    out_norm.itpc = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+                    tmp.real = real_evoked.lfp;
+                    tmp.shuffled_mean = shuffled_mean.lfp;
+                    out_norm.lfp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+                    tmp.real = real_evoked.itpcbp;
+                    tmp.shuffled_mean = shuffled_mean.itpcbp;
+                    out_norm.itpcbp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+                end
+
                 %% use shuffled Rpeak results to normalize data-shuffle_predictor_mean ..... zscore(data)-zscore(shuffle_predictor) ?
                 if ~isempty(real_tfs.pow.mean)
                     %sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled_mean.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow_norm   = out_norm.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc       = real_tfs.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled_mean.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = out_norm.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real_tfs.time;
                     sites_data(i).condition(cn).state_hs(st, hs).freq       = real_tfs.freq;
                 end
                 if ~isempty(real_evoked.lfp.mean)
                     sites_data(i).condition(cn).state_hs(st, hs).lfp            = real_evoked.lfp;
                     sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled_mean.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp_norm       = out_norm.lfp;
                     sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real_evoked.itpcbp;
                     sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled_mean.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_norm    = out_norm.itpcbp;
                     sites_data(i).condition(cn).state_hs(st, hs).time           = real_evoked.time;               
                 end
             end
