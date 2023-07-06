@@ -1,4 +1,4 @@
-function [out_norm] = ecg_bna_compute_shufflePredictor_normalization_general(variable,ecg_bna_cfg)
+function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,ecg_bna_cfg)
 % ecg_bna_compute_shufflePredictor_normalization_general - normalizing the real tfs
 % and evoked data based on the shuffle predictor results
 %
@@ -16,14 +16,17 @@ function [out_norm] = ecg_bna_compute_shufflePredictor_normalization_general(var
 
 
 method = ecg_bna_cfg.shuffle_normalization_method;
-
-if strcmp(method , 'subtraction')
-    out_norm    = variable.real.mean - variable.shuffled_mean.mean;
-elseif strcmp(method , 'division')
-    out_norm    = variable.real.mean / variable.shuffled_mean.mean;
-elseif strcmp(method , 'zscore')
-    out_norm    = (variable.real.mean - variable.shuffled_mean.mean) / variable.shuffled_mean.std;
-elseif strcmp(method , 'not normalized')
-    out_norm    = variable.real.mean ;
+parameters={'pow','itpc','lfp','itpcbp'};
+for p=1:numel(parameters)
+    parameter=parameters{p};
+    if strcmp(method , 'subtraction')
+        normalized.(parameter)    = real.(parameter).mean-shuffled.(parameter).mean;
+    elseif strcmp(method , 'division')
+        normalized.(parameter)    = real.(parameter).mean./shuffled.(parameter).mean;
+    elseif strcmp(method , 'zscore')
+        normalized.(parameter)    = real.(parameter).mean-shuffled.(parameter).mean./shuffled.(parameter).std;
+    elseif strcmp(method , 'not normalized')
+        normalized.(parameter)    = real.(parameter).mean;
+    end
 end
 

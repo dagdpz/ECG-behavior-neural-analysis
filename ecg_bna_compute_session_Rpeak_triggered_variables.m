@@ -141,7 +141,15 @@ for i = 1:nsites
                 %end
                 real_tfs    = ecg_bna_get_ECG_triggered_tfr(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
                 real_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
-                
+                real.pow=real_tfs.pow;
+                real.itpc=real_tfs.itpc;
+                real.tfr_time=real_tfs.time;
+                real.freq=real_tfs.freq;
+                real.state=real_tfs.state;
+                real.state_name=real_tfs.state_name;
+                real.lfp=real_evoked.lfp;
+                real.itpcbp=real_evoked.itpcbp;
+                real.time=real_evoked.time;
                 
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
@@ -150,27 +158,27 @@ for i = 1:nsites
                     shuffled_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
 
                     tmp=[shuffled_tfs.itpc];
-                    shuffled_mean.itpc.mean=mean(cat(1,tmp.mean),1);
-                    shuffled_mean.itpc.std=std(cat(1,tmp.mean),1); % mean of std OR std of mean?
+                    shuffled.itpc.mean=mean(cat(1,tmp.mean),1);
+                    shuffled.itpc.std=std(cat(1,tmp.mean),1); % mean of std OR std of mean?
                     tmp=[shuffled_tfs.pow];
-                    shuffled_mean.pow.mean=mean(cat(1,tmp.mean),1);
-                    shuffled_mean.pow.std=std(cat(1,tmp.mean),1);   % is this std per pixel?
+                    shuffled.pow.mean=mean(cat(1,tmp.mean),1);
+                    shuffled.pow.std=std(cat(1,tmp.mean),1);   % is this std per pixel?
                     tmp=[shuffled_evoked.lfp];
-                    shuffled_mean.lfp.mean=mean(cat(1,tmp.mean),1);
-                    shuffled_mean.lfp.std=std(cat(1,tmp.mean),1);
+                    shuffled.lfp.mean=mean(cat(1,tmp.mean),1);
+                    shuffled.lfp.std=std(cat(1,tmp.mean),1);
                     tmp=[shuffled_evoked.itpcbp];
-                    shuffled_mean.itpcbp.mean=mean(cat(1,tmp.mean),1);
-                    shuffled_mean.itpcbp.std=std(cat(1,tmp.mean),1);
+                    shuffled.itpcbp.mean=mean(cat(1,tmp.mean),1);
+                    shuffled.itpcbp.std=std(cat(1,tmp.mean),1);
                 else % some sort of dummies
-                    shuffled_evoked.lfp.mean=zeros(size(real_evoked.lfp.mean));
-                    shuffled_evoked.lfp.std =zeros(size(real_evoked.lfp.std));
-                    shuffled_evoked.itpcbp.mean=zeros(size(real_evoked.itpcbp.mean));
-                    shuffled_evoked.itpcbp.std =zeros(size(real_evoked.itpcbp.std));
+                    shuffled_evoked.lfp.mean=zeros(size(real.lfp.mean));
+                    shuffled_evoked.lfp.std =zeros(size(real.lfp.std));
+                    shuffled_evoked.itpcbp.mean=zeros(size(real.itpcbp.mean));
+                    shuffled_evoked.itpcbp.std =zeros(size(real.itpcbp.std));
                 end
-                if ~isempty(real_tfs.pow.mean) || ~isempty(real_evoked.lfp.mean)
-                    if isfield(real_tfs, 'state') && isfield(real_tfs, 'state_name')
-                        sites_data(i).condition(cn).state_hs(st, hs).state = real_tfs.state;
-                        sites_data(i).condition(cn).state_hs(st, hs).state_name = real_tfs.state_name;
+                if ~isempty(real.pow.mean) || ~isempty(real.lfp.mean)
+                    if isfield(real, 'state') && isfield(real_tfs, 'state_name')
+                        sites_data(i).condition(cn).state_hs(st, hs).state = real.state;
+                        sites_data(i).condition(cn).state_hs(st, hs).state_name = real.state_name;
                     end
                     sites_data(i).condition(cn).state_hs(st, hs).trials = cond_trials(cix); %find(cond_trials);
                     sites_data(i).condition(cn).state_hs(st, hs).ntrials = sum(cix);
@@ -178,49 +186,54 @@ for i = 1:nsites
                 end                
 
                 %% this could be the simplest possibl correction
-                %real_tfs.pow.mean=real_tfs.pow.mean-shuffled_mean.pow.mean;
+                %real_tfs.pow.mean=real_tfs.pow.mean-shuffled.pow.mean;
                 %
                 % new subfunction to do the normalization:
 %                 % approach one:
-%                 if ~isempty(shuffled_mean)
-%                     out_norm = ecg_bna_compute_shufflePredictor_normalization(real_tfs,real_evoked,shuffled_mean,ecg_bna_cfg);
+%                 if ~isempty(shuffled)
+%                     out_norm = ecg_bna_compute_shufflePredictor_normalization(real_tfs,real_evoked,shuffled,ecg_bna_cfg);
 %                 end
                 % approach two:
-                if ~isempty(shuffled_mean)
-                    tmp.real = real_tfs.pow;
-                    tmp.shuffled_mean = shuffled_mean.pow;
-                    out_norm.pow = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-                    tmp.real = real_tfs.itpc;
-                    tmp.shuffled_mean = shuffled_mean.itpc;
-                    out_norm.itpc = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-                    tmp.real = real_evoked.lfp;
-                    tmp.shuffled_mean = shuffled_mean.lfp;
-                    out_norm.lfp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-                    tmp.real = real_evoked.itpcbp;
-                    tmp.shuffled_mean = shuffled_mean.itpcbp;
-                    out_norm.itpcbp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+                if ~isempty(shuffled)
+                    
+                    normalized = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,ecg_bna_cfg);
+                    
+                    
+%                     
+%                     tmp.real = real_tfs.pow;
+%                     tmp.shuffled = shuffled.pow;
+%                     out_norm.pow = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+%                     tmp.real = real_tfs.itpc;
+%                     tmp.shuffled = shuffled.itpc;
+%                     out_norm.itpc = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+%                     tmp.real = real_evoked.lfp;
+%                     tmp.shuffled = shuffled.lfp;
+%                     out_norm.lfp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
+%                     tmp.real = real_evoked.itpcbp;
+%                     tmp.shuffled = shuffled.itpcbp;
+%                     out_norm.itpcbp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
                 end
 
                 %% use shuffled Rpeak results to normalize data-shuffle_predictor_mean ..... zscore(data)-zscore(shuffle_predictor) ?
-                if ~isempty(real_tfs.pow.mean)
+                if ~isempty(real.pow.mean)
                     %sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled_mean.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow_norm   = out_norm.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc       = real_tfs.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled_mean.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = out_norm.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real_tfs.time;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq       = real_tfs.freq;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow        = real.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow_norm   = normalized.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc       = real.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = normalized.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).freq       = real.freq;
                 end
-                if ~isempty(real_evoked.lfp.mean)
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp            = real_evoked.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled_mean.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp_norm       = out_norm.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real_evoked.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled_mean.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_norm    = out_norm.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).time           = real_evoked.time;               
+                if ~isempty(real.lfp.mean)
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp            = real.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp_norm       = normalized.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_norm    = normalized.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).time           = real.time;               
                 end
             end
         end
@@ -311,9 +324,9 @@ for t = 1:length(targets)
                         if session_avg(t).condition(cn).state_hs(st, hs).nsites == 1
                             % subtracting shuffled mean
                             session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp;...
-                                sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean] ;
+                                sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
                             session_avg(t).condition(cn).state_hs(st, hs).lfp = [session_avg(t).condition(cn).state_hs(st, hs).lfp;...
-                                sites_data(i).condition(cn).state_hs(st, hs).mean - sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean] ;
+                                sites_data(i).condition(cn).state_hs(st, hs).mean - sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
                             session_avg(t).condition(cn).state_hs(st, hs).time = sites_data(i).condition(cn).state_hs(st, hs).time;
                             
                         else % nsamples differs (hopefully only slightly (?) across sites
@@ -323,9 +336,9 @@ for t = 1:length(targets)
                             end
                             % subtracting shuffled mean
                             session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp  = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp(:,1:nsamples); ...
-                                sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean(1:nsamples)] ;
+                                sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
                             session_avg(t).condition(cn).state_hs(st, hs).lfp  = [session_avg(t).condition(cn).state_hs(st, hs).lfp(:,1:nsamples); ...
-                                sites_data(i).condition(cn).state_hs(st, hs).mean(1:nsamples)- sites_data(i).condition(cn).state_hs(st, hs).shuffled_mean(1:nsamples)] ;
+                                sites_data(i).condition(cn).state_hs(st, hs).mean(1:nsamples)- sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
                             session_avg(t).condition(cn).state_hs(st, hs).time = session_avg(t).condition(cn).state_hs(st, hs).time(1:nsamples) ;
                             
                         end
@@ -345,8 +358,8 @@ for t = 1:length(targets)
             for st = 1:size(session_avg(t).condition(cn).state_hs, 1)
                 session_avg(t).condition(cn).state_hs(st, hs).mean = nanmean(session_avg(t).condition(cn).state_hs(st, hs).lfp, 1);
                 session_avg(t).condition(cn).state_hs(st, hs).std = nanstd(session_avg(t).condition(cn).state_hs(st, hs).lfp, 0, 1);
-                session_avg(t).condition(cn).state_hs(st, hs).shuffled_mean = nanmean(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 1);
-                session_avg(t).condition(cn).state_hs(st, hs).shuffled_mean = nanstd(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 0, 1);
+                session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanmean(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 1);
+                session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanstd(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 0, 1);
             end
         end
         % plot average evoked LFP across sites for this session
