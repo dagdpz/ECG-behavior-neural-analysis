@@ -19,14 +19,17 @@ method = ecg_bna_cfg.shuffle_normalization_method;
 parameters={'pow','itpc','lfp','itpcbp'};
 for p=1:numel(parameters)
     parameter=parameters{p};
+    realmean=real.(parameter).mean;
+    shuffledmean=shuffled.(parameter).mean;
+    shuffledstd=shuffled.(parameter).std;
     if strcmp(method , 'subtraction')
-        normalized.(parameter)    = real.(parameter).mean-shuffled.(parameter).mean;
+        normalized.(parameter)    = realmean-shuffledmean;
     elseif strcmp(method , 'division')
-        normalized.(parameter)    = real.(parameter).mean./shuffled.(parameter).mean;
+        normalized.(parameter)    = realmean./shuffledmean;
     elseif strcmp(method , 'zscore')
-        normalized.(parameter)    = real.(parameter).mean-shuffled.(parameter).mean./shuffled.(parameter).std;
+        normalized.(parameter)    = (realmean-shuffledmean)./shuffledstd;
     elseif strcmp(method , 'not normalized')
-        normalized.(parameter)    = real.(parameter).mean;
+        normalized.(parameter)    = realmean;
     end
 end
 
