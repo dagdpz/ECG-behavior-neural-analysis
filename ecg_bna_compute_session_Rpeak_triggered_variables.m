@@ -160,15 +160,19 @@ for i = 1:nsites
                     tmp=[shuffled_tfs.itpc];
                     shuffled.itpc.mean=mean(cat(1,tmp.mean),1);
                     shuffled.itpc.std=std(cat(1,tmp.mean),1); % mean of std OR std of mean?
+                    shuffled.itpc.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
                     tmp=[shuffled_tfs.pow];
                     shuffled.pow.mean=mean(cat(1,tmp.mean),1);
                     shuffled.pow.std=std(cat(1,tmp.mean),1);   % is this std per pixel?
+                    shuffled.pow.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
                     tmp=[shuffled_evoked.lfp];
                     shuffled.lfp.mean=mean(cat(1,tmp.mean),1);
                     shuffled.lfp.std=std(cat(1,tmp.mean),1);
+                    shuffled.lfp.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
                     tmp=[shuffled_evoked.itpcbp];
                     shuffled.itpcbp.mean=mean(cat(1,tmp.mean),1);
                     shuffled.itpcbp.std=std(cat(1,tmp.mean),1);
+                    shuffled.itpcbp.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
                 else % some sort of dummies
                     shuffled_evoked.lfp.mean=zeros(size(real.lfp.mean));
                     shuffled_evoked.lfp.std =zeros(size(real.lfp.std));
@@ -197,7 +201,7 @@ for i = 1:nsites
                 if ~isempty(shuffled)
                     
                     normalized = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,ecg_bna_cfg);
-                    
+                    significance = ecg_bna_compute_significance(real,shuffled,ecg_bna_cfg);
                     
 %                     
 %                     tmp.real = real_tfs.pow;
@@ -220,9 +224,11 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).pow        = real.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).pow_norm   = normalized.pow;
+                    sites_data(i).condition(cn).state_hs(st, hs).pow_sgnf   = significance.pow;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc       = real.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = normalized.itpc;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpc_sgnf  = significance.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real.time;
                     sites_data(i).condition(cn).state_hs(st, hs).freq       = real.freq;
                 end
@@ -230,9 +236,11 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).lfp            = real.lfp;
                     sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled.lfp;
                     sites_data(i).condition(cn).state_hs(st, hs).lfp_norm       = normalized.lfp;
+                    sites_data(i).condition(cn).state_hs(st, hs).lfp_sgnf       = significance.lfp;
                     sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real.itpcbp;
                     sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled.itpcbp;
                     sites_data(i).condition(cn).state_hs(st, hs).itpcbp_norm    = normalized.itpcbp;
+                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_sgnf    = significance.itpcbp;
                     sites_data(i).condition(cn).state_hs(st, hs).time           = real.time;               
                 end
             end
