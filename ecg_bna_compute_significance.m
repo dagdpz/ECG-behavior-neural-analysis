@@ -26,8 +26,7 @@ for p=1:numel(parameters)
         suffledConf = shuffled.(parameter).conf95;
 %         significance.(parameter).upper = find(realmean > suffledConf(1,:,:));
 %         significance.(parameter).lower = find(realmean < suffledConf(2,:,:));
-        significance.(parameter) = (suffledConf(1,:,:) < realmean < suffledConf(2,:,:));
-
+        significance.(parameter) = (suffledConf(1,:,:) < realmean) | (realmean < suffledConf(2,:,:));
     end
     
 end  
