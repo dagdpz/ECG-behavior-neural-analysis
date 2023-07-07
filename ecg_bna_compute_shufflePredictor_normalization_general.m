@@ -3,14 +3,15 @@ function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(r
 % and evoked data based on the shuffle predictor results
 %
 % USAGE:
-%	[out_norm] = ecg_bna_compute_shufflePredictor_normalization(variable,ecg_bna_cfg)
+%	[normalized] = ecg_bna_compute_shufflePredictor_normalization(variable,ecg_bna_cfg)
 %
 % INPUTS:
-%		variable  	    - 1xN struct containing the real and shuffled data
+%		real            - 1xN struct containing the real data
+%		shuffled  	    - 1xN struct containing the shuffled data
 %       ecg_bna_cfg     - struct containing configuration settings
-%		
+%
 % OUTPUTS: 
-%       out_norm        - 1xN struct containing the normalized results of
+%       normalized        - 1xN struct containing the normalized results of
 %       pow, itpc, lfp, or itpcbp data
 % ======================================================================= %
 
