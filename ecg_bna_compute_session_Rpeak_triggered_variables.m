@@ -229,7 +229,7 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = normalized.itpc;
                     sites_data(i).condition(cn).state_hs(st, hs).itpc_sgnf  = significance.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real.tfr_time;
                     sites_data(i).condition(cn).state_hs(st, hs).freq       = real.freq;
                 end
                 if ~isempty(real.lfp.mean)

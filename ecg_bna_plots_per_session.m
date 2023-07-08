@@ -117,6 +117,10 @@ for cn= 1:numel(data.condition)
         concat.itpc = [];
         concat.itpcbp = [];
         concat.lfp = [];
+        concat.pow_sgnf = [];
+        concat.itpc_sgnf = [];
+        concat.itpcbp_sgnf = [];
+        concat.lfp_sgnf = [];
         concat.tfr_time = [];
         concat.lfp_time = [];
         
@@ -162,10 +166,14 @@ for cn= 1:numel(data.condition)
             % concatenate across states with a NaN separation in between
             concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
             concat.itpc     = cat(3, concat.itpc,  con.itpc.mean, nan(size(con.itpc.mean, 1), size(con.itpc.mean, 2), 100/25));
-            concat.itpcbp   = cat(3, concat.itpcbp,con.itpcbp.mean,    nan(size(con.itpcbp.mean, 1),    size(con.itpcbp.mean, 2),    100));
+            concat.itpcbp   = cat(3, concat.itpcbp,con.itpcbp.mean,  nan(size(con.itpcbp.mean, 1),    size(con.itpcbp.mean, 2),    100));
             concat.lfp      = cat(2, concat.lfp,   con.lfp.mean,     nan(size(con.lfp.mean, 1),        100));
             concat.tfr_time = [concat.tfr_time, con.tfr_time, nan(1, 100/25)];
             concat.lfp_time = [concat.lfp_time, con.time,     nan(1, 100)];
+        concat.pow_sgnf = cat(3, concat.pow_sgnf,   con.pow_sgnf,   nan(size(con.pow_sgnf, 1),   size(con.pow_sgnf, 2),   100/25));
+        concat.itpc_sgnf = cat(3, concat.itpc_sgnf,   con.itpc_sgnf,   nan(size(con.itpc_sgnf, 1),   size(con.itpc_sgnf, 2),   100/25));
+        concat.itpcbp_sgnf = cat(3, concat.itpcbp_sgnf,   con.itpcbp_sgnf,   nan(size(con.itpcbp_sgnf, 1),   size(con.itpcbp_sgnf, 2),   100));
+        concat.lfp_sgnf = cat(2, concat.lfp_sgnf,   con.lfp_sgnf,     nan(size(con.lfp_sgnf, 1),        100));
             
             % somehow needed for (not) labelling not existing alignments
             if ~all(isnan(con.tfr_time))
@@ -193,6 +201,8 @@ for cn= 1:numel(data.condition)
             subplottitle = [subplottitle ' (ntrials = ' num2str(con_data(1, hs).ntrials) ')'];
         end
         
+
+        %% POW and ITPC
         toplot={concat.pow,concat.itpc};
         for figr=1:2 % frequency spectra
             figure(h(figr));
@@ -246,6 +256,7 @@ for cn= 1:numel(data.condition)
             
         end
         
+        %% Evoked LFP
         % Smoothing of the evoked LFP here:
         jnk = [];
         win = cfg.smoothWin;
@@ -253,7 +264,6 @@ for cn= 1:numel(data.condition)
             jnk(k,:)=conv(con.lfp.mean(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
         end
         con_lfp_mean_smooth = jnk(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
-        
         
         figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
@@ -263,23 +273,70 @@ for cn= 1:numel(data.condition)
         shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
         line([0 0], ylim, 'color', 'k');
         title(subplottitle);        
-        xlabel('Time(s)');
+        xlabel('Time(s)');        
+                
+        % adding the signifiance horizontal lines:
+        significance = find(con.lfp_sgnf(win:size(con.lfp.mean,2)-win));
+        t = con.time(win:size(con.lfp.mean,2)-win);
+        ylm = get(gca,'Ylim');
+        for n = 2:numel(significance)
+            if (significance(n)-significance(n-1))>= 2
+                plot([t(significance(n-1)), t(significance(n))],[ylm(1) ylm(1)],'k','linewidth',3)
+            else
+                continue;
+            end
+        end
         
+        %% Bandpassed ITPC        
         % Smoothing of the itpcbp here:
         jnk = [];
         win = cfg.smoothWin;
         for m = 1: size(concat.itpcbp,1)
             for k=1:size(concat.itpcbp,2)
-                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), gausswin(win),'same');%./max(conv(ones(100,1), gausswin(win)));
+                %% I think we dont care about the edge effects here, this is only for plotting, and the edges are meaningless
+                % thats why i put "same" as argument in convolution again,
+                % should make keeping track of sample sizes easier
+                % ./max(conv(ones(100,1), gausswin(win))) <-- this part
+                % should not be needed, as i hope gausswin already produces
+                % a normalized gaussian (sum(gausswin)=1). 
+                % By the way, i believe dividing by the maximum is not the
+                % correct normalization anyway
             end
         end
-        con_itpcbp_smooth = jnk(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        con_itpcbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        % see above, why now we don't need to cut
         
         figure(h(3));
         subplot(nhandlabels, nspacelabels, hs);
-        plot(repmat(concat.lfp_time(win:size(concat.itpcbp,3)-win),size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+        set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));               %% change color order to something nicer
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
         legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
         hold on;
+        
+        % adding the signifiance horizontal lines:
+        clear significance
+        %t = con.time(win:size(con.lfp.mean,2)-win);
+        ylm = get(gca,'Ylim');
+        %ytck = get(gca,'Ytick');
+        stp = (ylm(2)-ylm(1))/100;
+        significance = double(squeeze(concat.itpcbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
+        significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
+        multiplicator=(1:size(significance,1))*-1*stp;              % multiplicator basically defines position of significance line
+        significance=significance.*repmat(multiplicator',1,size(significance,2));
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+        
+%         colors = get(gca,'ColorOrder');
+%         for c = 1: length(colors)-1
+%             significance{c} = find(con.itpcbp_sgnf(:,c,win:size(con.time,2)-win));
+%             for n = 2:length(significance{c})
+%                 if (significance{1,c}(n,1)-significance{1,c}(n-1,1))>= 2
+%                     plot([t(significance{1,c}(n-1,1)), t(significance{1,c}(n,1))],[ylm(1)-(c-1)*stp , ylm(1)-(c-1)*stp],'Color',colors(c,:),'linewidth',3)
+%                 else
+%                     continue;
+%                 end
+%             end
+%         end
         
         
         %concat_states_tfs.time = 1:1:size(concat_states_tfs.powspctrm, 3);
@@ -295,7 +352,7 @@ for cn= 1:numel(data.condition)
 %             %axis xy, 
 %             
 %             %change aspect ratio if only 2 conditions
-% %             if size(avg_tfr, 2) < 3
+% %             if size(con, 2) < 3
 % %                 set(gca,'DataAspectRatio', [1 0.6 1]);
 % %             end
 %         end
