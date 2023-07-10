@@ -170,10 +170,10 @@ for cn= 1:numel(data.condition)
             concat.lfp      = cat(2, concat.lfp,   con.lfp.mean,     nan(size(con.lfp.mean, 1),        100));
             concat.tfr_time = [concat.tfr_time, con.tfr_time, nan(1, 100/25)];
             concat.lfp_time = [concat.lfp_time, con.time,     nan(1, 100)];
-        concat.pow_sgnf = cat(3, concat.pow_sgnf,   con.pow_sgnf,   nan(size(con.pow_sgnf, 1),   size(con.pow_sgnf, 2),   100/25));
-        concat.itpc_sgnf = cat(3, concat.itpc_sgnf,   con.itpc_sgnf,   nan(size(con.itpc_sgnf, 1),   size(con.itpc_sgnf, 2),   100/25));
-        concat.itpcbp_sgnf = cat(3, concat.itpcbp_sgnf,   con.itpcbp_sgnf,   nan(size(con.itpcbp_sgnf, 1),   size(con.itpcbp_sgnf, 2),   100));
-        concat.lfp_sgnf = cat(2, concat.lfp_sgnf,   con.lfp_sgnf,     nan(size(con.lfp_sgnf, 1),        100));
+            concat.pow_sgnf = cat(3, concat.pow_sgnf,   con.pow_sgnf,   nan(size(con.pow_sgnf, 1),   size(con.pow_sgnf, 2),   100/25));
+            concat.itpc_sgnf = cat(3, concat.itpc_sgnf,   con.itpc_sgnf,   nan(size(con.itpc_sgnf, 1),   size(con.itpc_sgnf, 2),   100/25));
+            concat.itpcbp_sgnf = cat(3, concat.itpcbp_sgnf,   con.itpcbp_sgnf,   nan(size(con.itpcbp_sgnf, 1),   size(con.itpcbp_sgnf, 2),   100));
+            concat.lfp_sgnf = cat(2, concat.lfp_sgnf,   con.lfp_sgnf,     nan(size(con.lfp_sgnf, 1),        100));
             
             % somehow needed for (not) labelling not existing alignments
             if ~all(isnan(con.tfr_time))
@@ -204,13 +204,19 @@ for cn= 1:numel(data.condition)
 
         %% POW and ITPC
         toplot={concat.pow,concat.itpc};
+        sigplot = {concat.pow_sgnf, concat.itpc_sgnf};
         for figr=1:2 % frequency spectra
             figure(h(figr));
             sph{figr}(hs)=subplot(nhandlabels, nspacelabels, hs);
 %             imagesc(1:size(toplot{figr},3), con.freq, squeeze(toplot{figr}));
             image(1:size(toplot{figr},3), 1:numel(con.freq), squeeze(toplot{figr}),'CDataMapping','scaled');
             hold on;
-
+            % calculate the significance here:
+            significance = double(squeeze(sigplot{figr})); %+repmat(randi([0 1], 60,19),[1,11]); checking the plot results
+            significance(significance==0)=NaN;
+            % plotting a contour around the significant parts:
+            contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
+            
             nonnan=toplot{figr};nonnan(isnan(nonnan))=[];
             collim{figr}=[min([collim{figr}(:); nonnan(:)]) max([collim{figr}(:); nonnan(:)])];
 
@@ -253,6 +259,7 @@ for cn= 1:numel(data.condition)
             
             title(subplottitle);
             
+            clear significance;
             
         end
         
@@ -260,32 +267,40 @@ for cn= 1:numel(data.condition)
         % Smoothing of the evoked LFP here:
         jnk = [];
         win = cfg.smoothWin;
-        for k=1:size(con.lfp.mean,1)
-            jnk(k,:)=conv(con.lfp.mean(k,:), gausswin(win))./max(conv(ones(100,1), gausswin(win)));
+        for k=1:size(concat.lfp,1)
+            jnk(k,:)=conv(concat.lfp(k,:), gausswin(win),'same'); %./max(conv(ones(100,1), gausswin(win)));
         end
-        con_lfp_mean_smooth = jnk(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
         figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
         hold on;
-        plot(con.time(win:size(con.lfp.mean,2)-win), con_lfp_mean_smooth) %, 'Color', colors(i,:));
+%         plot(con.time(win:size(con.lfp.mean,2)-win), con_lfp_mean_smooth) %, 'Color', colors(i,:));
+        plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)')
         lineprops={};
         shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
         line([0 0], ylim, 'color', 'k');
         title(subplottitle);        
-        xlabel('Time(s)');        
-                
-        % adding the signifiance horizontal lines:
-        significance = find(con.lfp_sgnf(win:size(con.lfp.mean,2)-win));
-        t = con.time(win:size(con.lfp.mean,2)-win);
+        xlabel('Time(s)'); 
+        
+        clear significance
+        %t = con.time(win:size(con.lfp.mean,2)-win);
         ylm = get(gca,'Ylim');
-        for n = 2:numel(significance)
-            if (significance(n)-significance(n-1))>= 2
-                plot([t(significance(n-1)), t(significance(n))],[ylm(1) ylm(1)],'k','linewidth',3)
-            else
-                continue;
-            end
-        end
+        significance = double(squeeze(concat.lfp_sgnf));
+        significance(significance==0)=NaN;
+        significance=significance.*ylm(1);
+        % adding the signifiance horizontal lines:
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+
+%         significance = find(con.lfp_sgnf(win:size(con.lfp.mean,2)-win));
+%         t = con.time(win:size(con.lfp.mean,2)-win);
+%         for n = 2:numel(significance)
+%             if (significance(n)-significance(n-1))>= 2
+%                 plot([t(significance(n-1)), t(significance(n))],[ylm(1) ylm(1)],'k','linewidth',3)
+%             else
+%                 continue;
+%             end
+%         end
         
         %% Bandpassed ITPC        
         % Smoothing of the itpcbp here:
@@ -311,7 +326,6 @@ for cn= 1:numel(data.condition)
         subplot(nhandlabels, nspacelabels, hs);
         set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));               %% change color order to something nicer
         plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
-        legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
         hold on;
         
         % adding the signifiance horizontal lines:
@@ -325,6 +339,9 @@ for cn= 1:numel(data.condition)
         multiplicator=(1:size(significance,1))*-1*stp;              % multiplicator basically defines position of significance line
         significance=significance.*repmat(multiplicator',1,size(significance,2));
         plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+        
+        legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
+
         
 %         colors = get(gca,'ColorOrder');
 %         for c = 1: length(colors)-1
