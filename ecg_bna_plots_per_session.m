@@ -266,9 +266,10 @@ for cn= 1:numel(data.condition)
         %% Evoked LFP
         % Smoothing of the evoked LFP here:
         jnk = [];
-        win = cfg.smoothWin;
+        win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
+        %gauss=normpdf(win,0,numel(win)/6);
         for k=1:size(concat.lfp,1)
-            jnk(k,:)=conv(concat.lfp(k,:), gausswin(win),'same'); %./max(conv(ones(100,1), gausswin(win)));
+            jnk(k,:)=conv(concat.lfp(k,:), normpdf(win,0,numel(win)/6),'same'); %./max(conv(ones(100,1), gausswin(win)));
         end
         con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
