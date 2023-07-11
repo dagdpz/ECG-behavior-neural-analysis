@@ -143,13 +143,8 @@ for i = 1:nsites
                 real_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
                 real.pow=real_tfs.pow;
                 real.itpc=real_tfs.itpc;
-                real.tfr_time=real_tfs.time;
-                real.freq=real_tfs.freq;
-                real.state=real_tfs.state;
-                real.state_name=real_tfs.state_name;
                 real.lfp=real_evoked.lfp;
                 real.itpcbp=real_evoked.itpcbp;
-                real.time=real_evoked.time;
                 
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
@@ -188,60 +183,24 @@ for i = 1:nsites
                     sites_data(i).condition(cn).state_hs(st, hs).ntrials = sum(cix);
                     sites_data(i).condition(cn).state_hs(st, hs).hs_label = hs_labels(hs);                    
                 end                
-
-                %% this could be the simplest possibl correction
-                %real_tfs.pow.mean=real_tfs.pow.mean-shuffled.pow.mean;
-                %
-                % new subfunction to do the normalization:
-%                 % approach one:
-%                 if ~isempty(shuffled)
-%                     out_norm = ecg_bna_compute_shufflePredictor_normalization(real_tfs,real_evoked,shuffled,ecg_bna_cfg);
-%                 end
-                % approach two:
-                if ~isempty(shuffled)
-                    
+                if ~isempty(shuffled)                    
                     normalized = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,ecg_bna_cfg);
                     significance = ecg_bna_compute_significance(real,shuffled,ecg_bna_cfg);
-                    
-%                     
-%                     tmp.real = real_tfs.pow;
-%                     tmp.shuffled = shuffled.pow;
-%                     out_norm.pow = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-%                     tmp.real = real_tfs.itpc;
-%                     tmp.shuffled = shuffled.itpc;
-%                     out_norm.itpc = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-%                     tmp.real = real_evoked.lfp;
-%                     tmp.shuffled = shuffled.lfp;
-%                     out_norm.lfp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
-%                     tmp.real = real_evoked.itpcbp;
-%                     tmp.shuffled = shuffled.itpcbp;
-%                     out_norm.itpcbp = ecg_bna_compute_shufflePredictor_normalization_general(tmp,ecg_bna_cfg);
                 end
-
-                %% use shuffled Rpeak results to normalize data-shuffle_predictor_mean ..... zscore(data)-zscore(shuffle_predictor) ?
-                if ~isempty(real.pow.mean)
-                    %sites_data(i).condition(cn).state_hs(st, hs).pow        = real_tfs.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow        = real.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow_shuff  = shuffled.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow_norm   = normalized.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).pow_sgnf   = significance.pow;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc       = real.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc_shuff = shuffled.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc_norm  = normalized.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpc_sgnf  = significance.itpc;
-                    sites_data(i).condition(cn).state_hs(st, hs).tfr_time   = real.tfr_time;
-                    sites_data(i).condition(cn).state_hs(st, hs).freq       = real.freq;
+                if ~isempty(real.pow.mean) && ~isempty(real.lfp.mean)
+                    sites_data(i).condition(cn).state_hs(st, hs).real=real;
+                    sites_data(i).condition(cn).state_hs(st, hs).shuffled=shuffled;
+                    sites_data(i).condition(cn).state_hs(st, hs).normalized=normalized;
+                    sites_data(i).condition(cn).state_hs(st, hs).significance=significance;
                 end
-                if ~isempty(real.lfp.mean)
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp            = real.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp_shuff      = shuffled.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp_norm       = normalized.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).lfp_sgnf       = significance.lfp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp         = real.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_shuff   = shuffled.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_norm    = normalized.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).itpcbp_sgnf    = significance.itpcbp;
-                    sites_data(i).condition(cn).state_hs(st, hs).time           = real.time;               
+                methods= {'real','shuffled','normalized'};
+                for mt = 1: numel(methods)
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).time=real_evoked.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).tfr_time=real_tfs.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state=real_tfs.state;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state_name=real_tfs.state_name;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).freq=real_tfs.freq;
+                    %sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).hs_label=real_tfs.hs_label;
                 end
             end
         end
@@ -249,9 +208,9 @@ for i = 1:nsites
     end
     
     % plots
-    close all
     methods= {'real','shuffled','normalized'};
     for mt = 1: numel(methods)
+    close all
         ecg_bna_plots_per_session( sites_data(i), site_conditions, ecg_bna_cfg, methods{mt}) % per site!
         % Notice: ===> last input could be 'real', 'shuffled', or 'normalized'
     end

@@ -86,12 +86,7 @@ for cn= 1:numel(data.condition)
     else
         injection = 'Any';
     end
-    plottitle = ['LFP (' injection '): Site ' data.site_ID ', Target ' data.target '(ref_' cfg.ref_hemisphere '), '  con_info(cn).label];
-    if con_info(cn).choice == 0
-        plottitle = [plottitle 'Instructed trials'];
-    elseif con_info(cn).choice == 1
-        plottitle = [plottitle 'Choice trials'];
-    end
+    plottitle = [data.site_ID ', Target ' data.target ' (' injection '): ' con_info(cn).label];
     
     % create figures with handles
     plot_names={'POW','ITPC','ITPC_BP','LFP_Evoked'};
@@ -109,7 +104,7 @@ for cn= 1:numel(data.condition)
     % loop through handspace
     for hs = 1:size(con_data, 2)
         %freq =  cat(2, con_data(:, hs).freq);
-        if isempty(cat(3, con_data(:, hs).pow.mean)) % this is a strange break condition to be honest
+        if isempty(cat(3, con_data(:, hs).(PlotMethod).pow.mean)) % this is a strange break condition to be honest
             continue;
         end
         % concatenate tfs for different state windows for plotting
@@ -124,34 +119,20 @@ for cn= 1:numel(data.condition)
         concat.tfr_time = [];
         concat.lfp_time = [];
         
-        concat.freq = con_data(1, hs).freq; %% this is actually in the settings...
+        concat.freq = con_data(1, hs).(PlotMethod).freq; %% this is actually in the settings...
         concat.label = con_data(1, hs).hs_label; %% this is in the settings too   
-        
-        % create a variable for plot Inputs:
-        Input.shuffled.pow = [];
-        Input.shuffled.itpc = [];
-        Input.shuffled.itpcbp = [];
-        Input.shuffled.lfp = [];
-        Input.shuffled.tfr_time = [];
-        Input.shuffled.lfp_time = [];
-        Input.shuffled.freq = con_data(1, hs).freq;
-        Input.shuffled.label = con_data(1, hs).hs_label;
-        
-        Input.normalized.pow = [];
-        Input.normalized.itpc = [];
-        Input.normalized.lfp = [];
-        Input.normalized.itpcbp = [];
-        Input.normalized.tfr_time = [];
-        Input.normalized.lfp_time = [];
-        Input.normalized.freq = con_data(1, hs).freq;
-        Input.normalized.label = con_data(1, hs).hs_label;
-             
         
         state_info = struct();
         for st = 1:size(con_data, 1)
             % state timing information
             % state onset sample number
-            con=con_data(st, hs);
+            con=con_data(st, hs).(PlotMethod);
+            con.pow_sgnf=con_data(st, hs).significance.pow;
+            con.itpc_sgnf=con_data(st, hs).significance.itpc;
+            con.itpcbp_sgnf=con_data(st, hs).significance.itpcbp;
+            con.lfp_sgnf=con_data(st, hs).significance.lfp;
+            con.shuffled=con_data(1, hs).shuffled;
+            
             state_info(st).onset_s = find(con.tfr_time <= 0, 1, 'last');
             % state onset time
             state_info(st).onset_t = 0;
@@ -170,16 +151,15 @@ for cn= 1:numel(data.condition)
                 state_info(st).finish_s = length(concat.state_time) + state_info(st).finish_s;
                 state_info(st).onset_s  = length(concat.state_time) + state_info(st).onset_s;
             end
-            
-            
+                        
             con.pow.mean(isnan(con.pow.mean))=0;
-            con.itpc.mean(isnan(con.itpc.mean))=0;
-
-            %% i think this part is for differences plots... not sure what to do here with
-            if plot_significant && isfield(con, 'stat_test') && ~isempty(con.stat_test.h)
-                con.stat_test.h(isnan(con.stat_test.h))=0;
-                powspctrm = powspctrm .* con.stat_test.h;
-            end
+            con.itpc.mean(isnan(con.itpc.mean))=0;            
+            con.itpcbp.mean(isnan(con.itpcbp.mean))=0;
+%             %% i think this part is for differences plots... not sure what to do here with
+%             if plot_significant && isfield(con, 'stat_test') && ~isempty(con.stat_test.h)
+%                 con.stat_test.h(isnan(con.stat_test.h))=0;
+%                 powspctrm = powspctrm .* con.stat_test.h;
+%             end
             
             % concatenate across states with a NaN separation in between
             concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
@@ -192,40 +172,20 @@ for cn= 1:numel(data.condition)
             concat.itpc_sgnf = cat(3, concat.itpc_sgnf,   con.itpc_sgnf,   nan(size(con.itpc_sgnf, 1),   size(con.itpc_sgnf, 2),   100/25));
             concat.itpcbp_sgnf = cat(3, concat.itpcbp_sgnf,   con.itpcbp_sgnf,   nan(size(con.itpcbp_sgnf, 1),   size(con.itpcbp_sgnf, 2),   100));
             concat.lfp_sgnf = cat(2, concat.lfp_sgnf,   con.lfp_sgnf,     nan(size(con.lfp_sgnf, 1),        100));
-            
-           
+                       
             % somehow needed for (not) labelling not existing alignments
             if ~all(isnan(con.tfr_time))
                 states_valid=[states_valid st];
             end
-            
-            % create a variable for plot Inputs:
-            Input.real = concat;
-            % shuffledd
-            Input.shuffled.pow = cat(3, Input.shuffled.pow,   con.pow_shuff.mean,   nan(size(con.pow_shuff.mean, 1),   size(con.pow_shuff.mean, 2),   100/25));
-            Input.shuffled.itpc = cat(3, Input.shuffled.itpc,  con.itpc_shuff.mean, nan(size(con.itpc_shuff.mean, 1), size(con.itpc_shuff.mean, 2), 100/25));
-            Input.shuffled.itpcbp = cat(3, Input.shuffled.itpcbp,  con.itpcbp_shuff.mean,  nan(size(con.itpcbp_shuff.mean, 1),    size(con.itpcbp_shuff.mean, 2),  100));
-            Input.shuffled.lfp = cat(2, Input.shuffled.lfp,  con.lfp_shuff.mean,  nan(size(con.lfp_shuff.mean, 1),    100));
-            Input.shuffled.tfr_time =  concat.tfr_time;
-            Input.shuffled.lfp_time =  concat.lfp_time;
-            % normalized
-            Input.normalized.pow = cat(3, Input.normalized.pow,   con.pow_norm,   nan(size(con.pow_norm, 1),   size(con.pow_norm, 2),   100/25));
-            Input.normalized.itpc = cat(3, Input.normalized.itpc,  con.itpc_norm, nan(size(con.itpc_norm, 1), size(con.itpc_norm, 2), 100/25));
-            Input.normalized.itpcbp = cat(3, Input.normalized.itpcbp,  con.itpcbp_norm,  nan(size(con.itpcbp_norm, 1),    size(con.itpcbp_norm, 2),  100));
-            Input.normalized.lfp = cat(2, Input.normalized.lfp,  con.lfp_norm,  nan(size(con.lfp_norm, 1),    100));
-            Input.normalized.tfr_time =  concat.tfr_time;
-            Input.normalized.lfp_time =  concat.lfp_time;
-            
-            
         end
         
         %% plot
         
-        state_onsets = find(Input.(PlotMethod).tfr_time == 0);
-        states_names={con_data(states_valid, hs).state_name};
+        state_onsets = find(concat.tfr_time == 0);
+        states_names={con_data(states_valid, hs).(PlotMethod).state_name};
         state_samples = sort([state_info.start_s, state_info.onset_s, state_info.finish_s]);
         
-        subplottitle =Input.(PlotMethod).label{1};
+        subplottitle =concat.label{1};
         if isfield(con_data(1, hs), 'nsessions')
             subplottitle = [subplottitle ' (nsessions = ' num2str(con_data(1, hs).nsessions) ')'];
         elseif isfield(con_data(1, hs), 'nsites')
@@ -236,12 +196,12 @@ for cn= 1:numel(data.condition)
         
 
         %% POW and ITPC
-        toplot={Input.(PlotMethod).pow,Input.(PlotMethod).itpc};
-        sigplot = {Input.real.pow_sgnf, Input.real.itpc_sgnf};
+        toplot={concat.pow,concat.itpc};
+        sigplot = {concat.pow_sgnf, concat.itpc_sgnf};
         for figr=1:2 % frequency spectra
             figure(h(figr));
             sph{figr}(hs)=subplot(nhandlabels, nspacelabels, hs);
-            image(1:size(toplot{figr},3), 1:numel(Input.(PlotMethod).freq), squeeze(toplot{figr}),'CDataMapping','scaled');
+            image(1:size(toplot{figr},3), 1:numel(concat.freq), squeeze(toplot{figr}),'CDataMapping','scaled');
             hold on;
             if strcmp(PlotMethod,'real')
                 % calculate the significance here:
@@ -280,7 +240,7 @@ for cn= 1:numel(data.condition)
             end
             
             % mark state onsets
-            state_ticks=round(Input.(PlotMethod).tfr_time(state_samples), 1);
+            state_ticks=round(concat.tfr_time(state_samples), 1);
             set(gca,'xtick',state_samples(~isnan(state_ticks)))
             set(gca,'xticklabels', state_ticks(~isnan(state_ticks)), 'fontsize', 8)
             set(gca, 'xticklabelrotation', 45)
@@ -301,8 +261,8 @@ for cn= 1:numel(data.condition)
         jnk = [];
         win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
         %gauss=normpdf(win,0,numel(win)/6);
-        for k=1:size(Input.(PlotMethod).lfp,1)
-            jnk(k,:)=conv(Input.(PlotMethod).lfp(k,:), normpdf(win,0,numel(win)/6),'same'); %./max(conv(ones(100,1), gausswin(win)));
+        for k=1:size(concat.lfp,1)
+            jnk(k,:)=conv(concat.lfp(k,:), normpdf(win,0,numel(win)/6),'same'); %./max(conv(ones(100,1), gausswin(win)));
         end
         con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
@@ -310,39 +270,31 @@ for cn= 1:numel(data.condition)
         subplot(nhandlabels, nspacelabels, hs);
         hold on;
 %         plot(con.time(win:size(con.lfp.mean,2)-win), con_lfp_mean_smooth) %, 'Color', colors(i,:));
-        plot(Input.(PlotMethod).lfp_time', squeeze(con_lfp_mean_smooth)')
+        plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)')
         line([0 0], ylim, 'color', 'k');
         title(subplottitle,'Fontsize',10);
         xlabel('Time(s)');
         
         if strcmp(PlotMethod,'real')
             lineprops={};
-            shadedErrorBar(con.time, con.lfp_shuff.mean,con.lfp_shuff.std,lineprops,1);
+            shadedErrorBar(con.time, con.shuffled.lfp.mean,con.shuffled.lfp.std,lineprops,1);
             
             clear significance
             %t = con.time(win:size(con.lfp.mean,2)-win);
             ylm = get(gca,'Ylim');
-            significance = double(squeeze(Input.(PlotMethod).lfp_sgnf));
+            significance = double(squeeze(concat.lfp_sgnf));
             significance(significance==0)=NaN;
             significance=significance.*ylm(1);
             % adding the signifiance horizontal lines:
-            plot(repmat(Input.(PlotMethod).lfp_time,size(Input.(PlotMethod).itpcbp,2),1)', significance','linewidth',3);
+            plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
         %% Bandpassed ITPC        
         % Smoothing of the itpcbp here:
         jnk = [];
         win = cfg.smoothWin;
-        for m = 1: size(Input.(PlotMethod).itpcbp,1)
-            for k=1:size(Input.(PlotMethod).itpcbp,2)
-                jnk(m,k,:)= conv(squeeze(Input.(PlotMethod).itpcbp(m,k,:)), gausswin(win),'same');%./max(conv(ones(100,1), gausswin(win)));
-                %% I think we dont care about the edge effects here, this is only for plotting, and the edges are meaningless
-                % thats why i put "same" as argument in convolution again,
-                % should make keeping track of sample sizes easier
-                % ./max(conv(ones(100,1), gausswin(win))) <-- this part
-                % should not be needed, as i hope gausswin already produces
-                % a normalized gaussian (sum(gausswin)=1). 
-                % By the way, i believe dividing by the maximum is not the
-                % correct normalization anyway
+        for m = 1: size(concat.itpcbp,1)
+            for k=1:size(concat.itpcbp,2)
+                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), gausswin(win),'same');%./max(conv(ones(100,1), gausswin(win)));
             end
         end
         con_itpcbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
@@ -350,8 +302,8 @@ for cn= 1:numel(data.condition)
         
         figure(h(3));
         subplot(nhandlabels, nspacelabels, hs);
-        set(gca,'ColorOrder',jet(size(Input.(PlotMethod).itpcbp,2)));               %% change color order to something nicer
-        plot(repmat(Input.(PlotMethod).lfp_time,size(Input.(PlotMethod).itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+        set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));               %% change color order to something nicer
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
         hold on;
         
         if strcmp(PlotMethod,'real')
@@ -361,11 +313,11 @@ for cn= 1:numel(data.condition)
             ylm = get(gca,'Ylim');
             %ytck = get(gca,'Ytick');
             stp = (ylm(2)-ylm(1))/100;
-            significance = double(squeeze(Input.(PlotMethod).itpcbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
+            significance = double(squeeze(concat.itpcbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
             significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
             multiplicator=(1:size(significance,1))*-1*stp;              % multiplicator basically defines position of significance line
             significance=significance.*repmat(multiplicator',1,size(significance,2));
-            plot(repmat(Input.(PlotMethod).lfp_time,size(Input.(PlotMethod).itpcbp,2),1)', significance','linewidth',3);
+            plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
         legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
  
@@ -397,8 +349,8 @@ for cn= 1:numel(data.condition)
         if ~exist(fldr,'dir')
            mkdir(cfg.sites_lfp_fldr,PRTS);
         end
-        results_file = fullfile(fldr, [plot_names{figr} '_' data.site_ID '_' con_info(cn).label '_' PlotMethod]);   
-        mtit(plottitle,'interpreter','none')
+        results_file = fullfile(fldr, [plot_names{figr} '_' data.site_ID '_' con_info(cn).label ' ' PlotMethod]);   
+        mtit([plottitle ' ' PlotMethod],'interpreter','none')
         export_fig(h(figr), results_file, '-pdf');
     end
     close all

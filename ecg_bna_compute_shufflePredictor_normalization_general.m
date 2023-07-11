@@ -21,16 +21,21 @@ parameters={'pow','itpc','lfp','itpcbp'};
 for p=1:numel(parameters)
     parameter=parameters{p};
     realmean=real.(parameter).mean;
+    realstd=real.(parameter).std;
     shuffledmean=shuffled.(parameter).mean;
     shuffledstd=shuffled.(parameter).std;
     if strcmp(method , 'subtraction')
-        normalized.(parameter)    = realmean-shuffledmean;
+        normalized.(parameter).mean    = realmean-shuffledmean;
+        normalized.(parameter).std    = shuffledstd;  %%??
     elseif strcmp(method , 'division')
-        normalized.(parameter)    = realmean./shuffledmean;
+        normalized.(parameter).mean    = realmean./shuffledmean;
+        normalized.(parameter).std    = realstd;%./shuffledmean;  %%??
     elseif strcmp(method , 'zscore')
-        normalized.(parameter)    = (realmean-shuffledmean)./shuffledstd;
+        normalized.(parameter).mean    = (realmean-shuffledmean)./shuffledstd;
+        normalized.(parameter).std    = realstd;%./shuffledstd; %% ??
     elseif strcmp(method , 'not normalized')
-        normalized.(parameter)    = realmean;
+        normalized.(parameter).mean    = realmean;
+        normalized.(parameter).std    = realstd;
     end
 end
 
