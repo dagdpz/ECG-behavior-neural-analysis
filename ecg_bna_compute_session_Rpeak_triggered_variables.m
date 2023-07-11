@@ -250,7 +250,11 @@ for i = 1:nsites
     
     % plots
     close all
-    ecg_bna_plots_per_session( sites_data(i), site_conditions, ecg_bna_cfg) % per site!
+    methods= {'real','shuffled','normalized'};
+    for mt = 1: numel(methods)
+        ecg_bna_plots_per_session( sites_data(i), site_conditions, ecg_bna_cfg, methods{mt}) % per site!
+        % Notice: ===> last input could be 'real', 'shuffled', or 'normalized'
+    end
     
     % difference between conditions
     sites_data(i).difference = [];
