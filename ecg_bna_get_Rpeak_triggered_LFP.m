@@ -80,7 +80,7 @@ if isvalid
         cat_phaseBP = cat(1,trigg_all(sh).phaseBP{:});
         % should we caclculate std over all time points in each freq (?)
         triggered(sh).itpcbp.mean = abs(nanmean(exp(1i*cat_phaseBP), 1));
-        triggered(sh).itpcbp.std  = nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3);
+        triggered(sh).itpcbp.std  = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(triggered(sh).time));
         
         % evoked LFP average
         cat_lfp = vertcat(trigg_all(sh).lfp{:});

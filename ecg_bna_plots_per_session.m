@@ -51,20 +51,22 @@ if nargin > 4
 end
 
 % colorbar title
-if strcmp(cfg.baseline_method, 'zscore')
-    cbtitle = 'Z-score';
+if strcmp(cfg.shuffle_normalization_method, 'zscore') % can change to baseline_method
+    % 'zscore' - P_norm(t,f) = ( mean(real) - mean(shuffled) ) / std(shuffled)
+%     cbtitle = 'Z-score'; % for baseline normalization
+    cbtitle = '(P - \mu) / std'; % for shuffle predictor normalization
     imscale = [-1, 1];
-elseif strcmp(cfg.baseline_method, 'division')
+elseif strcmp(cfg.shuffle_normalization_method, 'division')
     cbtitle = 'P / \mu';
     imscale = [0, 2];
-elseif strcmp(cfg.baseline_method, 'subtraction')
+elseif strcmp(cfg.shuffle_normalization_method, 'subtraction')
     cbtitle = 'P - \mu';
     imscale = [0 1e-8];
-elseif strcmp(cfg.baseline_method, 'relchange')
+elseif strcmp(cfg.shuffle_normalization_method, 'relchange')
     cbtitle = '(P - \mu) / \mu';
     imscale = [-1, 1];
     imscale = [0 1e-8];
-    elseif strcmp(baseline_method, 'none')
+    elseif strcmp(cfg.shuffle_normalization_method, 'none')
     cbtitle = 'not-Normalized';
     imscale = [-1, 1];
 end
@@ -131,7 +133,7 @@ for cn= 1:numel(data.condition)
             con.itpc_sgnf=con_data(st, hs).significance.itpc;
             con.itpcbp_sgnf=con_data(st, hs).significance.itpcbp;
             con.lfp_sgnf=con_data(st, hs).significance.lfp;
-            con.shuffled=con_data(1, hs).shuffled;
+            con.shuffled=con_data(st, hs).shuffled;
             
             state_info(st).onset_s = find(con.tfr_time <= 0, 1, 'last');
             % state onset time
@@ -243,13 +245,12 @@ for cn= 1:numel(data.condition)
             state_ticks=round(concat.tfr_time(state_samples), 1);
             set(gca,'xtick',state_samples(~isnan(state_ticks)))
             set(gca,'xticklabels', state_ticks(~isnan(state_ticks)), 'fontsize', 8)
-            set(gca, 'xticklabelrotation', 45)
+            set(gca,'xticklabelrotation', 45)
             % add 0.5 since the time value is the center of the bin
             % add 0 at the beginning to make the y-axis visible
             set(gca, 'xlim', [0 state_samples(end) + 0.5]);
             xlabel('Time (s)');
             ylabel('Frequency (Hz)');
-            
             title(subplottitle);
             
             clear significance;
@@ -269,16 +270,16 @@ for cn= 1:numel(data.condition)
         figure(h(4));
         subplot(nhandlabels, nspacelabels, hs);
         hold on;
-%         plot(con.time(win:size(con.lfp.mean,2)-win), con_lfp_mean_smooth) %, 'Color', colors(i,:));
-        plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)')
+        plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)','linewidth',1.5)
         line([0 0], ylim, 'color', 'k');
-        title(subplottitle,'Fontsize',10);
         xlabel('Time(s)');
+        title(subplottitle);
         
         if strcmp(PlotMethod,'real')
             lineprops={};
+%             shadedErrorBar(con.time, con.lfp.mean,con.lfp.std./(size(con.lfp.std,2).^0.5),lineprops,1);
             shadedErrorBar(con.time, con.shuffled.lfp.mean,con.shuffled.lfp.std,lineprops,1);
-            
+                                   
             clear significance
             %t = con.time(win:size(con.lfp.mean,2)-win);
             ylm = get(gca,'Ylim');
@@ -288,13 +289,14 @@ for cn= 1:numel(data.condition)
             % adding the signifiance horizontal lines:
             plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
+        
         %% Bandpassed ITPC        
         % Smoothing of the itpcbp here:
         jnk = [];
-        win = cfg.smoothWin;
+        win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
         for m = 1: size(concat.itpcbp,1)
             for k=1:size(concat.itpcbp,2)
-                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), gausswin(win),'same');%./max(conv(ones(100,1), gausswin(win)));
+                jnk(m,k,:)= conv(squeeze(concat.itpcbp(m,k,:)), normpdf(win,0,numel(win)/6),'same');%./max(conv(ones(100,1), gausswin(win)));
             end
         end
         con_itpcbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
@@ -320,6 +322,7 @@ for cn= 1:numel(data.condition)
             plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
         legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
+        title(subplottitle);
  
     end
     

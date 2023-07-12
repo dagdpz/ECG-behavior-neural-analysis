@@ -137,7 +137,7 @@ for sh = 1: n_shuffles
         
         
         triggered(sh).itpc.mean   = abs(nanmean(exp(1i*cat_phase), 1));
-        triggered(sh).itpc.std    = nanstd(abs(mean(exp(1i*cat_phase), 1)), 0, 3); 
+        triggered(sh).itpc.std    = repmat(nanstd(abs(mean(exp(1i*cat_phase), 1)), 0, 3),1,1,length(triggered(sh).time)); 
         % should we caclculate std over all time points in each freq (?)
         
 %         % baseline normalization
