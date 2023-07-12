@@ -23,28 +23,28 @@ width = state{4} - state{3};
 trials=site_lfp.trials;
 
 n_shuffles=size(trials(1).ECG_spikes,1);
-[trigg_all(1:n_shuffles).time]      = deal({}); % timestamps
-[trigg_all(1:n_shuffles).lfp]       = deal({}); % evoked LFP response
-[trigg_all(1:n_shuffles).phaseBP]   = deal({}); % bandpassed phase
 %[triggered(1:n_shuffles).state]     = deal({}); % not sure if this is needed (?)
 [triggered(1:n_shuffles).state_name] = deal(state_name); % not sure if this is needed (?)
 isvalid=0;
-for t = 1:length(trials)
-    trialperiod           = trials(t).trialperiod;
-    
-    % get the LFP samples and timestamps for the trial
-    idx=trials(t).time >= trialperiod(1) & trials(t).time <= trialperiod(2);
-    lfp_data = trials(t).lfp_data(idx);
-    lfp_tfs_pBP = site_lfp.trials(t).phase_bandpassed;
-    time = trials(t).time(idx);
-    ecg_peaks = trials(t).ECG_spikes(:,idx);
-    
-    % sample time
-    lfp_ts = 1/trials(t).fsample;
-    % number of samples in each window
-    w_nsamples = round(width/lfp_ts);
-    
-    for sh=1:n_shuffles
+for sh=1:n_shuffles
+trigg_all.time      = {}; % timestamps
+trigg_all.lfp       = {}; % evoked LFP response
+trigg_all.phaseBP   = {}; % bandpassed phase
+    for t = 1:length(trials)
+        trialperiod           = trials(t).trialperiod;
+        
+        % get the LFP samples and timestamps for the trial
+        idx=trials(t).time >= trialperiod(1) & trials(t).time <= trialperiod(2);
+        lfp_data = trials(t).lfp_data(idx);
+        lfp_tfs_pBP = site_lfp.trials(t).phase_bandpassed;
+        time = trials(t).time(idx);
+        ecg_peaks = trials(t).ECG_spikes(:,idx);
+        
+        % sample time
+        lfp_ts = 1/trials(t).fsample;
+        % number of samples in each window
+        w_nsamples = round(width/lfp_ts);
+        
         % now get the windows to combine
         w_center = find(ecg_peaks(sh,:));
         
@@ -55,44 +55,55 @@ for t = 1:length(trials)
             end
             window=w_center(w) - round(w_nsamples/2):w_center(w) + round(w_nsamples/2);
             % evoked LFP for this state
-            trigg_all(sh).lfp = [trigg_all(sh).lfp, lfp_data(window)];
+            trigg_all.lfp = [trigg_all.lfp, lfp_data(window)];
             % bandpassed phase spectrum for this window
-            trigg_all(sh).phaseBP = [trigg_all(sh).phaseBP, lfp_tfs_pBP(:,:,window)];
+            trigg_all.phaseBP = [trigg_all.phaseBP, lfp_tfs_pBP(:,:,window)];
             % timestamps, set mid-timestamp to zero
             temp_time =  time(window) ;
             temp_time = temp_time - temp_time(round(length(temp_time)/2));
-            trigg_all(sh).time     = [trigg_all(sh).time, temp_time];
+            trigg_all.time     = [trigg_all.time, temp_time];
             isvalid=1;
         end
-    end
-end
-
-if isvalid
-    % crop each lfp to same number of samples
-    nsamples = min(cellfun('length', trigg_all(1).lfp));%% question here really is what happens if some shuffles do not contain an RPeak in one of hte trials
-   
-    for sh=1:n_shuffles
-        for k = 1:length(trigg_all(sh).lfp)
-            trigg_all(sh).lfp{k} = trigg_all(sh).lfp{k}(1:nsamples);
-            triggered(sh).time   = trigg_all(sh).time{k}(1:nsamples);
-        end
-        %triggered(sh).time = trigg_all(sh).time(1:nsamples);
-        cat_phaseBP = cat(1,trigg_all(sh).phaseBP{:});
+        triggered(sh).time   = temp_time;
+        cat_phaseBP = cat(1,trigg_all.phaseBP{:});
         % should we caclculate std over all time points in each freq (?)
         triggered(sh).itpcbp.mean = abs(nanmean(exp(1i*cat_phaseBP), 1));
         triggered(sh).itpcbp.std  = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(triggered(sh).time));
         
         % evoked LFP average
-        cat_lfp = vertcat(trigg_all(sh).lfp{:});
+        cat_lfp = vertcat(trigg_all.lfp{:});
         triggered(sh).lfp.mean = nanmean(cat_lfp, 1);
         triggered(sh).lfp.std = nanstd(cat_lfp, 0, 1);
+        
     end
-else
-    triggered.time = [];
-    triggered.lfp.mean = [];
-    triggered.lfp.std = [];
-    triggered.itpcbp.mean = [];
-    triggered.itpcbp.std = [];
 end
+
+% if isvalid
+%     % crop each lfp to same number of samples
+%     nsamples = min(cellfun('length', trigg_all(1).lfp));%% question here really is what happens if some shuffles do not contain an RPeak in one of hte trials
+%    
+%     for sh=1:n_shuffles
+%         for k = 1:length(trigg_all(sh).lfp)
+%             trigg_all(sh).lfp{k} = trigg_all(sh).lfp{k}(1:nsamples);
+%             triggered(sh).time   = trigg_all(sh).time{k}(1:nsamples);
+%         end
+%         %triggered(sh).time = trigg_all(sh).time(1:nsamples);
+%         cat_phaseBP = cat(1,trigg_all(sh).phaseBP{:});
+%         % should we caclculate std over all time points in each freq (?)
+%         triggered(sh).itpcbp.mean = abs(nanmean(exp(1i*cat_phaseBP), 1));
+%         triggered(sh).itpcbp.std  = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(triggered(sh).time));
+%         
+%         % evoked LFP average
+%         cat_lfp = vertcat(trigg_all(sh).lfp{:});
+%         triggered(sh).lfp.mean = nanmean(cat_lfp, 1);
+%         triggered(sh).lfp.std = nanstd(cat_lfp, 0, 1);
+%     end
+% else
+%     triggered.time = [];
+%     triggered.lfp.mean = [];
+%     triggered.lfp.std = [];
+%     triggered.itpcbp.mean = [];
+%     triggered.itpcbp.std = [];
+% end
 end
 
