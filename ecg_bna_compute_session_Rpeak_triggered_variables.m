@@ -139,35 +139,11 @@ for i = 1:nsites
                 
                 %if strcmp(analyse_states{st, 1}, 'ecg') % honestly, this needs to go inside the triggering functions
                 %end
-                real_tfs    = ecg_bna_get_ECG_triggered_tfr(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
-                real_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
-                real.pow=real_tfs.pow;
-                real.itpc=real_tfs.itpc;
-                real.lfp=real_evoked.lfp;
-                real.itpcbp=real_evoked.itpcbp;
-                
+                real = ecg_bna_get_triggered_parameters(cond_LFP, analyse_states(st, :), ecg_bna_cfg);                
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
                     [cond_LFP.trials.ECG_spikes]=session_ecg.trials(trial_idx).ECG_spikes_shuffled;
-                    shuffled_tfs    = ecg_bna_get_ECG_triggered_tfr(cond_LFP, cond_ecg, analyse_states(st, :), ecg_bna_cfg);
-                    shuffled_evoked = ecg_bna_get_Rpeak_triggered_LFP(cond_LFP, analyse_states(st, :));
-
-                    tmp=[shuffled_tfs.itpc];
-                    shuffled.itpc.mean=mean(cat(1,tmp.mean),1);
-                    shuffled.itpc.std=std(cat(1,tmp.mean),1); % mean of std OR std of mean?
-                    shuffled.itpc.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
-                    tmp=[shuffled_tfs.pow];
-                    shuffled.pow.mean=mean(cat(1,tmp.mean),1);
-                    shuffled.pow.std=std(cat(1,tmp.mean),1);   % is this std per pixel?
-                    shuffled.pow.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
-                    tmp=[shuffled_evoked.lfp];
-                    shuffled.lfp.mean=mean(cat(1,tmp.mean),1);
-                    shuffled.lfp.std=std(cat(1,tmp.mean),1);
-                    shuffled.lfp.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
-                    tmp=[shuffled_evoked.itpcbp];
-                    shuffled.itpcbp.mean=mean(cat(1,tmp.mean),1);
-                    shuffled.itpcbp.std=std(cat(1,tmp.mean),1);
-                    shuffled.itpcbp.conf95 = prctile(cat(1,tmp.mean),[97.5, 2.5],1);
+                    shuffled = ecg_bna_get_triggered_parameters(cond_LFP, analyse_states(st, :), ecg_bna_cfg);                    
                 else % some sort of dummies
                     shuffled_evoked.lfp.mean=zeros(size(real.lfp.mean));
                     shuffled_evoked.lfp.std =zeros(size(real.lfp.std));
@@ -175,7 +151,7 @@ for i = 1:nsites
                     shuffled_evoked.itpcbp.std =zeros(size(real.itpcbp.std));
                 end
                 if ~isempty(real.pow.mean) || ~isempty(real.lfp.mean)
-                    if isfield(real, 'state') && isfield(real_tfs, 'state_name')
+                    if isfield(real, 'state') && isfield(real, 'state_name')
                         sites_data(i).condition(cn).state_hs(st, hs).state = real.state;
                         sites_data(i).condition(cn).state_hs(st, hs).state_name = real.state_name;
                     end
@@ -195,11 +171,11 @@ for i = 1:nsites
                 end
                 methods= {'real','shuffled','normalized'};
                 for mt = 1: numel(methods)
-                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).time=real_evoked.time;
-                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).tfr_time=real_tfs.time;
-                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state=real_tfs.state;
-                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state_name=real_tfs.state_name;
-                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).freq=real_tfs.freq;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).time=real.time;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).tfr_time=real.tfr_time;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state=real.state;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).state_name=real.state_name;
+                    sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).freq=real.freq;
                     %sites_data(i).condition(cn).state_hs(st, hs).(methods{mt}).hs_label=real_tfs.hs_label;
                 end
             end

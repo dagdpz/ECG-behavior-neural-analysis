@@ -210,7 +210,7 @@ for cn= 1:numel(data.condition)
                 significance = double(squeeze(sigplot{figr})); %+repmat(randi([0 1], 60,19),[1,11]); checking the plot results
                 significance(significance==0)=NaN;
                 % plotting a contour around the significant parts:
-                contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
+                %contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
             end
             nonnan=toplot{figr};nonnan(isnan(nonnan))=[];
             collim{figr}=[min([collim{figr}(:); nonnan(:)]) max([collim{figr}(:); nonnan(:)])];

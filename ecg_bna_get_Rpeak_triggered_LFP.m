@@ -1,7 +1,7 @@
 function triggered = ecg_bna_get_Rpeak_triggered_LFP( site_lfp, state )
-% ecg_bna_get_Rpeak_evoked_LFP - computes the Rpeak evoked LFP for a specified 
+% ecg_bna_get_Rpeak_evoked_LFP - computes the Rpeak evoked LFP for a specified
 % time window around the Rpeak onset for given trials (usually trials
-% belonging to a condition) in a session 
+% belonging to a condition) in a session
 %
 % USAGE:
 %	triggered_out = ecg_bna_get_Rpeak_evoked_LFP( trials_lfp, state )
@@ -13,23 +13,37 @@ function triggered = ecg_bna_get_Rpeak_triggered_LFP( site_lfp, state )
 %       during which evoked response should be obtained
 % OUTPUTS:
 %		triggered_out  - struct containing Rpeak onset triggered
-%		evoked LFP from the given trials 
+%		evoked LFP from the given trials
 %
 % See also ecg_bna_get_Rpeak_based_STA, ecg_bna_get_shuffled_Rpeak_evoked_LFP
 
 state_name = state{2};
 width = state{4} - state{3};
-
 trials=site_lfp.trials;
 
+% sample time
+lfp_ts = 1/trials(1).fsample;
+% number of samples in each window
+w_nsamples = round(width/lfp_ts);
+
 n_shuffles=size(trials(1).ECG_spikes,1);
-%[triggered(1:n_shuffles).state]     = deal({}); % not sure if this is needed (?)
-[triggered(1:n_shuffles).state_name] = deal(state_name); % not sure if this is needed (?)
-isvalid=0;
+freq_bp=size(trials(1).phase_bandpassed,2);
+
+nanpreallocator=NaN(n_shuffles, freq_bp, round(w_nsamples/2)*2+1);
+itpcbp.mean    = nanpreallocator;
+itpcbp.std     = nanpreallocator;
+itpcbp.conf95_high     = nanpreallocator;
+itpcbp.conf95_low     = nanpreallocator;
+
+nanpreallocator=NaN(n_shuffles, round(w_nsamples/2)*2+1);
+lfp.mean   = nanpreallocator;
+lfp.std    = nanpreallocator;
+lfp.conf95_high     = nanpreallocator;
+lfp.conf95_low     = nanpreallocator;
+
 for sh=1:n_shuffles
-trigg_all.time      = {}; % timestamps
-trigg_all.lfp       = {}; % evoked LFP response
-trigg_all.phaseBP   = {}; % bandpassed phase
+    trigg_all.lfp       = {}; % evoked LFP response
+    trigg_all.phaseBP   = {}; % bandpassed phase
     for t = 1:length(trials)
         trialperiod           = trials(t).trialperiod;
         
@@ -39,15 +53,8 @@ trigg_all.phaseBP   = {}; % bandpassed phase
         lfp_tfs_pBP = site_lfp.trials(t).phase_bandpassed;
         time = trials(t).time(idx);
         ecg_peaks = trials(t).ECG_spikes(:,idx);
-        
-        % sample time
-        lfp_ts = 1/trials(t).fsample;
-        % number of samples in each window
-        w_nsamples = round(width/lfp_ts);
-        
         % now get the windows to combine
-        w_center = find(ecg_peaks(sh,:));
-        
+        w_center = find(ecg_peaks(sh,:));        
         % loop through each window
         for w = 1:length(w_center)
             if w_center(w) - round(w_nsamples/2) < 1 || w_center(w) + round(w_nsamples/2) > length(time)
@@ -59,51 +66,37 @@ trigg_all.phaseBP   = {}; % bandpassed phase
             % bandpassed phase spectrum for this window
             trigg_all.phaseBP = [trigg_all.phaseBP, lfp_tfs_pBP(:,:,window)];
             % timestamps, set mid-timestamp to zero
-            temp_time =  time(window) ;
-            temp_time = temp_time - temp_time(round(length(temp_time)/2));
-            trigg_all.time     = [trigg_all.time, temp_time];
-            isvalid=1;
+            time =  time(window) ;
+            time = time - time(round(length(time)/2));
         end
-        triggered(sh).time   = temp_time;
-        cat_phaseBP = cat(1,trigg_all.phaseBP{:});
-        % should we caclculate std over all time points in each freq (?)
-        triggered(sh).itpcbp.mean = abs(nanmean(exp(1i*cat_phaseBP), 1));
-        triggered(sh).itpcbp.std  = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(triggered(sh).time));
-        
-        % evoked LFP average
-        cat_lfp = vertcat(trigg_all.lfp{:});
-        triggered(sh).lfp.mean = nanmean(cat_lfp, 1);
-        triggered(sh).lfp.std = nanstd(cat_lfp, 0, 1);
-        
     end
+    %triggered(sh).time   = time;
+    cat_phaseBP = cat(1,trigg_all.phaseBP{:});
+    % should we caclculate std over all time points in each freq (?)
+    itpcbp.mean(sh,:,:) = abs(nanmean(exp(1i*cat_phaseBP), 1));
+    itpcbp.std(sh,:,:) = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(time));
+    
+    % evoked LFP average
+    cat_lfp = vertcat(trigg_all.lfp{:});
+    lfp.mean(sh,:) = nanmean(cat_lfp, 1);
+    lfp.std(sh,:) = nanstd(cat_lfp, 0, 1);
 end
 
-% if isvalid
-%     % crop each lfp to same number of samples
-%     nsamples = min(cellfun('length', trigg_all(1).lfp));%% question here really is what happens if some shuffles do not contain an RPeak in one of hte trials
-%    
-%     for sh=1:n_shuffles
-%         for k = 1:length(trigg_all(sh).lfp)
-%             trigg_all(sh).lfp{k} = trigg_all(sh).lfp{k}(1:nsamples);
-%             triggered(sh).time   = trigg_all(sh).time{k}(1:nsamples);
-%         end
-%         %triggered(sh).time = trigg_all(sh).time(1:nsamples);
-%         cat_phaseBP = cat(1,trigg_all(sh).phaseBP{:});
-%         % should we caclculate std over all time points in each freq (?)
-%         triggered(sh).itpcbp.mean = abs(nanmean(exp(1i*cat_phaseBP), 1));
-%         triggered(sh).itpcbp.std  = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(triggered(sh).time));
-%         
-%         % evoked LFP average
-%         cat_lfp = vertcat(trigg_all(sh).lfp{:});
-%         triggered(sh).lfp.mean = nanmean(cat_lfp, 1);
-%         triggered(sh).lfp.std = nanstd(cat_lfp, 0, 1);
-%     end
-% else
-%     triggered.time = [];
-%     triggered.lfp.mean = [];
-%     triggered.lfp.std = [];
-%     triggered.itpcbp.mean = [];
-%     triggered.itpcbp.std = [];
-% end
+triggered.time=time;
+triggered.state_name=state_name;
+triggered.state=state;
+
+%% differentiate between 
+%%      a) mean of std and std of (shuffle) means
+%%      a) mean confidence interval and confidence interval of (shuffle) means 
+
+triggered.lfp.mean=mean(cat(1,lfp.mean),1);
+triggered.lfp.std=std(cat(1,lfp.mean),1);
+triggered.lfp.conf95 = prctile(cat(1,lfp.mean),[97.5, 2.5],1);
+triggered.lfp.std_mean=mean(cat(1,lfp.std),1);
+triggered.itpcbp.mean=mean(cat(1,itpcbp.mean),1);
+triggered.itpcbp.std=std(cat(1,itpcbp.mean),1);
+triggered.itpcbp.conf95 = prctile(cat(1,itpcbp.mean),[97.5, 2.5],1);
+triggered.itpcbp.std_mean=mean(cat(1,itpcbp.std),1);
 end
 
