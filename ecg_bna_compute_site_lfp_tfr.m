@@ -127,11 +127,12 @@ for r = (unique([site_lfp.trials.run]))
 %         fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
 %         fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
 %         
-        [b, a]=butter(3, frequency_bands(f,1)*ts_original); % low-pass filter
+%         [b, a]=butter(3, frequency_bands(f,1)*ts_original,'high'); % hgh-pass filter 
+%         fltered_data = filtfilt(b,a,concat_raw);
+%         [b, a]=butter(3, frequency_bands(f,2)*ts_original); % low-pass filter
+%         fltered_data = filtfilt(b,a,fltered_data);
+        [b, a]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter 
         fltered_data = filtfilt(b,a,concat_raw);
-        [b, a]=butter(3, frequency_bands(f,2)*ts_original,'high'); % hgh-pass filter
-        fltered_data = filtfilt(b,a,fltered_data);
-        
         phase_data = angle(hilbert(fltered_data));
         n_sample_start=1;
         

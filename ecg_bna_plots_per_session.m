@@ -58,17 +58,12 @@ if strcmp(cfg.shuffle_normalization_method, 'zscore') % can change to baseline_m
     imscale = [-1, 1];
 elseif strcmp(cfg.shuffle_normalization_method, 'division')
     cbtitle = 'P / \mu';
-    imscale = [0, 2];
 elseif strcmp(cfg.shuffle_normalization_method, 'subtraction')
     cbtitle = 'P - \mu';
-    imscale = [0 1e-8];
 elseif strcmp(cfg.shuffle_normalization_method, 'relchange')
     cbtitle = '(P - \mu) / \mu';
-    imscale = [-1, 1];
-    imscale = [0 1e-8];
     elseif strcmp(cfg.shuffle_normalization_method, 'none')
     cbtitle = 'not-Normalized';
-    imscale = [-1, 1];
 end
 
 % number of subplots required
@@ -121,7 +116,7 @@ for cn= 1:numel(data.condition)
         concat.tfr_time = [];
         concat.lfp_time = [];
         
-        concat.freq = con_data(1, hs).(PlotMethod).freq; %% this is actually in the settings...
+        concat.freq  = con_data(1, hs).(PlotMethod).freq; %% this is actually in the settings...
         concat.label = con_data(1, hs).hs_label; %% this is in the settings too   
         
         state_info = struct();
@@ -205,13 +200,13 @@ for cn= 1:numel(data.condition)
             sph{figr}(hs)=subplot(nhandlabels, nspacelabels, hs);
             image(1:size(toplot{figr},3), 1:numel(concat.freq), squeeze(toplot{figr}),'CDataMapping','scaled');
             hold on;
-            if strcmp(PlotMethod,'real')
+            %if strcmp(PlotMethod,'real')
                 % calculate the significance here:
                 significance = double(squeeze(sigplot{figr})); %+repmat(randi([0 1], 60,19),[1,11]); checking the plot results
-                significance(significance==0)=NaN;
+                %significance(significance==0)=NaN;
                 % plotting a contour around the significant parts:
-                %contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
-            end
+                contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
+            %end
             nonnan=toplot{figr};nonnan(isnan(nonnan))=[];
             collim{figr}=[min([collim{figr}(:); nonnan(:)]) max([collim{figr}(:); nonnan(:)])];
 

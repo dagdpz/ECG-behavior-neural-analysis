@@ -191,170 +191,170 @@ for i = 1:nsites
         % Notice: ===> last input could be 'real', 'shuffled', or 'normalized'
     end
     
-    % difference between conditions
-    sites_data(i).difference = [];
-    for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
-        diff_condition = ecg_bna_cfg.diff_condition{diff};
-        diff_color = []; diff_legend = [];
-        if isfield(ecg_bna_cfg, 'diff_color')
-            diff_color = ecg_bna_cfg.diff_color{diff};
-        end
-        if isfield(ecg_bna_cfg, 'diff_legend')
-            diff_legend = ecg_bna_cfg.diff_legend{diff};
-        end
-        sites_data(i).difference = [sites_data(i).difference, ecg_bna_compute_diff_condition_average('Rpeak_evoked_LFP', sites_data(i).condition, diff_condition, diff_color, diff_legend)];
-    end
-    % plot Difference TFR
-    for dcn = 1:length(sites_data(i).difference)
-        if ~isempty(sites_data(i).difference(dcn).state_hs)
-            if isfield(sites_data(i).difference(dcn).state_hs,'mean')
-                plottitle = ['Site ID: ' sites_data(i).site_ID ', Target = ' sites_data(i).target '(ref_' ecg_bna_cfg.ref_hemisphere '), ' sites_data(i).difference(dcn).label];
-                result_file = fullfile(site_results_folder, ['LFP_DiffEvoked_' sites_data(i).site_ID '_' 'diff_condition' num2str(dcn)]);
-                ecg_bna_plot_evoked_lfp(sites_data(i).difference(dcn).state_hs, ecg_bna_cfg, plottitle, result_file);
-            end
-        end
-    end
-    
-    site_evoked_lfp = sites_data(i);
-    % save mat file for site
-    save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
-    % save to a mother struct
-    session_data.sites(i) = site_evoked_lfp;
-    
-    close all;
+%     % difference between conditions
+%     sites_data(i).difference = [];
+%     for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
+%         diff_condition = ecg_bna_cfg.diff_condition{diff};
+%         diff_color = []; diff_legend = [];
+%         if isfield(ecg_bna_cfg, 'diff_color')
+%             diff_color = ecg_bna_cfg.diff_color{diff};
+%         end
+%         if isfield(ecg_bna_cfg, 'diff_legend')
+%             diff_legend = ecg_bna_cfg.diff_legend{diff};
+%         end
+%         sites_data(i).difference = [sites_data(i).difference, ecg_bna_compute_diff_condition_average('Rpeak_evoked_LFP', sites_data(i).condition, diff_condition, diff_color, diff_legend)];
+%     end
+%     % plot Difference TFR
+%     for dcn = 1:length(sites_data(i).difference)
+%         if ~isempty(sites_data(i).difference(dcn).state_hs)
+%             if isfield(sites_data(i).difference(dcn).state_hs,'mean')
+%                 plottitle = ['Site ID: ' sites_data(i).site_ID ', Target = ' sites_data(i).target '(ref_' ecg_bna_cfg.ref_hemisphere '), ' sites_data(i).difference(dcn).label];
+%                 result_file = fullfile(site_results_folder, ['LFP_DiffEvoked_' sites_data(i).site_ID '_' 'diff_condition' num2str(dcn)]);
+%                 ecg_bna_plot_evoked_lfp(sites_data(i).difference(dcn).state_hs, ecg_bna_cfg, plottitle, result_file);
+%             end
+%         end
+%     end
+%     
+%     site_evoked_lfp = sites_data(i);
+%     % save mat file for site
+%     save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
+%     % save to a mother struct
+%     session_data.sites(i) = site_evoked_lfp;
+%     
+%     close all;
 end
-
-% Average across sites for a session
-session_avg = struct();
-% targets for this session
-targets = unique({session_proc_lfp.target});
-% average each target separately
-for t = 1:length(targets)
-    session_avg(t).target = targets{t};
-    
-    % conditions
-    for cn = 1:length(site_conditions)
-        session_avg(t).condition(cn).state_hs = struct();
-        session_avg(t).condition(cn).cfg_condition = site_conditions(cn);
-        session_avg(t).condition(cn).label = site_conditions(cn).label;
-        session_avg(t).condition(cn).condition = site_conditions(cn);
-        session_avg(t).condition(cn).label = site_conditions(cn).label;
-        session_avg(t).condition(cn).session = session_proc_lfp(1).session;
-        session_avg(t).condition(cn).target = session_proc_lfp(1).target;
-        
-        for st = 1:size(analyse_states, 1)
-            for hs = 1:length(hs_labels)
-                session_avg(t).condition(cn).state_hs(st, hs).nsites = 0;
-                session_avg(t).condition(cn).state_hs(st, hs).lfp = [];
-                session_avg(t).condition(cn).state_hs(st, hs).mean = [];
-                session_avg(t).condition(cn).state_hs(st, hs).std = [];
-                session_avg(t).condition(cn).state_hs(st, hs).time = [];
-                session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp = [];
-            end
-        end
-        for i = 1:length(sites_data)
-            % if the site's target is same as target being considered
-            if ~strcmp(session_proc_lfp(i).target, targets{t})
-                continue;
-            end
-            if sites_data(i).use_for_avg
-                % calculate the average evoked LFP across sites for this condition
-                if isempty(sites_data(i).condition(cn).state_hs) || ~isfield(sites_data(i).condition(cn).state_hs, 'mean')
-                    continue;
-                end
-                for hs = 1:size(sites_data(i).condition(cn).state_hs, 2)
-                    for st = 1:size(sites_data(i).condition(cn).state_hs, 1)
-                        if isempty(sites_data(i).condition(cn).state_hs(st, hs).mean)
-                            continue;
-                        end
-                        session_avg(t).condition(cn).state_hs(st, hs).nsites = session_avg(t).condition(cn).state_hs(st, hs).nsites + 1;
-                        if session_avg(t).condition(cn).state_hs(st, hs).nsites == 1
-                            % subtracting shuffled mean
-                            session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp;...
-                                sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
-                            session_avg(t).condition(cn).state_hs(st, hs).lfp = [session_avg(t).condition(cn).state_hs(st, hs).lfp;...
-                                sites_data(i).condition(cn).state_hs(st, hs).mean - sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
-                            session_avg(t).condition(cn).state_hs(st, hs).time = sites_data(i).condition(cn).state_hs(st, hs).time;
-                            
-                        else % nsamples differs (hopefully only slightly (?) across sites
-                            nsamples = length(session_avg(t).condition(cn).state_hs(st, hs).time);
-                            if nsamples > length(sites_data(i).condition(cn).state_hs(st, hs).time)
-                                nsamples = length(sites_data(i).condition(cn).state_hs(st, hs).time);
-                            end
-                            % subtracting shuffled mean
-                            session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp  = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp(:,1:nsamples); ...
-                                sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
-                            session_avg(t).condition(cn).state_hs(st, hs).lfp  = [session_avg(t).condition(cn).state_hs(st, hs).lfp(:,1:nsamples); ...
-                                sites_data(i).condition(cn).state_hs(st, hs).mean(1:nsamples)- sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
-                            session_avg(t).condition(cn).state_hs(st, hs).time = session_avg(t).condition(cn).state_hs(st, hs).time(1:nsamples) ;
-                            
-                        end
-                        % struct to store average evoked LFP across sites
-                        session_avg(t).condition(cn).state_hs(st, hs).hs_label = sites_data(i).condition(cn).state_hs(st, hs).hs_label;
-                        if isfield(sites_data(i).condition(cn).state_hs(st, hs), 'state') && isfield(sites_data(i).condition(cn).state_hs(st, hs), 'state_name')
-                            session_avg(t).condition(cn).state_hs(st, hs).state = sites_data(i).condition(cn).state_hs(st, hs).state;
-                            session_avg(t).condition(cn).state_hs(st, hs).state_name = sites_data(i).condition(cn).state_hs(st, hs).state_name;
-                        end
-                    end
-                    
-                end
-            end
-        end
-        % average LFP across sites for a session
-        for hs = 1:size(session_avg(t).condition(cn).state_hs, 2)
-            for st = 1:size(session_avg(t).condition(cn).state_hs, 1)
-                session_avg(t).condition(cn).state_hs(st, hs).mean = nanmean(session_avg(t).condition(cn).state_hs(st, hs).lfp, 1);
-                session_avg(t).condition(cn).state_hs(st, hs).std = nanstd(session_avg(t).condition(cn).state_hs(st, hs).lfp, 0, 1);
-                session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanmean(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 1);
-                session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanstd(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 0, 1);
-            end
-        end
-        % plot average evoked LFP across sites for this session
-        plottitle = ['Session: ', session_avg(t).condition(cn).session ', Target = ' session_avg(t).condition(cn).target ' (ref_' ecg_bna_cfg.ref_hemisphere '), ' site_conditions(cn).label ', '];
-        if site_conditions(cn).choice == 0
-            plottitle = [plottitle 'Instructed trials'];
-        elseif site_conditions(cn).choice == 1
-            plottitle = [plottitle 'Choice trials'];
-        end
-        result_file = fullfile(results_folder_evoked, ['LFP_Evoked_' session_avg(t).condition(cn).session '_' session_avg(t).condition(cn).target '_' site_conditions(cn).label]);
-        ecg_bna_plot_evoked_lfp (session_avg(t).condition(cn).state_hs, ecg_bna_cfg, plottitle, result_file);
-    end
-    
-    
-    % difference between conditions
-    session_avg(t).difference = [];
-    for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
-        diff_condition = ecg_bna_cfg.diff_condition{diff};
-        diff_color = []; diff_legend = [];
-        if isfield(ecg_bna_cfg, 'diff_color')
-            diff_color = ecg_bna_cfg.diff_color{diff};
-        end
-        if isfield(ecg_bna_cfg, 'diff_legend')
-            diff_legend = ecg_bna_cfg.diff_legend{diff};
-        end
-        session_avg(t).difference = [session_avg(t).difference, ...
-            ecg_bna_compute_diff_condition_average('Rpeak_evoked_LFP', session_avg(t).condition, diff_condition, diff_color, diff_legend)];
-    end
-    % plot Difference TFR
-    for dcn = 1:length(session_avg(t).difference)
-        if ~isempty(session_avg(t).difference(dcn).state_hs)
-            if isfield(session_avg(t).difference(dcn).state_hs,'mean')
-                plottitle = ['Target ', ecg_bna_cfg.compare.targets{t}, ' (ref_', ecg_bna_cfg.ref_hemisphere, ') ', session_avg(t).difference(dcn).label];
-                result_file = fullfile(results_folder_evoked, ['LFP_DiffEvoked_' ecg_bna_cfg.compare.targets{t} '_' 'diff_condition' num2str(dcn)]);
-                %session_avg(t).difference(dcn).label '.png']);
-                ecg_bna_plot_evoked_lfp(session_avg(t).difference(dcn).state_hs, ecg_bna_cfg, plottitle, result_file);
-            end
-        end
-    end
-    
-end
-
-close all;
-
-% store session average data
-session_data.session_avg = session_avg;
-
-% save mat files
-save(fullfile(results_folder_evoked, ['Rpeak_evoked_LFP_' session_data.session '.mat']), 'session_data');
+% 
+% % Average across sites for a session
+% session_avg = struct();
+% % targets for this session
+% targets = unique({session_proc_lfp.target});
+% % average each target separately
+% for t = 1:length(targets)
+%     session_avg(t).target = targets{t};
+%     
+%     % conditions
+%     for cn = 1:length(site_conditions)
+%         session_avg(t).condition(cn).state_hs = struct();
+%         session_avg(t).condition(cn).cfg_condition = site_conditions(cn);
+%         session_avg(t).condition(cn).label = site_conditions(cn).label;
+%         session_avg(t).condition(cn).condition = site_conditions(cn);
+%         session_avg(t).condition(cn).label = site_conditions(cn).label;
+%         session_avg(t).condition(cn).session = session_proc_lfp(1).session;
+%         session_avg(t).condition(cn).target = session_proc_lfp(1).target;
+%         
+%         for st = 1:size(analyse_states, 1)
+%             for hs = 1:length(hs_labels)
+%                 session_avg(t).condition(cn).state_hs(st, hs).nsites = 0;
+%                 session_avg(t).condition(cn).state_hs(st, hs).lfp = [];
+%                 session_avg(t).condition(cn).state_hs(st, hs).mean = [];
+%                 session_avg(t).condition(cn).state_hs(st, hs).std = [];
+%                 session_avg(t).condition(cn).state_hs(st, hs).time = [];
+%                 session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp = [];
+%             end
+%         end
+%         for i = 1:length(sites_data)
+%             % if the site's target is same as target being considered
+%             if ~strcmp(session_proc_lfp(i).target, targets{t})
+%                 continue;
+%             end
+%             if sites_data(i).use_for_avg
+%                 % calculate the average evoked LFP across sites for this condition
+%                 if isempty(sites_data(i).condition(cn).state_hs) || ~isfield(sites_data(i).condition(cn).state_hs, 'mean')
+%                     continue;
+%                 end
+%                 for hs = 1:size(sites_data(i).condition(cn).state_hs, 2)
+%                     for st = 1:size(sites_data(i).condition(cn).state_hs, 1)
+%                         if isempty(sites_data(i).condition(cn).state_hs(st, hs).mean)
+%                             continue;
+%                         end
+%                         session_avg(t).condition(cn).state_hs(st, hs).nsites = session_avg(t).condition(cn).state_hs(st, hs).nsites + 1;
+%                         if session_avg(t).condition(cn).state_hs(st, hs).nsites == 1
+%                             % subtracting shuffled mean
+%                             session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp;...
+%                                 sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
+%                             session_avg(t).condition(cn).state_hs(st, hs).lfp = [session_avg(t).condition(cn).state_hs(st, hs).lfp;...
+%                                 sites_data(i).condition(cn).state_hs(st, hs).mean - sites_data(i).condition(cn).state_hs(st, hs).shuffled] ;
+%                             session_avg(t).condition(cn).state_hs(st, hs).time = sites_data(i).condition(cn).state_hs(st, hs).time;
+%                             
+%                         else % nsamples differs (hopefully only slightly (?) across sites
+%                             nsamples = length(session_avg(t).condition(cn).state_hs(st, hs).time);
+%                             if nsamples > length(sites_data(i).condition(cn).state_hs(st, hs).time)
+%                                 nsamples = length(sites_data(i).condition(cn).state_hs(st, hs).time);
+%                             end
+%                             % subtracting shuffled mean
+%                             session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp  = [session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp(:,1:nsamples); ...
+%                                 sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
+%                             session_avg(t).condition(cn).state_hs(st, hs).lfp  = [session_avg(t).condition(cn).state_hs(st, hs).lfp(:,1:nsamples); ...
+%                                 sites_data(i).condition(cn).state_hs(st, hs).mean(1:nsamples)- sites_data(i).condition(cn).state_hs(st, hs).shuffled(1:nsamples)] ;
+%                             session_avg(t).condition(cn).state_hs(st, hs).time = session_avg(t).condition(cn).state_hs(st, hs).time(1:nsamples) ;
+%                             
+%                         end
+%                         % struct to store average evoked LFP across sites
+%                         session_avg(t).condition(cn).state_hs(st, hs).hs_label = sites_data(i).condition(cn).state_hs(st, hs).hs_label;
+%                         if isfield(sites_data(i).condition(cn).state_hs(st, hs), 'state') && isfield(sites_data(i).condition(cn).state_hs(st, hs), 'state_name')
+%                             session_avg(t).condition(cn).state_hs(st, hs).state = sites_data(i).condition(cn).state_hs(st, hs).state;
+%                             session_avg(t).condition(cn).state_hs(st, hs).state_name = sites_data(i).condition(cn).state_hs(st, hs).state_name;
+%                         end
+%                     end
+%                     
+%                 end
+%             end
+%         end
+%         % average LFP across sites for a session
+%         for hs = 1:size(session_avg(t).condition(cn).state_hs, 2)
+%             for st = 1:size(session_avg(t).condition(cn).state_hs, 1)
+%                 session_avg(t).condition(cn).state_hs(st, hs).mean = nanmean(session_avg(t).condition(cn).state_hs(st, hs).lfp, 1);
+%                 session_avg(t).condition(cn).state_hs(st, hs).std = nanstd(session_avg(t).condition(cn).state_hs(st, hs).lfp, 0, 1);
+%                 session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanmean(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 1);
+%                 session_avg(t).condition(cn).state_hs(st, hs).shuffled = nanstd(session_avg(t).condition(cn).state_hs(st, hs).shuffled_lfp, 0, 1);
+%             end
+%         end
+%         % plot average evoked LFP across sites for this session
+%         plottitle = ['Session: ', session_avg(t).condition(cn).session ', Target = ' session_avg(t).condition(cn).target ' (ref_' ecg_bna_cfg.ref_hemisphere '), ' site_conditions(cn).label ', '];
+%         if site_conditions(cn).choice == 0
+%             plottitle = [plottitle 'Instructed trials'];
+%         elseif site_conditions(cn).choice == 1
+%             plottitle = [plottitle 'Choice trials'];
+%         end
+%         result_file = fullfile(results_folder_evoked, ['LFP_Evoked_' session_avg(t).condition(cn).session '_' session_avg(t).condition(cn).target '_' site_conditions(cn).label]);
+%         ecg_bna_plot_evoked_lfp (session_avg(t).condition(cn).state_hs, ecg_bna_cfg, plottitle, result_file);
+%     end
+%     
+%     
+%     % difference between conditions
+%     session_avg(t).difference = [];
+%     for diff = 1:size(ecg_bna_cfg.diff_condition, 2)
+%         diff_condition = ecg_bna_cfg.diff_condition{diff};
+%         diff_color = []; diff_legend = [];
+%         if isfield(ecg_bna_cfg, 'diff_color')
+%             diff_color = ecg_bna_cfg.diff_color{diff};
+%         end
+%         if isfield(ecg_bna_cfg, 'diff_legend')
+%             diff_legend = ecg_bna_cfg.diff_legend{diff};
+%         end
+%         session_avg(t).difference = [session_avg(t).difference, ...
+%             ecg_bna_compute_diff_condition_average('Rpeak_evoked_LFP', session_avg(t).condition, diff_condition, diff_color, diff_legend)];
+%     end
+%     % plot Difference TFR
+%     for dcn = 1:length(session_avg(t).difference)
+%         if ~isempty(session_avg(t).difference(dcn).state_hs)
+%             if isfield(session_avg(t).difference(dcn).state_hs,'mean')
+%                 plottitle = ['Target ', ecg_bna_cfg.compare.targets{t}, ' (ref_', ecg_bna_cfg.ref_hemisphere, ') ', session_avg(t).difference(dcn).label];
+%                 result_file = fullfile(results_folder_evoked, ['LFP_DiffEvoked_' ecg_bna_cfg.compare.targets{t} '_' 'diff_condition' num2str(dcn)]);
+%                 %session_avg(t).difference(dcn).label '.png']);
+%                 ecg_bna_plot_evoked_lfp(session_avg(t).difference(dcn).state_hs, ecg_bna_cfg, plottitle, result_file);
+%             end
+%         end
+%     end
+%     
+% end
+% 
+% close all;
+% 
+% % store session average data
+% session_data.session_avg = session_avg;
+% 
+% % save mat files
+% save(fullfile(results_folder_evoked, ['Rpeak_evoked_LFP_' session_data.session '.mat']), 'session_data');
 
 end
