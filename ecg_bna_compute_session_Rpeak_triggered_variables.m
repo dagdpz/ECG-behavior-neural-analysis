@@ -69,10 +69,10 @@ if ~exist(site_results_folder, 'dir')
     mkdir(site_results_folder);
 end
 
-% condition based Evoked
-sites_data = struct();
-session_data = struct();
-session_data.session = session_proc_lfp(1).session;
+% % condition based Evoked
+% sites_data = struct();
+% session_data = struct();
+% session_data.session = session_proc_lfp(1).session;
 
 % get trial conditions for this session
 site_conditions = lfp_tfa_compare_conditions(ecg_bna_cfg, {0, 1});
@@ -135,14 +135,14 @@ for i = 1:nsites
             for st = 1:size(analyse_states, 1)                
                 cond_LFP=session_proc_lfp(i);
                 [cond_LFP.trials]=cond_LFP.trials(cond_trials(cix));
-                [cond_LFP.trials.ECG_spikes] = session_ecg.trials(trial_idx).ECG_spikes;     
+                [cond_LFP.trials.ECG_spikes] = cond_ecg.ECG_spikes;     
                 
                 %if strcmp(analyse_states{st, 1}, 'ecg') % honestly, this needs to go inside the triggering functions
                 %end
                 real = ecg_bna_get_triggered_parameters(cond_LFP, analyse_states(st, :), ecg_bna_cfg);                
                 if isfield(ecg_bna_cfg, 'random_permute_triggers') && ecg_bna_cfg.random_permute_triggers
                     %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
-                    [cond_LFP.trials.ECG_spikes]=session_ecg.trials(trial_idx).ECG_spikes_shuffled;
+                    [cond_LFP.trials.ECG_spikes]=cond_ecg.ECG_spikes_shuffled;
                     shuffled = ecg_bna_get_triggered_parameters(cond_LFP, analyse_states(st, :), ecg_bna_cfg);                    
                 else % some sort of dummies
                     shuffled_evoked.lfp.mean=zeros(size(real.lfp.mean));
@@ -180,7 +180,6 @@ for i = 1:nsites
                 end
             end
         end
-        
     end
     
     % plots

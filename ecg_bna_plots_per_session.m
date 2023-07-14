@@ -69,7 +69,12 @@ end
 % number of subplots required
 nhandlabels = length(cfg.compare.reach_hands);
 nspacelabels = length(cfg.compare.reach_spaces);
+plot_names={'POW','ITPC','ITPC_BP','LFP_Evoked'};
+nsubplots=numel(plot_names);
 
+nrows=ceil(sqrt((nsubplots*nhandlabels*nspacelabels)));
+ncolumns=nrows;
+results_folder=[cfg.sites_lfp_fldr filesep];
 
 %% loop through conditions
 for cn= 1:numel(data.condition)    
@@ -85,14 +90,8 @@ for cn= 1:numel(data.condition)
     end
     plottitle = [data.site_ID ', Target ' data.target ' (' injection '): ' con_info(cn).label];
     
-    % create figures with handles
-    plot_names={'POW','ITPC','ITPC_BP','LFP_Evoked'};
-    results_folders={[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_TFS'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_PHA'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_PHABP'],[cfg.sites_lfp_fldr filesep 'Rpeak_evoked_LFP']};
-    for f=1:numel(plot_names)
-        h(f) = figure('Name',plot_names{f});
-        %set(h(f), 'position', [100, 100,900, 675]);
-        hold on
-    end
+    % create figure
+    h = figure('units','normalized','position',[0 0 1 1]);
     
     con_data=data.condition(cn).state_hs;
     states_valid=[];
@@ -100,7 +99,6 @@ for cn= 1:numel(data.condition)
     collim{2}=[];
     % loop through handspace
     for hs = 1:size(con_data, 2)
-        %freq =  cat(2, con_data(:, hs).freq);
         if isempty(cat(3, con_data(:, hs).(PlotMethod).pow.mean)) % this is a strange break condition to be honest
             continue;
         end
@@ -152,11 +150,6 @@ for cn= 1:numel(data.condition)
             con.pow.mean(isnan(con.pow.mean))=0;
             con.itpc.mean(isnan(con.itpc.mean))=0;            
             con.itpcbp.mean(isnan(con.itpcbp.mean))=0;
-%             %% i think this part is for differences plots... not sure what to do here with
-%             if plot_significant && isfield(con, 'stat_test') && ~isempty(con.stat_test.h)
-%                 con.stat_test.h(isnan(con.stat_test.h))=0;
-%                 powspctrm = powspctrm .* con.stat_test.h;
-%             end
             
             % concatenate across states with a NaN separation in between
             concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
@@ -195,20 +188,18 @@ for cn= 1:numel(data.condition)
         %% POW and ITPC
         toplot={concat.pow,concat.itpc};
         sigplot = {concat.pow_sgnf, concat.itpc_sgnf};
-        for figr=1:2 % frequency spectra
-            figure(h(figr));
-            sph{figr}(hs)=subplot(nhandlabels, nspacelabels, hs);
-            image(1:size(toplot{figr},3), 1:numel(concat.freq), squeeze(toplot{figr}),'CDataMapping','scaled');
+        for sp=1:2 % frequency spectra
+            sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);
+            image(1:size(toplot{sp},3), 1:numel(concat.freq), squeeze(toplot{sp}),'CDataMapping','scaled');
+            set(gca,'YDir','normal');
             hold on;
-            %if strcmp(PlotMethod,'real')
-                % calculate the significance here:
-                significance = double(squeeze(sigplot{figr})); %+repmat(randi([0 1], 60,19),[1,11]); checking the plot results
-                %significance(significance==0)=NaN;
-                % plotting a contour around the significant parts:
-                contour(1:size(toplot{figr},3),1:numel(con.freq),significance,1,'linecolor','k')
-            %end
-            nonnan=toplot{figr};nonnan(isnan(nonnan))=[];
-            collim{figr}=[min([collim{figr}(:); nonnan(:)]) max([collim{figr}(:); nonnan(:)])];
+            % calculate the significance here:
+            significance = double(squeeze(sigplot{sp})); %+repmat(randi([0 1], 60,19),[1,11]); checking the plot results
+            %significance(significance==0)=NaN;
+            % plotting a contour around the significant parts:
+            contour(1:size(toplot{sp},3),1:numel(con.freq),significance,1,'linecolor','k')
+            nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
+            collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
 
             % horizontal lines to separate frequency bands
             fbandstart = [2, 4, 8, 12, 18, 32, 80];
@@ -227,7 +218,6 @@ for cn= 1:numel(data.condition)
             % add 0.5 at end since the time value is the center of the bin
             % add 0 at beginning to make x-axis visible
             set(gca, 'ylim', [0.5,numel(con.freq) + 0.5]);
-            %round(concat_states_tfs.freq([1:8:numel(concat_states_tfs.freq)])));
             for so = state_onsets
                 line([so so], ylim, 'color', 'k');
                 if isfield(con_data(state_onsets == so, hs), 'state_name') && ~isempty(states_names(state_onsets == so))
@@ -256,14 +246,13 @@ for cn= 1:numel(data.condition)
         % Smoothing of the evoked LFP here:
         jnk = [];
         win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
-        %gauss=normpdf(win,0,numel(win)/6);
         for k=1:size(concat.lfp,1)
-            jnk(k,:)=conv(concat.lfp(k,:), normpdf(win,0,numel(win)/6),'same'); %./max(conv(ones(100,1), gausswin(win)));
+            jnk(k,:)=conv(concat.lfp(k,:), normpdf(win,0,numel(win)/6),'same'); 
         end
         con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
-        figure(h(4));
-        subplot(nhandlabels, nspacelabels, hs);
+        sp=4;
+        sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);
         hold on;
         plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)','linewidth',1.5)
         line([0 0], ylim, 'color', 'k');
@@ -276,7 +265,6 @@ for cn= 1:numel(data.condition)
             shadedErrorBar(con.time, con.shuffled.lfp.mean,con.shuffled.lfp.std,lineprops,1);
                                    
             clear significance
-            %t = con.time(win:size(con.lfp.mean,2)-win);
             ylm = get(gca,'Ylim');
             significance = double(squeeze(concat.lfp_sgnf));
             significance(significance==0)=NaN;
@@ -296,19 +284,17 @@ for cn= 1:numel(data.condition)
         end
         con_itpcbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
         % see above, why now we don't need to cut
-        
-        figure(h(3));
-        subplot(nhandlabels, nspacelabels, hs);
-        set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));               %% change color order to something nicer
-        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+               
+        sp=3;
+        sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);             %% change color order to something nicer
         hold on;
-        
+        set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));  
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+                
         if strcmp(PlotMethod,'real')
             % adding the signifiance horizontal lines:
             clear significance
-            %t = con.time(win:size(con.lfp.mean,2)-win);
             ylm = get(gca,'Ylim');
-            %ytck = get(gca,'Ytick');
             stp = (ylm(2)-ylm(1))/100;
             significance = double(squeeze(concat.itpcbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
             significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
@@ -316,41 +302,28 @@ for cn= 1:numel(data.condition)
             significance=significance.*repmat(multiplicator',1,size(significance,2));
             plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
-        legend(strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz'));
+        legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
         title(subplottitle);
- 
     end
     
     %% format spectra colors
-    for figr=1:2
-        figure(h(figr));
-        
-        %set(gcf,'CLim',collim{figr})
+    for sp=1:2
         for hs = 1:size(con_data, 2)
-            subplot(sph{figr}(hs));
-            set(gca,'CLim',collim{figr})
-            %clim(collim{figr});
-        end
-        
+            subplot(sph(sp,hs));
+            set(gca,'CLim',collim{sp})
+        end        
         cm = colormap('jet');
         if nargin > 4
             cm = colormap(varargin{1});
         end
-            cb = colorbar;
-            set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
+        cb = colorbar;
+        set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
         colormap(cm);
     end
     
-    for figr=1:numel(h)
-        fldr=results_folders{figr};
-        [~,PRTS]=fileparts(fldr);
-        if ~exist(fldr,'dir')
-           mkdir(cfg.sites_lfp_fldr,PRTS);
-        end
-        results_file = fullfile(fldr, [plot_names{figr} '_' data.site_ID '_' con_info(cn).label ' ' PlotMethod]);   
-        mtit([plottitle ' ' PlotMethod],'interpreter','none')
-        export_fig(h(figr), results_file, '-pdf');
-    end
+    results_file = fullfile(results_folder, [data.site_ID '_' con_info(cn).label ' ' PlotMethod]);
+    mtit([plottitle ' ' PlotMethod],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+    export_fig(h, results_file, '-pdf');
     close all
 end
 end

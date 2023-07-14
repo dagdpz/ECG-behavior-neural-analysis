@@ -52,16 +52,13 @@ function [session_info, allsites_lfp]= ecg_bna_process_LFP( session_info, lfp_tf
 % lfp_tfa_global_states, lfp_tfa_reject_noisy_lfp_trials,
 % lfp_tfa_compute_site_baseline
 
-close all;
-
-load(session_info.Input_LFP{:}, 'sites');
 
 % prepare results folder
 results_fldr = fullfile(session_info.proc_results_fldr);
 if ~exist(results_fldr, 'dir')
     mkdir(results_fldr);
 end
-
+load(session_info.Input_LFP{:}, 'sites');
 
 % structure array to store lfp data for all sites
 % to be used for cross power spectrum calculation
@@ -77,13 +74,11 @@ for i = 1:length(sites)
     site_lfp.site_ID = sites(i).site_ID;
     site_lfp.target = sites(i).target;
     site_lfp.recorded_hemisphere = upper(sites(i).target(end));
-    site_lfp.ref_hemisphere = lfp_tfa_cfg.ref_hemisphere;
+    %site_lfp.ref_hemisphere = lfp_tfa_cfg.ref_hemisphere;
     site_lfp.xpos = sites(i).grid_x;
     site_lfp.ypos = sites(i).grid_y;
     site_lfp.zpos = sites(i).electrode_depth;
     
-    %% LS 2021: convert to ipsi/contra instead of fixed reference hemisphere
-    %% remove non-completed trials later !
     sitetrials=[sites(i).trial];
     positions=[sitetrials.tar_pos]-[sitetrials.fix_pos];
     hemifields=num2cell(sign(real(positions)));
@@ -98,32 +93,32 @@ for i = 1:length(sites)
     
     %% now loop through each trial for this site to do what exactly?
     for t = 1:length(sites(i).trial)
-        % convert hand and space information into string labels (for some reason)
-        hf=sites(i).trial(t).hemifield;
-        
-        % reach space
-        if hf == -1
-            reach_space = 'I';
-        elseif hf == 1
-            reach_space = 'C';
-        else
-            reach_space = 'N';
-        end      
-        
-        rh = sites(i).trial(t).reach_hand; % 1 = left, 2 = right
-        % reach hand
-        if rh == 1
-            reach_hand = 'I';
-        elseif rh == 2
-            reach_hand = 'C';
-        else
-            reach_hand = 'N';  % no hand labeling
-        end
-        hs_label=[reach_hand 'H ' reach_space 'S'];        
-        
-        site_lfp.trials(t).reach_hand  = reach_hand;
-        site_lfp.trials(t).reach_space = reach_space;
-        site_lfp.trials(t).hndspc_lbl  = hs_label;
+%         % convert hand and space information into string labels (for some reason)
+%         hf=sites(i).trial(t).hemifield;
+%         
+%         % reach space
+%         if hf == -1
+%             reach_space = 'I';
+%         elseif hf == 1
+%             reach_space = 'C';
+%         else
+%             reach_space = 'N';
+%         end      
+%         
+%         rh = sites(i).trial(t).reach_hand; % 1 = left, 2 = right
+%         % reach hand
+%         if rh == 1
+%             reach_hand = 'I';
+%         elseif rh == 2
+%             reach_hand = 'C';
+%         else
+%             reach_hand = 'N';  % no hand labeling
+%         end
+%         hs_label=[reach_hand 'H ' reach_space 'S'];        
+%         
+%         site_lfp.trials(t).reach_hand  = reach_hand;
+%         site_lfp.trials(t).reach_space = reach_space;
+%         site_lfp.trials(t).hndspc_lbl  = hs_label;
               
         
         %% retrieve LFP data
@@ -182,13 +177,9 @@ for i = 1:length(sites)
         trial_end_t   = site_lfp.trials(t).states([site_lfp.trials(t).states.id] == lfp_tfa_cfg.trialinfo.end_state).onset_t + lfp_tfa_cfg.trialinfo.ref_tend;
         site_lfp.trials(t).trialperiod = [trial_start_t, trial_end_t];
     end
-    
-    %%% Noise rejection - should this be included within processing check this? %%%
-    %state_filt_lfp(i) = lfp_tfa_reject_noisy_lfp( state_lfp(i), lfp_tfa_cfg.noise );
-    
+        
     %% Time frequency spectrogram calculation
     site_lfp = ecg_bna_compute_site_lfp_tfr( site_lfp, lfp_tfa_cfg );
-    %site_lfp = lfp_tfa_compute_site_tfr( site_lfp, lfp_tfa_cfg );
     
     % Noise rejection
     site_lfp = lfp_tfa_reject_noisy_lfp_trials( site_lfp, lfp_tfa_cfg.noise );
@@ -199,7 +190,7 @@ for i = 1:length(sites)
     allsites_lfp = [allsites_lfp, site_lfp];    
 end
 
-%% calculate cross power spectrum between sites and sync measure spectrogram - NOT WORKING at the moment
+%% calculate cross power spectrum between sites and sync measure spectrogram - PROBABLY NOT WORKING at the moment
 if any(strcmp(lfp_tfa_cfg.analyses, 'sync')) || any(strcmp(lfp_tfa_cfg.analyses, 'syncsp'))
     % prepare results folder
     results_fldr = fullfile(session_info.proc_results_fldr, 'crossspectrum');

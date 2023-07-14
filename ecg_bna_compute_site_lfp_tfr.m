@@ -1,4 +1,4 @@
-function [ site_lfp ] = ecg_bna_compute_site_lfp_tfr( site_lfp, cfg )
+function site_lfp = ecg_bna_compute_site_lfp_tfr(site_lfp,cfg)
 % lfp_tfa_compute_site_tfr - Computes the LFP time frequency spectrogram
 % for all trials of a site. This function calls the ft_freqanalysis routine
 % of feldtrip toolbox for the calculation of LFP power spectrogram
@@ -48,38 +48,30 @@ function [ site_lfp ] = ecg_bna_compute_site_lfp_tfr( site_lfp, cfg )
 % ...
 %%%%%%%%%%%%%%%%%%%%%%%%%[DAG mfle header version 1]%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+N_cycles=cfg.tfr.n_cycles;
+frequencies = cfg.tfr.foi;
+morlet_borders=1/min(frequencies)*N_cycles/2;
+s = N_cycles./(2*pi*frequencies);
 %loop through each run (actually good choice not to loop through runs)
+frequency_bands=cfg.tfr.frequency_bands;
 for r = (unique([site_lfp.trials.run]))
     fprintf('Computing TFR for run %g\n-----------------------\n', r);
     % concatenate all trials for this run
     trials_idx = find([site_lfp.trials.run] == r);
-
     concat_raw = double([site_lfp.trials(trials_idx).lfp_data]);
-% %     concat_TFR = single(resample(concat_raw,1,cfg.tfr.timestep));   % this one is resampled! --> think of a better way
-% 
-% % ========> unComment this part if we want to resample before Convolution.
-%     % SS: a better way :
-%     concat_TFR = single(mean(reshape(concat_raw(1:end-mod(size(concat_raw,2), cfg.tfr.timestep)),cfg.tfr.timestep,[]),1));
-
     ts_original = site_lfp.trials(trials_idx(1)).tsample;           % original time step
-%     ts = ts_original*cfg.tfr.timestep;                              % resampled time step
-
-        
-    N_cycles=cfg.tfr.n_cycles;
-    frequencies = cfg.tfr.foi; 
-    morlet_borders=1/min(frequencies)*N_cycles/2;
-    time = -morlet_borders:1*ts_original:morlet_borders; % ts_orginal should be replace with ts if want to resample before Conv.
-    s = N_cycles./(2*pi*frequencies);
     
     % fT parameters (use next-power-of-2)
-    n_wavelet     = length(time); 
-    n_data        = size(concat_raw,2); %size(concat_TFR,2);
+    time = -morlet_borders:1*ts_original:morlet_borders;
+    n_wavelet     = length(time);
+    n_data        = size(concat_raw,2);
     n_convolution = n_wavelet+n_data;
     n_conv_pow2   = pow2(nextpow2(n_convolution));
     half_wavelet_len = ceil(length(time)/2);
-        
+    
     % get fT of data
-    dataft = fft(concat_raw,n_conv_pow2); %fft(concat_TFR,n_conv_pow2);
+    dataft = fft(concat_raw,n_conv_pow2);
     
     for f=1:length(frequencies)
         % create wavelet
@@ -88,50 +80,37 @@ for r = (unique([site_lfp.trials.run]))
         datconv = ifft(fft(wavelet,n_conv_pow2).*dataft);
         datconv = datconv(1:n_convolution);
         datconv = datconv(half_wavelet_len+1:end-half_wavelet_len); % +1 is for one overlap point at the start
-
         % resample here:
         datconv = mean(reshape(datconv(1:end-mod(size(datconv,2), cfg.tfr.timestep)),cfg.tfr.timestep,[]),1);
-        
         % now reshape to the original number of trials:
         n_sample_start=1;
         remainder=0;
         for t = trials_idx
-            %% for some reason, last trial is 2 samples short (thats 50 ms!)
             n_smpls=numel(site_lfp.trials(t).lfp_data)/cfg.tfr.timestep+remainder;
             n_samples=round(n_smpls);
             remainder=n_smpls-n_samples;
             t_start_sample=ceil(cfg.tfr.timestep*(1/2-remainder));
-            n_sample_end =n_sample_start + n_samples-1;
-            
-            if n_sample_end == numel(datconv)+1
+            n_sample_end    = n_sample_start + n_samples-1;
+            if n_sample_end == numel(datconv)+1 % due to resampling, it can be one sample less
                 n_sample_end = numel(datconv);
             end
-            
             % extract phase values of reshaped data:
             site_lfp.trials(t).tfs.phase(1,f,:)= angle(datconv(n_sample_start:n_sample_end));
             % extracted Power of each trial
-            site_lfp.trials(t).tfs.powspctrm(1,f,:)= abs(datconv(n_sample_start:n_sample_end)).^2;
-            % time ( :(, only cause needed in this format in other bits)
-            site_lfp.trials(t).tfs.time= site_lfp.trials(t).time(t_start_sample:cfg.tfr.timestep:end);
-            site_lfp.trials(t).tfs.freq=frequencies;
+            site_lfp.trials(t).tfs.powspctrm(1,f,:) = abs(datconv(n_sample_start:n_sample_end)).^2;
+            site_lfp.trials(t).tfs.time             = site_lfp.trials(t).time(t_start_sample:cfg.tfr.timestep:end);
+            site_lfp.trials(t).tfs.freq             = frequencies;
             
             n_sample_start = n_sample_end +1;
         end
     end
-    
-    
-    frequency_bands=cfg.tfr.frequency_bands;
-    for f=1:size(frequency_bands,1)
-
-%% think about how to use good filters without causing errors for short periods
-%         fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
-%         fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
-%         
-%         [b, a]=butter(3, frequency_bands(f,1)*ts_original,'high'); % hgh-pass filter 
-%         fltered_data = filtfilt(b,a,concat_raw);
-%         [b, a]=butter(3, frequency_bands(f,2)*ts_original); % low-pass filter
-%         fltered_data = filtfilt(b,a,fltered_data);
-        [b, a]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter 
+        
+    for f=1:size(frequency_bands,1)       
+        
+        %% think about how to use good filters without causing errors for short periods
+        %  fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
+        %  fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
+        [b, a]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
         fltered_data = filtfilt(b,a,concat_raw);
         phase_data = angle(hilbert(fltered_data));
         n_sample_start=1;
@@ -144,5 +123,4 @@ for r = (unique([site_lfp.trials.run]))
         end
     end
 end
-
 end
