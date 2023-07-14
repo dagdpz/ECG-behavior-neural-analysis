@@ -84,7 +84,7 @@ for sh = 1: n_shuffles
         trial_pow       = trials(t).tfs.powspctrm;
         trial_phs       = trials(t).tfs.phase; 
         trial_lfp       = trials(t).lfp_data;
-        trial_pBP       = site_lfp.trials(t).phase_bandpassed;
+        trial_pBP       = trials(t).phase_bandpassed;
         trial_tfs_time  = trials(t).tfs.time;
         trial_lfp_time  = trials(t).time;     
         
@@ -128,7 +128,7 @@ for sh = 1: n_shuffles
             
             w_lfp=w_lfp_mid(w) - round(w_nsamples/2):w_lfp_mid(w) + round(w_nsamples/2);
             % evoked LFP for this state
-            trigg.lfp = [trigg.lfp, trial_lfp(w_lfp)];
+            trigg.lfp = [trigg.lfp, trial_lfp(:,w_lfp)];
             % bandpassed phase spectrum for this window
             trigg.phaseBP = [trigg.phaseBP, trial_pBP(:,:,w_lfp)];
             % timestamps, set mid-timestamp to zero
