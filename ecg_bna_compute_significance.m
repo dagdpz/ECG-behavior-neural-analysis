@@ -16,7 +16,7 @@ function [significance] = ecg_bna_compute_significance(real,shuffled,ecg_bna_cfg
 % ======================================================================= %
 
 method = ecg_bna_cfg.significance_method;
-parameters={'pow','itpc','lfp','itpcbp'};
+parameters={'pow','itpc','lfp','itpcbp','powbp'};
 for p=1:numel(parameters)
     parameter=parameters{p};
     realmean=real.(parameter).mean;

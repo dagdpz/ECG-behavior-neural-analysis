@@ -113,12 +113,14 @@ for r = (unique([site_lfp.trials.run]))
         [b, a]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
         fltered_data = filtfilt(b,a,concat_raw);
         phase_data = angle(hilbert(fltered_data));
+        powBP_data = abs(hilbert(fltered_data)).^2;
         n_sample_start=1;
         
         for t = trials_idx
             n_sample_end = n_sample_start + numel(site_lfp.trials(t).lfp_data)-1;
             % extract phase values of reshaped data:
             site_lfp.trials(t).phase_bandpassed(1,f,:) = phase_data(n_sample_start:n_sample_end);
+            site_lfp.trials(t).power_bandpassed(1,f,:) = powBP_data(n_sample_start:n_sample_end);
             n_sample_start = n_sample_end +1;
         end
     end

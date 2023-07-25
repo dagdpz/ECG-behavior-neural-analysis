@@ -149,6 +149,8 @@ for i = 1:nsites
                     shuffled_evoked.lfp.std =zeros(size(real.lfp.std));
                     shuffled_evoked.itpcbp.mean=zeros(size(real.itpcbp.mean));
                     shuffled_evoked.itpcbp.std =zeros(size(real.itpcbp.std));
+                    shuffled_evoked.powbp.mean=zeros(size(real.powbp.mean));
+                    shuffled_evoked.powbp.std =zeros(size(real.powbp.std));
                 end
                 if ~isempty(real.pow.mean) || ~isempty(real.lfp.mean)
                     if isfield(real, 'state') && isfield(real, 'state_name')
@@ -214,11 +216,11 @@ for i = 1:nsites
 %         end
 %     end
 %     
-%     site_evoked_lfp = sites_data(i);
-%     % save mat file for site
-%     save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
-%     % save to a mother struct
-%     session_data.sites(i) = site_evoked_lfp;
+    site_evoked_lfp = sites_data(i);
+    % save mat file for site
+    save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
+    % save to a mother struct
+    session_data.sites(i) = site_evoked_lfp;
 %     
 %     close all;
 end
@@ -353,7 +355,7 @@ end
 % % store session average data
 % session_data.session_avg = session_avg;
 % 
-% % save mat files
+% save mat files
 % save(fullfile(results_folder_evoked, ['Rpeak_evoked_LFP_' session_data.session '.mat']), 'session_data');
 
 end

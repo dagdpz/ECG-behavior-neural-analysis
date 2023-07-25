@@ -69,7 +69,7 @@ end
 % number of subplots required
 nhandlabels = length(cfg.compare.reach_hands);
 nspacelabels = length(cfg.compare.reach_spaces);
-plot_names={'POW','ITPC','ITPC_BP','LFP_Evoked'};
+plot_names={'POW','ITPC','LFP_Evoked','ITPC_BP'};
 nsubplots=numel(plot_names);
 
 nrows=ceil(sqrt((nsubplots*nhandlabels*nspacelabels)));
@@ -174,6 +174,7 @@ for cn= 1:numel(data.condition)
         state_onsets = find(concat.tfr_time == 0);
         states_names={con_data(states_valid, hs).(PlotMethod).state_name};
         state_samples = sort([state_info.start_s, state_info.onset_s, state_info.finish_s]);
+        state_nRpeaks = (con_data(states_valid, hs).real.nRpeaks);
         
         subplottitle =concat.label{1};
         if isfield(con_data(1, hs), 'nsessions')
@@ -236,7 +237,7 @@ for cn= 1:numel(data.condition)
             set(gca, 'xlim', [0 state_samples(end) + 0.5]);
             xlabel('Time (s)');
             ylabel('Frequency (Hz)');
-            title(subplottitle);
+            title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),' - nRpeaks = ',num2str(state_nRpeaks)]);
             
             clear significance;
             
@@ -251,13 +252,14 @@ for cn= 1:numel(data.condition)
         end
         con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
-        sp=4;
+        sp=3;
         sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);
         hold on;
         plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)','linewidth',1.5)
         line([0 0], ylim, 'color', 'k');
-        xlabel('Time(s)');
-        title(subplottitle);
+        xlabel('Time(s)'); ylabel('Voltage (V)');
+        title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),...
+            ' - nRpeaks = ',num2str(state_nRpeaks)],'fontsize',9,'interpreter','none');
         
         if strcmp(PlotMethod,'real')
             lineprops={};
@@ -285,11 +287,13 @@ for cn= 1:numel(data.condition)
         con_itpcbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
         % see above, why now we don't need to cut
                
-        sp=3;
+        sp=4;
         sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);             %% change color order to something nicer
         hold on;
         set(gca,'ColorOrder',jet(size(concat.itpcbp,2)));  
         plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', squeeze(con_itpcbp_smooth)')
+        line([0 0], ylim, 'color', 'k');
+        xlabel('Time(s)'); ylabel('ITPC value');
                 
         if strcmp(PlotMethod,'real')
             % adding the signifiance horizontal lines:
@@ -303,7 +307,8 @@ for cn= 1:numel(data.condition)
             plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
         end
         legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
-        title(subplottitle);
+        title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),...
+            ' - nRpeaks = ',num2str(state_nRpeaks)],'fontsize',9,'interpreter','none');
     end
     
     %% format spectra colors
@@ -317,7 +322,9 @@ for cn= 1:numel(data.condition)
             cm = colormap(varargin{1});
         end
         cb = colorbar;
-        set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
+        if strcmp(PlotMethod,'normalized')
+            set(get(cb,'title'),'string', cbtitle, 'fontsize',8);
+        end
         colormap(cm);
     end
     

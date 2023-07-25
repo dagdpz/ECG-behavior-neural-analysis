@@ -67,6 +67,10 @@ itpcbp.mean    = nanpreallocator;
 itpcbp.std     = nanpreallocator;
 itpcbp.conf95_high     = nanpreallocator;
 itpcbp.conf95_low     = nanpreallocator;
+powbp.mean    = nanpreallocator;
+powbp.std     = nanpreallocator;
+powbp.conf95_high     = nanpreallocator;
+powbp.conf95_low     = nanpreallocator;
 
 nanpreallocator=NaN(n_shuffles, round(w_nsamples/2)*2+1);
 lfp.mean   = nanpreallocator;
@@ -79,12 +83,15 @@ for sh = 1: n_shuffles
     trigg.phase = {}; % phase spectrogram
     trigg.lfp       = {}; % evoked LFP response
     trigg.phaseBP   = {}; % bandpassed phase
+    trigg.powBP   = {}; % bandpassed power
+    trigg.nRpeaks = []; % number of Rpeaks used
     for t = 1:numel(trials)
         % get the LFP samples and timestamps between start and end states
         trial_pow       = trials(t).tfs.powspctrm;
         trial_phs       = trials(t).tfs.phase; 
         trial_lfp       = trials(t).lfp_data;
         trial_pBP       = trials(t).phase_bandpassed;
+        trial_powBP       = trials(t).power_bandpassed;
         trial_tfs_time  = trials(t).tfs.time;
         trial_lfp_time  = trials(t).time;     
         
@@ -131,12 +138,16 @@ for sh = 1: n_shuffles
             trigg.lfp = [trigg.lfp, trial_lfp(:,w_lfp)];
             % bandpassed phase spectrum for this window
             trigg.phaseBP = [trigg.phaseBP, trial_pBP(:,:,w_lfp)];
+            % bandpassed power spectrum for this window
+            trigg.powBP = [trigg.powBP, trial_powBP(:,:,w_lfp)];
             % timestamps, set mid-timestamp to zero
             lfp_time =  trial_lfp_time(w_lfp) ;
             lfp_time = lfp_time - lfp_time(round(length(lfp_time)/2));
-        end
+         end
+        % storing the number of Rpeaks:
+        trigg.nRpeaks = [trigg.nRpeaks, length(w_tfr_mid)];
     end
-    
+    nRpeaks(sh,:) = sum(trigg.nRpeaks); 
     if ~isempty(trigg.pow)
         % find the average TFS for each state in each shuffled data
         cat_pow = cat(1, trigg.pow{:});
@@ -160,6 +171,11 @@ for sh = 1: n_shuffles
         itpcbp.mean(sh,:,:) = abs(nanmean(exp(1i*cat_phaseBP), 1));
         itpcbp.std(sh,:,:) = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(lfp_time));
         
+        % adding power bandpassed mean & std
+        cat_powBP = cat(1,trigg.powBP{:});
+        powbp.mean(sh,:,:) = nanmean(cat_powBP , 1);
+        powbp.std(sh,:,:) = repmat(nanstd(nanmean(cat_powBP , 1), 0, 3),1,1,length(lfp_time));
+        
         % evoked LFP average
         cat_lfp = vertcat(trigg.lfp{:});
         lfp.mean(sh,:) = nanmean(cat_lfp, 1);
@@ -171,6 +187,7 @@ triggered.freq=freq;
 triggered.state_name=state_name;
 triggered.state=state;
 triggered.tfr_time=tfr_time;
+triggered.nRpeaks = nRpeaks;
 
 %% differentiate between
 %%      a) mean of std and std of (shuffle) means
@@ -194,5 +211,10 @@ triggered.itpcbp.mean=mean(cat(1,itpcbp.mean),1);
 triggered.itpcbp.std=std(cat(1,itpcbp.mean),1);
 triggered.itpcbp.conf95 = prctile(cat(1,itpcbp.mean),[97.5, 2.5],1);
 triggered.itpcbp.std_mean=mean(cat(1,itpcbp.std),1);
+
+triggered.powbp.mean=mean(cat(1,powbp.mean),1);
+triggered.powbp.std=std(cat(1,powbp.mean),1);
+triggered.powbp.conf95 = prctile(cat(1,powbp.mean),[97.5, 2.5],1);
+triggered.powbp.std_mean=mean(cat(1,powbp.std),1);
 end
 
