@@ -69,11 +69,11 @@ end
 % number of subplots required
 nhandlabels = length(cfg.compare.reach_hands);
 nspacelabels = length(cfg.compare.reach_spaces);
-plot_names={'POW','ITPC','LFP_Evoked','ITPC_BP'};
+plot_names={'POW','ITPC','Power_BP','ITPC_BP','LFP_Evoked'};
 nsubplots=numel(plot_names);
 
 nrows=ceil(sqrt((nsubplots*nhandlabels*nspacelabels)));
-ncolumns=nrows;
+ncolumns=2; %nrows;
 results_folder=[cfg.sites_lfp_fldr filesep];
 
 %% loop through conditions
@@ -106,10 +106,12 @@ for cn= 1:numel(data.condition)
         concat.pow = [];
         concat.itpc = [];
         concat.itpcbp = [];
+        concat.powbp = [];
         concat.lfp = [];
         concat.pow_sgnf = [];
         concat.itpc_sgnf = [];
         concat.itpcbp_sgnf = [];
+        concat.powbp_sgnf = [];
         concat.lfp_sgnf = [];
         concat.tfr_time = [];
         concat.lfp_time = [];
@@ -125,6 +127,7 @@ for cn= 1:numel(data.condition)
             con.pow_sgnf=con_data(st, hs).significance.pow;
             con.itpc_sgnf=con_data(st, hs).significance.itpc;
             con.itpcbp_sgnf=con_data(st, hs).significance.itpcbp;
+            con.powbp_sgnf =con_data(st, hs).significance.powbp;
             con.lfp_sgnf=con_data(st, hs).significance.lfp;
             con.shuffled=con_data(st, hs).shuffled;
             
@@ -150,17 +153,20 @@ for cn= 1:numel(data.condition)
             con.pow.mean(isnan(con.pow.mean))=0;
             con.itpc.mean(isnan(con.itpc.mean))=0;            
             con.itpcbp.mean(isnan(con.itpcbp.mean))=0;
+            con.powbp.mean(isnan(con.itpcbp.mean))=0;
             
             % concatenate across states with a NaN separation in between
             concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
             concat.itpc     = cat(3, concat.itpc,  con.itpc.mean, nan(size(con.itpc.mean, 1), size(con.itpc.mean, 2), 100/25));
             concat.itpcbp   = cat(3, concat.itpcbp,con.itpcbp.mean,  nan(size(con.itpcbp.mean, 1),    size(con.itpcbp.mean, 2),    100));
+            concat.powbp   = cat(3, concat.powbp,con.powbp.mean,  nan(size(con.powbp.mean, 1),    size(con.powbp.mean, 2),    100));
             concat.lfp      = cat(2, concat.lfp,   con.lfp.mean,     nan(size(con.lfp.mean, 1),        100));
             concat.tfr_time = [concat.tfr_time, con.tfr_time, nan(1, 100/25)];
             concat.lfp_time = [concat.lfp_time, con.time,     nan(1, 100)];
             concat.pow_sgnf = cat(3, concat.pow_sgnf,   con.pow_sgnf,   nan(size(con.pow_sgnf, 1),   size(con.pow_sgnf, 2),   100/25));
             concat.itpc_sgnf = cat(3, concat.itpc_sgnf,   con.itpc_sgnf,   nan(size(con.itpc_sgnf, 1),   size(con.itpc_sgnf, 2),   100/25));
             concat.itpcbp_sgnf = cat(3, concat.itpcbp_sgnf,   con.itpcbp_sgnf,   nan(size(con.itpcbp_sgnf, 1),   size(con.itpcbp_sgnf, 2),   100));
+            concat.powbp_sgnf = cat(3, concat.powbp_sgnf,   con.powbp_sgnf,   nan(size(con.powbp_sgnf, 1),   size(con.powbp_sgnf, 2),   100));
             concat.lfp_sgnf = cat(2, concat.lfp_sgnf,   con.lfp_sgnf,     nan(size(con.lfp_sgnf, 1),        100));
                        
             % somehow needed for (not) labelling not existing alignments
@@ -252,7 +258,7 @@ for cn= 1:numel(data.condition)
         end
         con_lfp_mean_smooth = jnk;%(:,win:size(con.lfp.mean,2)-win); % cutting the zero padding part of the conv, from begin and end of the results
         
-        sp=3;
+        sp=5;
         sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);
         hold on;
         plot(concat.lfp_time', squeeze(con_lfp_mean_smooth)','linewidth',1.5)
@@ -305,6 +311,40 @@ for cn= 1:numel(data.condition)
             multiplicator=(1:size(significance,1))*-1*stp;              % multiplicator basically defines position of significance line
             significance=significance.*repmat(multiplicator',1,size(significance,2));
             plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+        end
+        legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),...
+            ' - nRpeaks = ',num2str(state_nRpeaks)],'fontsize',9,'interpreter','none');
+        %% Bandpassed POWER        
+        % Smoothing of the itpcbp here:
+        jnk = [];
+        win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
+        for m = 1: size(concat.powbp,1)
+            for k=1:size(concat.powbp,2)
+                jnk(m,k,:)= conv(squeeze(concat.powbp(m,k,:)), normpdf(win,0,numel(win)/6),'same');%./max(conv(ones(100,1), gausswin(win)));
+            end
+        end
+        con_powbp_smooth = jnk;%(:,:,win:size(concat.itpcbp,3)-win); % cutting the zero padding part of the conv, from begin and end of the results
+        % see above, why now we don't need to cut
+               
+        sp=3;
+        sph(sp,hs)=subplot(nrows, ncolumns, (nsubplots)*(hs-1)+sp);             %% change color order to something nicer
+        hold on;
+        set(gca,'ColorOrder',jet(size(concat.powbp,2)));  
+        plot(repmat(concat.lfp_time,size(concat.powbp,2),1)', squeeze(con_powbp_smooth)')
+        line([0 0], ylim, 'color', 'k');
+        xlabel('Time(s)'); %ylabel('ITPC value');
+                
+        if strcmp(PlotMethod,'real')
+            % adding the signifiance horizontal lines:
+            clear significance
+            ylm = get(gca,'Ylim');
+            stp = (ylm(2)-ylm(1))/100;
+            significance = double(squeeze(concat.powbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
+            significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
+            multiplicator=(1:size(significance,1))*-1*stp;              % multiplicator basically defines position of significance line
+            significance=significance.*repmat(multiplicator',1,size(significance,2));
+            plot(repmat(concat.lfp_time,size(concat.powbp,2),1)', significance','linewidth',3);
         end
         legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
         title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),...
