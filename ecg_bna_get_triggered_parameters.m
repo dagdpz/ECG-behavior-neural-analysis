@@ -91,7 +91,7 @@ for sh = 1: n_shuffles
         trial_phs       = trials(t).tfs.phase; 
         trial_lfp       = trials(t).lfp_data;
         trial_pBP       = trials(t).phase_bandpassed;
-        trial_powBP       = trials(t).power_bandpassed;
+        trial_powBP     = trials(t).power_bandpassed;
         trial_tfs_time  = trials(t).tfs.time;
         trial_lfp_time  = trials(t).time;     
         
