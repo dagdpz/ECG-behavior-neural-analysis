@@ -74,7 +74,7 @@ nsubplots=numel(plot_names);
 
 nrows=ceil(sqrt((nsubplots*nhandlabels*nspacelabels)));
 ncolumns=2; %nrows;
-results_folder=[cfg.sites_lfp_fldr filesep];
+results_folder=[cfg.sites_lfp_fldr filesep]; 
 
 %% loop through conditions
 for cn= 1:numel(data.condition)

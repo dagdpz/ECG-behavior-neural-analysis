@@ -132,7 +132,9 @@ for v = 1:length(versions)
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sites'))
             session_Rpeak_triggered_raw.sites_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg, 'sites');
         end
-%         clear session_Rpeak_triggered_raw
+        
+        save(fullfile(ecg_bna_cfg.session_lfp_fldr, ['Rpeak_triggered_session_' session_data.session '.mat']), 'session_Rpeak_triggered_raw');
+        clear session_Rpeak_triggered_raw
     end
 %     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
 %         ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??

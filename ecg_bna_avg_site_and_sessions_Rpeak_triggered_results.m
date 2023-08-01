@@ -49,8 +49,8 @@ if ~exist(results_fldr, 'dir')
 end
 
 avg = struct();
-targets = unique({session_raw.sites.target});
-
+targets = {session_raw.sites(:).target};
+targets = unique(targets);
 for t = 1:length(targets)
     
     avg.(across)(t).target = targets{t};
@@ -186,6 +186,7 @@ for t = 1:length(targets)
     % condition to plot:
     cond_cfg = [avg.(across)(t).condition(:).cfg_condition];
     % plotting
+    ecg_bna_cfg.sites_lfp_fldr   = results_fldr;
     data2plot = avg.(across)(t);
     ecg_bna_plots_per_session( data2plot, cond_cfg, ecg_bna_cfg, 'normalized')
     
