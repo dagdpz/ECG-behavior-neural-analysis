@@ -58,13 +58,14 @@ function [ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables( s
 warning ('off', 'MATLAB:hg:willberemoved');
 
 % make a folder to save figures
-results_folder_evoked = fullfile(ecg_bna_cfg.session_lfp_fldr, 'Rpeak_evoked_LFP');
-if ~exist(results_folder_evoked, 'dir')
-    mkdir(results_folder_evoked);
+session_result_folder = fullfile(ecg_bna_cfg.session_lfp_fldr);
+if ~exist(session_result_folder, 'dir')
+    mkdir(session_result_folder);
 end
 
 % folder to save sitewise results
-site_results_folder = fullfile(ecg_bna_cfg.sites_lfp_fldr, 'Rpeak_evoked_LFP');
+% site_results_folder = fullfile(ecg_bna_cfg.sites_lfp_fldr, 'Rpeak_evoked_LFP');
+site_results_folder = fullfile(ecg_bna_cfg.sites_lfp_fldr);
 if ~exist(site_results_folder, 'dir')
     mkdir(site_results_folder);
 end
@@ -130,6 +131,7 @@ for i = 1:nsites
                 continue;
             end
             cond_ecg = session_ecg.trials(trial_idx);
+            fprintf('Condition Trials = %i , Num Trial_idx = %i, CIX = %i\n',numel(cond_trials),sum(trial_idx), sum(cix))
             
             % loop through time windows around the states to analyse            
             for st = 1:size(analyse_states, 1)                
@@ -216,13 +218,15 @@ for i = 1:nsites
 %         end
 %     end
 %     
-    site_evoked_lfp = sites_data(i);
+    site_Rpeak_triggered = sites_data(i);
     % save mat file for site
-    save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
+%     save(fullfile(site_results_folder, ['Rpeak_evoked_LFP_' sites_data(i).site_ID '.mat']), 'site_evoked_lfp');
+    save(fullfile(site_results_folder, [sites_data(i).site_ID '.mat']), 'site_Rpeak_triggered');
     % save to a mother struct
-    session_data.sites(i) = site_evoked_lfp;
-%     
-%     close all;
+    session_data.sites(i) = site_Rpeak_triggered;
+    session_data.session = session_data.sites(1).session;
+    
+    close all;
 end
 % 
 % % Average across sites for a session
@@ -356,6 +360,6 @@ end
 % session_data.session_avg = session_avg;
 % 
 % save mat files
-% save(fullfile(results_folder_evoked, ['Rpeak_evoked_LFP_' session_data.session '.mat']), 'session_data');
+save(fullfile(session_result_folder, ['Rpeak_triggered_session_' session_data.session '.mat']), 'session_data');
 
 end

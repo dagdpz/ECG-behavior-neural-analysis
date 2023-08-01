@@ -130,7 +130,11 @@ for cn= 1:numel(data.condition)
             con.powbp_sgnf =con_data(st, hs).significance.powbp;
             con.lfp_sgnf=con_data(st, hs).significance.lfp;
             con.shuffled=con_data(st, hs).shuffled;
-            
+%             if ~isempty(con_data(st, hs).shuffled)
+%                 con.shuffled=con_data(st, hs).shuffled;
+%             else
+%                 con.shuffled = [];
+%             end
             state_info(st).onset_s = find(con.tfr_time <= 0, 1, 'last');
             % state onset time
             state_info(st).onset_t = 0;
@@ -159,7 +163,7 @@ for cn= 1:numel(data.condition)
             concat.pow      = cat(3, concat.pow,   con.pow.mean,   nan(size(con.pow.mean, 1),   size(con.pow.mean, 2),   100/25));
             concat.itpc     = cat(3, concat.itpc,  con.itpc.mean, nan(size(con.itpc.mean, 1), size(con.itpc.mean, 2), 100/25));
             concat.itpcbp   = cat(3, concat.itpcbp,con.itpcbp.mean,  nan(size(con.itpcbp.mean, 1),    size(con.itpcbp.mean, 2),    100));
-            concat.powbp   = cat(3, concat.powbp,con.powbp.mean,  nan(size(con.powbp.mean, 1),    size(con.powbp.mean, 2),    100));
+            concat.powbp    = cat(3, concat.powbp,con.powbp.mean,  nan(size(con.powbp.mean, 1),    size(con.powbp.mean, 2),    100));
             concat.lfp      = cat(2, concat.lfp,   con.lfp.mean,     nan(size(con.lfp.mean, 1),        100));
             concat.tfr_time = [concat.tfr_time, con.tfr_time, nan(1, 100/25)];
             concat.lfp_time = [concat.lfp_time, con.time,     nan(1, 100)];
@@ -345,11 +349,11 @@ for cn= 1:numel(data.condition)
         title([plot_names{sp},' - ',subplottitle, ' - nShuffles = ',num2str(cfg.n_permutations),...
             ' - nRpeaks = ',num2str(state_nRpeaks)],'fontsize',9,'interpreter','none');
         
-        %         if strcmp(PlotMethod,'real')
-        lineprops={};
-        %             shadedErrorBar(con.time, con.lfp.mean,con.lfp.std./(size(con.lfp.std,2).^0.5),lineprops,1);
-        shadedErrorBar(con.time, con.shuffled.lfp.mean,con.shuffled.lfp.std,lineprops,1);
-        
+        if strcmp(PlotMethod,'real')
+            lineprops={};
+            %             shadedErrorBar(con.time, con.lfp.mean,con.lfp.std./(size(con.lfp.std,2).^0.5),lineprops,1);
+            shadedErrorBar(con.time, con.shuffled.lfp.mean,con.shuffled.lfp.std,lineprops,1);
+        end
         clear significance
         ylm = get(gca,'Ylim');
         significance = double(squeeze(concat.lfp_sgnf));
