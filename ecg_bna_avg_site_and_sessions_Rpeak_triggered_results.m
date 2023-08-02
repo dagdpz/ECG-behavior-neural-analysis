@@ -52,10 +52,10 @@ avg = struct();
 targets = {session_raw.sites(:).target};
 targets = unique(targets);
 for t = 1:length(targets)
-    
+    nTargetSites = numel(find(strcmp(targets{t},{session_raw.sites.target})));
     avg.(across)(t).target = targets{t};
     avg.(across)(t).session = session_raw.session;
-    avg.(across)(t).site_ID = [session_raw.session,'_Population_of_',num2str(length(session_raw.sites)),'_Sites'];
+    avg.(across)(t).site_ID = [session_raw.session,'_Population of ',num2str(nTargetSites),' Sites Target ',targets{t}];
     
     if ~strcmp(targets{t}, ecg_bna_cfg.compare.targets)
         continue;
@@ -129,7 +129,7 @@ for t = 1:length(targets)
         
 
         for i = 1:length(session_raw.sites)
-            if ~strcmp(targets{t},session_raw.sites(i).target)
+            if ~strcmp(targets{t},session_raw.sites(i).target) || (session_raw.sites(i).condition(cn).ntrials ==0)
                 continue;
             end
             

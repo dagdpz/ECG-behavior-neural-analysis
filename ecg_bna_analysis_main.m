@@ -133,9 +133,12 @@ for v = 1:length(versions)
             session_Rpeak_triggered_raw.sites_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg, 'sites');
         end
         
-        save(fullfile(ecg_bna_cfg.session_lfp_fldr, ['Rpeak_triggered_session_' session_data.session '.mat']), 'session_Rpeak_triggered_raw');
+        session_data = session_Rpeak_triggered_raw;
+        save(fullfile(ecg_bna_cfg.session_lfp_fldr, ['Rpeak_triggered_session_' session_Rpeak_triggered_raw.session '.mat']), 'session_data');
+        clear session_data
         clear session_Rpeak_triggered_raw
     end
+    %%
 %     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
 %         ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??
 %         Rpeak_evoked_lfp_tfr=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_evoked_TFS','LFP_TFR','Per_Session','session_tfs');
@@ -177,6 +180,7 @@ for v = 1:length(versions)
 end
 end
 
+
 function Out = load_stuff(sessions_info,subfolder,namepart,per,varname)
 for i = 1:length(sessions_info)
 %     if isempty(subfolder) %% unfortunate inconsistent naming
@@ -185,7 +189,7 @@ for i = 1:length(sessions_info)
 %         monkey=['_' sessions_info(i).Monkey(1:3)];
 %     end
     results_folder = fullfile(sessions_info(i).(subfolder),per);
-    Out = load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
-%     Out.session(i)=to_load.(varname);
+    to_load = load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
+    Out=to_load.(varname);
 end
 end
