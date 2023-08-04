@@ -1,4 +1,4 @@
-function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ts,cfg)
+function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,cfg,ts)
 
 n_shuffles=cfg.n_permutations;
 
@@ -36,7 +36,7 @@ for b=blocks
     % ECG_R2Rvalid_bpm = block_Rpeak.R2R_valid_bpm;
     
     trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod); %% uhmmmmmmmm doublecheck this
-    if nargin<3
+    if nargin<4
         ts = session_ecg.trials(trials_idx(1)).tsample;
     end
     session_ecg.tsample=ts;

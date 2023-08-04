@@ -75,9 +75,9 @@ for v = 1:length(versions)
             if isfield(sessions_info(i), 'Input_ECG_combined') && ~isempty(sessions_info(i).Input_ECG_combined)
                 session_ecg = ecg_bna_read_combined_ECG(sessions_info(i), ecg_bna_cfg.plottrials); %this one isnt fixed at all (?)
             elseif isfield(sessions_info(i), 'Input_ECG_preproc') && ~isempty(sessions_info(i).Input_ECG_preproc)
-                session_ecg = ecg_bna_read_preproc_ECG_simple(sessions_info(i));
+                session_ecg = ecg_bna_read_preproc_ECG(sessions_info(i));
             end
-            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
+            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ecg_bna_cfg); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
             
             if isempty(fieldnames(session_ecg))
                 continue;
@@ -89,13 +89,13 @@ for v = 1:length(versions)
             % Calculate and plot the session average ECG, evoked response for different conditions
             
             %ecg_bna_compute_session_evoked_ECG( session_ecg,sessions_info(i), ecg_bna_cfg.analyse_states, ecg_bna_cfg );
-            %% shuffle state onsets?
-            ecg_bna_compute_session_state_evoked_ECG( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
-            
-            %% add shuffled Rpeaks !!
-            ecg_bna_compute_session_Rpeak_evoked_state_onsets( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
-            %ecg_bna_compute_session_evoked_ECG_R2Rt( session_ecg, sessions_info(i), ecg_bna_cfg.event_triggers, ecg_bna_cfg );
-            
+%             %% shuffle state onsets?
+%             ecg_bna_compute_session_state_evoked_ECG( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
+%             
+%             %% add shuffled Rpeaks !!
+%             ecg_bna_compute_session_Rpeak_evoked_state_onsets( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
+%             %ecg_bna_compute_session_evoked_ECG_R2Rt( session_ecg, sessions_info(i), ecg_bna_cfg.event_triggers, ecg_bna_cfg );
+%             
         elseif ecg_bna_cfg.process_LFP
             session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).session '.mat']);
             if exist(session_ecg_filename, 'file')
@@ -115,7 +115,7 @@ for v = 1:length(versions)
             ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
             ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
             
-            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample,ecg_bna_cfg); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
+            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ecg_bna_cfg,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
             ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg );
             
             clear session_proc_lfp;
@@ -183,13 +183,14 @@ end
 
 function Out = load_stuff(sessions_info,subfolder,namepart,per,varname)
 for i = 1:length(sessions_info)
-%     if isempty(subfolder) %% unfortunate inconsistent naming
+    if ~isempty(subfolder) %% unfortunate inconsistent naming
         monkey=sessions_info(i).Monkey(1:3);
-%     else
-%         monkey=['_' sessions_info(i).Monkey(1:3)];
-%     end
-    results_folder = fullfile(sessions_info(i).(subfolder),per);
-    to_load = load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
-    Out=to_load.(varname);
+        
+        results_folder = fullfile(sessions_info(i).(subfolder),per);
+        to_load = load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
+        Out=to_load.(varname);
+    else
+        error('The Per session folder is empty');
+    end
 end
 end
