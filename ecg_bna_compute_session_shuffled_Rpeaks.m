@@ -17,11 +17,8 @@ for b=1:numel(out)
     ecg_R2Rt_mean=mean(RPEAKS_intervals);
     idx_valid = RPEAKS_intervals<1.5*ecg_R2Rt_mean; %use mode or mean ?
     nonval_idx=find([0, ~idx_valid]);
-    invalid_intervals=[NaN,NaN];
-    for iv=1:numel(nonval_idx)
-        invalid_intervals(iv,1)=RPEAK_ts(nonval_idx(iv)-1);
-        invalid_intervals(iv,2)=RPEAK_ts(nonval_idx(iv));
-    end
+    invalid_intervals(:,1)=RPEAK_ts(nonval_idx-1);
+    invalid_intervals(:,2)=RPEAK_ts(nonval_idx);
     RPEAKS_intervals=RPEAKS_intervals(idx_valid);
     ecg_R2Rt_std=std(RPEAKS_intervals);
     N=ecg_bna_cfg.n_permutations;
