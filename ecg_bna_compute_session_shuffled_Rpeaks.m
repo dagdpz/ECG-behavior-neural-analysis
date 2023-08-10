@@ -1,4 +1,4 @@
-function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,ecg_bna_cfg)
+function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,N)
 load(session_info.Input_ECG);
 
 Rpeaks = struct('block', {out.nrblock_combinedFiles});
@@ -21,7 +21,6 @@ for b=1:numel(out)
     invalid_intervals(:,2)=RPEAK_ts(nonval_idx);
     RPEAKS_intervals=RPEAKS_intervals(idx_valid);
     ecg_R2Rt_std=std(RPEAKS_intervals);
-    N=ecg_bna_cfg.n_permutations;
     [~,ix]=sort(rand(N,length(RPEAKS_intervals)),2);
     perm=RPEAKS_intervals(ix);
     

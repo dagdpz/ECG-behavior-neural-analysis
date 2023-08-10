@@ -57,7 +57,7 @@ for v = 1:length(versions)
             save(seed_filename,'seed');
         end
         if ecg_bna_cfg.process_LFP || ecg_bna_cfg.process_ECG || ecg_bna_cfg.process_spikes
-            Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
+            Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg.n_permutations);
         end
         if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
             ecg_bna_compute_session_spike_histogram_fast(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
