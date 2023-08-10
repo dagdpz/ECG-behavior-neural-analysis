@@ -1,12 +1,12 @@
 function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,ecg_bna_cfg)
 load(session_info.Input_ECG);
 
+Rpeaks = struct('block', {out.nrblock_combinedFiles});
+
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
-    Rpeaks(b).block=out(b).nrblock_combinedFiles;
     Rpeaks(b).offset=offset_blocks_Rpeak(b);
     if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)
-        Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).shuffled_ts=[];
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
