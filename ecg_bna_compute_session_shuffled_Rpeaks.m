@@ -29,11 +29,14 @@ for b=1:numel(out)
     RPEAK_ts_p=cumsum(RPEAKS_intervals_p,2);
     
     %% re-evaluating valid intervals... this is important to fix surrogates being higher due to periods of increased spiking that correlate with invalid Rpeaks
-    for iv=1:size(invalid_intervals,1)
-        RPEAK_ts_p(RPEAK_ts_p>invalid_intervals(iv,1)+ecg_R2Rt_mean/2 & RPEAK_ts_p<invalid_intervals(iv,2)-ecg_R2Rt_mean/2)=NaN;
-    end
-    RPEAK_ts_p(RPEAK_ts_p>max(RPEAK_ts)+max(RPEAKS_intervals))=NaN;
-    RPEAK_ts_p(:,all(isnan(RPEAK_ts_p),1))=[];
+    idx_invalid = arrayfun(@(x,y) ...
+        RPEAK_ts_p > max(RPEAK_ts) + max(RPEAKS_intervals) | ...
+        (RPEAK_ts_p > x + ecg_R2Rt_mean/2 & ...
+        RPEAK_ts_p < y - ecg_R2Rt_mean/2), ...
+        invalid_intervals(:,1), invalid_intervals(:,2), 'UniformOutput',false);
+    idx_invalid = cat(3, idx_invalid{:});
+    idx_invalid = any(idx_invalid, [1 3]);
+    RPEAK_ts_p(idx_invalid)=[];
     Rpeaks(b).RPEAK_ts=RPEAK_ts+offset_blocks_Rpeak(b);
     Rpeaks(b).shuffled_ts=RPEAK_ts_p+offset_blocks_Rpeak(b);
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+max(RPEAKS_intervals)*2;
