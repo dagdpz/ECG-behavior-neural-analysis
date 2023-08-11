@@ -1,18 +1,16 @@
 function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,N)
 load(session_info.Input_ECG);
 
-Rpeaks = struct('block', {out.nrblock_combinedFiles});
-
+Rpeaks = struct('block', {out.nrblock_combinedFiles}, ...
+    'RPEAK_ts', arrayfun(@(x) [x.Rpeak_t(1) intersect(x.Rpeak_t,x.R2R_t)], out, 'Uniformoutput', false)); % have no idea why it should be written like that as we have R2R intervals in 'out'
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
     Rpeaks(b).offset=offset_blocks_Rpeak(b);
     if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)
-        Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).shuffled_ts=[];
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
         continue
     end
-    RPEAK_ts=[out(b).Rpeak_t(1) intersect(out(b).Rpeak_t,out(b).R2R_t)];
     RPEAKS_intervals=diff(RPEAK_ts);
     ecg_R2Rt_mean=mean(RPEAKS_intervals);
     idx_valid = RPEAKS_intervals<1.5*ecg_R2Rt_mean; %use mode or mean ?
