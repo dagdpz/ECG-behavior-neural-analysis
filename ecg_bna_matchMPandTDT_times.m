@@ -1,66 +1,68 @@
-clear all, close all
+function ecg_bna_matchMPandTDT_times(YYYYMMDD)
+% Example usage:
+% ecg_bna_matchMPandTDT_times('20230518')
+%
+%
+% Dependencies:
+% ma1_check_timing_streams for dagdpz/ma1
+%
 
-% filenames
-% 'Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20220921\Magcombined2022-09-21_10_block_01.mat'
-% 'Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20230518\Magcombined2023-05-18_02_block_01.mat'
-% 'Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20230518\Magcombined2023-06-15_04_block_03.mat'
-% 'Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20230518\Magcombined2023-06-15_06_block_05.mat'
+% set up data folders based on session date
+combined_folder = ['Y:\Data\Magnus_phys_combined_monkeypsych_TDT\' YYYYMMDD filesep];
+bodySignals_folder = ['Y:\Data\BodySignals\ECG\Magnus\' YYYYMMDD filesep];
 
-load('Y:\Data\Magnus_phys_combined_monkeypsych_TDT\20230518\Magcombined2023-05-18_02_block_01.mat')
-load('Y:\Data\BodySignals\ECG\Magnus\20230518\20230518_ecg.mat')
+% set up combined and ECG data files based on session date
+combined_files = dir([combined_folder '*.mat']);
+ecg_file = dir([bodySignals_folder '*.mat']);
 
-for ii = 1:length(trial)
-    
-    trial(ii).TDT_state_onsets = trial(ii).TDT_state_onsets';
-    trial(ii).TDT_state_onsets = trial(ii).TDT_state_onsets + trial(ii).states_onset(2);
-    
-    if ii < 11
-       txt_MP = mat2cell(trial(ii).states, 1, ones(length(trial(ii).states),1));
-       txt_MP = cellfun(@num2str, txt_MP, 'UniformOutput', false);
-       txt_TDT = mat2cell(trial(ii).TDT_states, ones(length(trial(ii).TDT_states),1), 1);
-       txt_TDT = cellfun(@num2str, txt_TDT, 'UniformOutput', false);
-        
-       figure,
-       set(gcf, 'Position', [681 559 1197 420])
-       stem(trial(ii).states_onset, ones(length(trial(ii).states_onset), 1), 'r')
-       text(trial(ii).states_onset, ones(length(trial(ii).states_onset), 1)+0.05, txt_MP, 'Color','r')
-       hold on
-       stem(trial(ii).TDT_state_onsets, 1.2*ones(length(trial(ii).TDT_state_onsets), 1), 'b')
-       text(trial(ii).TDT_state_onsets, 1.2*ones(length(trial(ii).TDT_state_onsets), 1)+0.05, txt_TDT, 'Color','b')
-       title(['Magnus ' num2str(trial(ii).TDT_session) '; Trial ' num2str(trial(ii).trial_number(1))])
-       ylim([0 1.3])
-    end
-    
-    isVisibleTarget = nan(7,1);
-    for iii = 1:7
-        isVisibleTarget(iii) = ~isequal(trial(ii).eye.tar(iii).color_dim, [0 0 0]); % check if equals to background color
-    end
-    isVisibleTarget = sum(isVisibleTarget(2:7)); % check if one of the peripheral targets (2-7) isn't black; if this 1 - then peripheral target visible; if 0, then invisible
-    
-    if trial(ii).completed
-        if trial(ii).rewarded && isVisibleTarget % rewarded, peripheral on - HIT
-            trial(ii).SDT_trial_type = 1; % assign 1 to HIT trials
-        elseif ~trial(ii).rewarded && isVisibleTarget % non-rewarded, peripheral on - MISS
-            trial(ii).SDT_trial_type = 2; % assign 2 to MISS trials
-        elseif ~trial(ii).rewarded && ~isVisibleTarget % non-rewarded, peripheral off - FALSE ALARM
-            trial(ii).SDT_trial_type = 3; % assign 3 to FALSE ALARM
-        elseif trial(ii).rewarded && ~isVisibleTarget % rewarded, peripheral off - CORRECT REJECTION
-            trial(ii).SDT_trial_type = 4; % assign 4 to CORRECT REJECTION
-        end
-    else
-        trial(ii).SDT_trial_type = 0; % don't analyze with STD
-    end
-    
+% find block numbers
+block_id = cellfun(@(x) strfind(x, 'block_'), {combined_files.name}, 'UniformOutput', false);
+blockNumbers = cellfun(@(x,y) str2double(x(y + (6:7))), {combined_files.name}, block_id);
+
+% load ECG data
+if length(ecg_file) == 1
+    disp('Found one ECG mat file, we''re good! Proceeding...')
+    ecg_filepath = [ecg_file.folder filesep ecg_file.name];
+else
+    error('Problem: more than 1 ECG file')
 end
 
-TDT_state_onsets = [trial.TDT_state_onsets];
-MP_state_onsets = [trial.states_onset];
-Rpeak_times = out(1).Rpeak_t;
-
-figure,
-stem(TDT_state_onsets, 2*ones(length(TDT_state_onsets), 1), 'g')
-hold on
-stem(MP_state_onsets, ones(length(MP_state_onsets), 1), 'k')
-stem(Rpeak_times, 0.5*ones(length(Rpeak_times), 1), 'm')
-
-save('Magcombined2022-09-21_10_block_01.mat', 'trial', 'task', 'SETTINGS', 'First_trial_INI', 'preprocessing_settings')
+for blockNum = 1:length(combined_files)
+    
+    currFilePath = ...
+        [combined_files(blockNum).folder filesep combined_files(blockNum).name];
+    
+    % trials are aligned to the 1st INI within this function
+    trial = ma1_check_timing_streams(currFilePath, 0, 0, ecg_filepath, blockNumbers(blockNum));
+    
+    if length(trial(1).eye.tar) == 1
+        disp(['Block ' num2str(blockNum) ' is a rest block. Skip, proceed with the next block'])
+        continue
+    end
+    
+    for trialNum = 1:length(trial)
+    
+        isVisibleTarget = nan(7,1);
+        for iii = 1:7
+            isVisibleTarget(iii) = ~isequal(trial(trialNum).eye.tar(iii).color_dim, [0 0 0]); % check if equals to background color
+        end
+        isVisibleTarget = sum(isVisibleTarget(2:7)); % check if one of the peripheral targets (2-7) isn't black; if this 1 - then peripheral target visible; if 0, then invisible
+        
+        if trial(trialNum).completed
+            if trial(trialNum).rewarded && isVisibleTarget % rewarded, peripheral on - HIT
+                trial(trialNum).SDT_trial_type = 1; % assign 1 to HIT trials
+            elseif ~trial(trialNum).rewarded && isVisibleTarget % non-rewarded, peripheral on - MISS
+                trial(trialNum).SDT_trial_type = 2; % assign 2 to MISS trials
+            elseif ~trial(trialNum).rewarded && ~isVisibleTarget % non-rewarded, peripheral off - FALSE ALARM
+                trial(trialNum).SDT_trial_type = 3; % assign 3 to FALSE ALARM
+            elseif trial(trialNum).rewarded && ~isVisibleTarget % rewarded, peripheral off - CORRECT REJECTION
+                trial(trialNum).SDT_trial_type = 4; % assign 4 to CORRECT REJECTION
+            end
+        else
+            trial(trialNum).SDT_trial_type = 0; % don't analyze with STD
+        end
+    end
+    
+    save([combined_files(blockNum).name(1:end-4) '_lnv.mat'], 'trial')
+    
+end
