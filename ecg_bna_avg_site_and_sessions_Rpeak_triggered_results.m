@@ -52,15 +52,19 @@ avg = struct();
 targets = {session_raw.sites(:).target};
 targets = unique(targets);
 for t = 1:length(targets)
-    nTargetSites = numel(find(strcmp(targets{t},{session_raw.sites.target})));
+    % 
+    sites_for_this_target = ismember({session_raw.sites.target},targets{t});
+    target_sites = session_raw.sites(sites_for_this_target);
+    %
+    nTargetSites = numel(find(strcmp(targets{t},{target_sites.target})));
     avg.(across)(t).target = targets{t};
     avg.(across)(t).session = session_raw.session;
     avg.(across)(t).site_ID = [session_raw.session,'_Population of ',num2str(nTargetSites),' Sites Target ',targets{t}];
     
-    if ~strcmp(targets{t}, ecg_bna_cfg.compare.targets)
-        continue;
-    end
-    
+%     if ~strcmp(targets{t}, ecg_bna_cfg.compare.targets)
+%         continue;
+%     end
+%     
     for cn = 1:length(ecg_bna_cfg.conditions)
         
         fprintf('averaging Condition %s across %s\n', ecg_bna_cfg.conditions(cn).label, across);
@@ -83,71 +87,72 @@ for t = 1:length(targets)
         avg.(across)(t).condition(cn).cfg_condition = ecg_bna_cfg.conditions(cn);       
         avg.(across)(t).condition(cn).state_hs = struct();
         
-        if (session_raw.sites(1).condition(cn).ntrials ==0)
+        if all(arrayfun(@(x) x.condition(cn).ntrials == 0, target_sites))
             avg.(across)(t).condition(cn).ntrials = 0;
             continue;
         end
-        avg.(across)(t).condition(cn).state_hs.state = session_raw.sites(1).condition(cn).state_hs.state;
-        avg.(across)(t).condition(cn).state_hs.state_name = session_raw.sites(1).condition(cn).state_hs.state_name;
-        avg.(across)(t).condition(cn).state_hs.hs_label = session_raw.sites(1).condition(cn).state_hs.hs_label;
+        idx = find(arrayfun(@(x) ~x.condition(cn).ntrials == 0, target_sites));
+        avg.(across)(t).condition(cn).state_hs.state = target_sites(idx(1)).condition(cn).state_hs.state;
+        avg.(across)(t).condition(cn).state_hs.state_name = target_sites(idx(1)).condition(cn).state_hs.state_name;
+        avg.(across)(t).condition(cn).state_hs.hs_label = target_sites(idx(1)).condition(cn).state_hs.hs_label;
         
         avg.(across)(t).condition(cn).state_hs.real = struct();
         avg.(across)(t).condition(cn).state_hs.shuffled = struct();
         avg.(across)(t).condition(cn).state_hs.normalized = struct();
         avg.(across)(t).condition(cn).state_hs.significance = struct();
         % real 
-        avg.(across)(t).condition(cn).state_hs.real.time = session_raw.sites(1).condition(cn).state_hs.real.time;
-        avg.(across)(t).condition(cn).state_hs.real.tfr_time = session_raw.sites(1).condition(cn).state_hs.real.tfr_time;
-        avg.(across)(t).condition(cn).state_hs.real.freq = session_raw.sites(1).condition(cn).state_hs.real.freq;
-        avg.(across)(t).condition(cn).state_hs.real.state = session_raw.sites(1).condition(cn).state_hs.state;
-        avg.(across)(t).condition(cn).state_hs.real.state_name = session_raw.sites(1).condition(cn).state_hs.state_name;
+        avg.(across)(t).condition(cn).state_hs.real.time = target_sites(idx(1)).condition(cn).state_hs.real.time;
+        avg.(across)(t).condition(cn).state_hs.real.tfr_time = target_sites(idx(1)).condition(cn).state_hs.real.tfr_time;
+        avg.(across)(t).condition(cn).state_hs.real.freq = target_sites(idx(1)).condition(cn).state_hs.real.freq;
+        avg.(across)(t).condition(cn).state_hs.real.state = target_sites(idx(1)).condition(cn).state_hs.state;
+        avg.(across)(t).condition(cn).state_hs.real.state_name = target_sites(idx(1)).condition(cn).state_hs.state_name;
         
         % normalized
-        avg.(across)(t).condition(cn).state_hs.normalized.time = session_raw.sites(1).condition(cn).state_hs.normalized.time;
-        avg.(across)(t).condition(cn).state_hs.normalized.tfr_time = session_raw.sites(1).condition(cn).state_hs.normalized.tfr_time;
-        avg.(across)(t).condition(cn).state_hs.normalized.freq = session_raw.sites(1).condition(cn).state_hs.normalized.freq;
-        avg.(across)(t).condition(cn).state_hs.normalized.state = session_raw.sites(1).condition(cn).state_hs.state;
-        avg.(across)(t).condition(cn).state_hs.normalized.state_name = session_raw.sites(1).condition(cn).state_hs.state_name;
+        avg.(across)(t).condition(cn).state_hs.normalized.time = target_sites(idx(1)).condition(cn).state_hs.normalized.time;
+        avg.(across)(t).condition(cn).state_hs.normalized.tfr_time = target_sites(idx(1)).condition(cn).state_hs.normalized.tfr_time;
+        avg.(across)(t).condition(cn).state_hs.normalized.freq = target_sites(idx(1)).condition(cn).state_hs.normalized.freq;
+        avg.(across)(t).condition(cn).state_hs.normalized.state = target_sites(idx(1)).condition(cn).state_hs.state;
+        avg.(across)(t).condition(cn).state_hs.normalized.state_name = target_sites(idx(1)).condition(cn).state_hs.state_name;
 
         % having significance and shuffle in place for plotting function to work 
         % ==> it's now only rand 0,1
-        avg.(across)(t).condition(cn).state_hs.significance.pow = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.significance.pow));
-        avg.(across)(t).condition(cn).state_hs.significance.itpc = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.significance.itpc));
-        avg.(across)(t).condition(cn).state_hs.significance.itpcbp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.significance.itpcbp));
-        avg.(across)(t).condition(cn).state_hs.significance.powbp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.significance.powbp));
-        avg.(across)(t).condition(cn).state_hs.significance.lfp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.significance.lfp));
+        avg.(across)(t).condition(cn).state_hs.significance.pow = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.significance.pow));
+        avg.(across)(t).condition(cn).state_hs.significance.itpc = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.significance.itpc));
+        avg.(across)(t).condition(cn).state_hs.significance.itpcbp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.significance.itpcbp));
+        avg.(across)(t).condition(cn).state_hs.significance.powbp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.significance.powbp));
+        avg.(across)(t).condition(cn).state_hs.significance.lfp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.significance.lfp));
         % shuffled
-        avg.(across)(t).condition(cn).state_hs.shuffled.pow = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.shuffled.pow));
-        avg.(across)(t).condition(cn).state_hs.shuffled.itpc = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.shuffled.itpc));
-        avg.(across)(t).condition(cn).state_hs.shuffled.itpcbp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.shuffled.itpcbp));
-        avg.(across)(t).condition(cn).state_hs.shuffled.powbp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.shuffled.powbp));
-        avg.(across)(t).condition(cn).state_hs.shuffled.lfp = randi([0 1],size(session_raw.sites(1).condition(cn).state_hs.shuffled.lfp));
-        avg.(across)(t).condition(cn).state_hs.shuffled.time = session_raw.sites(1).condition(cn).state_hs.real.time;
-        avg.(across)(t).condition(cn).state_hs.shuffled.tfr_time = session_raw.sites(1).condition(cn).state_hs.real.tfr_time;
-        avg.(across)(t).condition(cn).state_hs.shuffled.freq = session_raw.sites(1).condition(cn).state_hs.real.freq;
+        avg.(across)(t).condition(cn).state_hs.shuffled.pow = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.shuffled.pow));
+        avg.(across)(t).condition(cn).state_hs.shuffled.itpc = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.shuffled.itpc));
+        avg.(across)(t).condition(cn).state_hs.shuffled.itpcbp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.shuffled.itpcbp));
+        avg.(across)(t).condition(cn).state_hs.shuffled.powbp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.shuffled.powbp));
+        avg.(across)(t).condition(cn).state_hs.shuffled.lfp = randi([0 1],size(target_sites(idx(1)).condition(cn).state_hs.shuffled.lfp));
+        avg.(across)(t).condition(cn).state_hs.shuffled.time = target_sites(idx(1)).condition(cn).state_hs.real.time;
+        avg.(across)(t).condition(cn).state_hs.shuffled.tfr_time = target_sites(idx(1)).condition(cn).state_hs.real.tfr_time;
+        avg.(across)(t).condition(cn).state_hs.shuffled.freq = target_sites(idx(1)).condition(cn).state_hs.real.freq;
         
         
 
-        for i = 1:length(session_raw.sites)
-            if ~strcmp(targets{t},session_raw.sites(i).target) || (session_raw.sites(i).condition(cn).ntrials ==0)
+        for i = 1:length(target_sites)
+            if (target_sites(i).condition(cn).ntrials ==0)
                 continue;
             end
             
             % concatnating the normalized variables of each sites:
-            concat.real.nRpeaks = [session_raw.sites(i).condition(cn).state_hs.real.nRpeaks];
-            concat.ntrials = [session_raw.sites(i).condition(cn).state_hs.ntrials];
+            concat.real.nRpeaks = [target_sites(i).condition(cn).state_hs.real.nRpeaks];
+            concat.ntrials = [target_sites(i).condition(cn).state_hs.ntrials];
             % real
-            concat.real.pow = cat(4,concat.real.pow,session_raw.sites(i).condition(cn).state_hs.real.pow.mean);
-            concat.real.itpc = cat(4,concat.real.itpc,session_raw.sites(i).condition(cn).state_hs.real.itpc.mean);
-            concat.real.powbp = cat(4,concat.real.powbp,session_raw.sites(i).condition(cn).state_hs.real.powbp.mean);
-            concat.real.itpcbp = cat(4,concat.real.itpcbp, session_raw.sites(i).condition(cn).state_hs.real.itpcbp.mean);
-            concat.real.lfp = cat(3,concat.real.lfp, session_raw.sites(i).condition(cn).state_hs.real.lfp.mean);
+            concat.real.pow = cat(4,concat.real.pow,target_sites(i).condition(cn).state_hs.real.pow.mean);
+            concat.real.itpc = cat(4,concat.real.itpc,target_sites(i).condition(cn).state_hs.real.itpc.mean);
+            concat.real.powbp = cat(4,concat.real.powbp,target_sites(i).condition(cn).state_hs.real.powbp.mean);
+            concat.real.itpcbp = cat(4,concat.real.itpcbp, target_sites(i).condition(cn).state_hs.real.itpcbp.mean);
+            concat.real.lfp = cat(3,concat.real.lfp, target_sites(i).condition(cn).state_hs.real.lfp.mean);
             % normalized
-            concat.normalized.pow = cat(4,concat.normalized.pow,session_raw.sites(i).condition(cn).state_hs.normalized.pow.mean);
-            concat.normalized.itpc = cat(4,concat.normalized.itpc,session_raw.sites(i).condition(cn).state_hs.normalized.itpc.mean);
-            concat.normalized.powbp = cat(4,concat.normalized.powbp,session_raw.sites(i).condition(cn).state_hs.normalized.powbp.mean);
-            concat.normalized.itpcbp = cat(4,concat.normalized.itpcbp, session_raw.sites(i).condition(cn).state_hs.normalized.itpcbp.mean);
-            concat.normalized.lfp = cat(3,concat.normalized.lfp, session_raw.sites(i).condition(cn).state_hs.normalized.lfp.mean);
+            concat.normalized.pow = cat(4,concat.normalized.pow,target_sites(i).condition(cn).state_hs.normalized.pow.mean);
+            concat.normalized.itpc = cat(4,concat.normalized.itpc,target_sites(i).condition(cn).state_hs.normalized.itpc.mean);
+            concat.normalized.powbp = cat(4,concat.normalized.powbp,target_sites(i).condition(cn).state_hs.normalized.powbp.mean);
+            concat.normalized.itpcbp = cat(4,concat.normalized.itpcbp, target_sites(i).condition(cn).state_hs.normalized.itpcbp.mean);
+            concat.normalized.lfp = cat(3,concat.normalized.lfp, target_sites(i).condition(cn).state_hs.normalized.lfp.mean);
 
 
         end

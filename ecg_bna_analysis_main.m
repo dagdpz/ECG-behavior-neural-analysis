@@ -110,7 +110,10 @@ for v = 1:length(versions)
             
             % Read LFP data
             sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
-            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg); 
+            % for  all data before june 2023 use " ecg_bna_process_LFP "
+            % and after june "ecg_bna_process_LFP_newTask"
+            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
+%             [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP_newTask(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
             
             ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
             ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
