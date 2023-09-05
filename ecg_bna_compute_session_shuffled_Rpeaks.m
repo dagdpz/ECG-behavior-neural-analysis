@@ -1,6 +1,22 @@
 function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,ecg_bna_cfg)
 load(session_info.Input_ECG);
 
+% condition for using CAP data instead of ECG 
+if (ecg_bna_cfg.outNameCap)  
+    oldnames = fieldnames(out_cap);
+    newnames = strrep(oldnames,'B2B','R2R');
+    idx = find(~strcmpi(newnames,oldnames));
+    for n = 1: numel(newnames)
+        [out_cap.(newnames{n})] = deal(out_cap.(oldnames{n}));
+    end
+    for n = 1:numel(idx)
+        out_cap = rmfield(out_cap,oldnames{idx(n)});
+    end
+    out = out_cap;
+    nrblockscell=num2cell(ses.nrblock_combinedFiles);
+    [out.nrblock_combinedFiles] = deal(nrblockscell{:});
+end
+
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
     Rpeaks(b).block=out(b).nrblock_combinedFiles;

@@ -1,6 +1,6 @@
-function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ts)
+function session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,cfg,ts)
 
-n_shuffles=100;   %% here we reduce the shuffled Rpeaks becasue it would get way too big with 100 permutations
+n_shuffles=cfg.n_permutations;
 
 Rpeak_blocks=[Rpeaks.block];
 session_blocks=unique([session_ecg.trials.block]);
@@ -35,9 +35,9 @@ for b=blocks
     % ECG_R2Rvalid = block_Rpeak.R2R_valid;
     % ECG_R2Rvalid_bpm = block_Rpeak.R2R_valid_bpm;
     
-    trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod);
-    if nargin<3
-    ts = session_ecg.trials(trials_idx(1)).tsample;
+    trials_time = vertcat(session_ecg.trials(trials_idx).trialperiod); %% uhmmmmmmmm doublecheck this
+    if nargin<4
+        ts = session_ecg.trials(trials_idx(1)).tsample;
     end
     session_ecg.tsample=ts;
     block_ecg_timestamps = (0:ts:round(trials_time(end)/ts)*ts);

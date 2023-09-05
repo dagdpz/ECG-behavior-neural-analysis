@@ -47,9 +47,10 @@ for v = 1:length(versions)
     %% per session processing..
     for i = 1:length(sessions_info)
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        %% MAYBE first make seed and ecg shuffles, then use those shuffles for all subfunctions
+        
+        % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
-        if exist(seed_filename,'file');
+        if exist(seed_filename,'file')
             load(seed_filename);
             rng(seed);
         else
@@ -60,7 +61,7 @@ for v = 1:length(versions)
             Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
         end
         if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            ecg_bna_compute_session_spike_histogram_fast(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
+            ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
         end
         
         if ecg_bna_cfg.process_ECG
@@ -74,9 +75,9 @@ for v = 1:length(versions)
             if isfield(sessions_info(i), 'Input_ECG_combined') && ~isempty(sessions_info(i).Input_ECG_combined)
                 session_ecg = ecg_bna_read_combined_ECG(sessions_info(i), ecg_bna_cfg.plottrials); %this one isnt fixed at all (?)
             elseif isfield(sessions_info(i), 'Input_ECG_preproc') && ~isempty(sessions_info(i).Input_ECG_preproc)
-                session_ecg = ecg_bna_read_preproc_ECG_simple(sessions_info(i));
+                session_ecg = ecg_bna_read_preproc_ECG(sessions_info(i));
             end
-            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
+            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ecg_bna_cfg); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
             
             if isempty(fieldnames(session_ecg))
                 continue;
@@ -88,13 +89,13 @@ for v = 1:length(versions)
             % Calculate and plot the session average ECG, evoked response for different conditions
             
             %ecg_bna_compute_session_evoked_ECG( session_ecg,sessions_info(i), ecg_bna_cfg.analyse_states, ecg_bna_cfg );
-            %% shuffle state onsets?
-            ecg_bna_compute_session_state_evoked_ECG( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
-            
-            %% add shuffled Rpeaks !!
-            ecg_bna_compute_session_Rpeak_evoked_state_onsets( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
-            %ecg_bna_compute_session_evoked_ECG_R2Rt( session_ecg, sessions_info(i), ecg_bna_cfg.event_triggers, ecg_bna_cfg );
-            
+%             %% shuffle state onsets?
+%             ecg_bna_compute_session_state_evoked_ECG( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
+%             
+%             %% add shuffled Rpeaks !!
+%             ecg_bna_compute_session_Rpeak_evoked_state_onsets( session_ecg, sessions_info(i), ecg_bna_cfg.analyse_Rpeak_states, ecg_bna_cfg );
+%             %ecg_bna_compute_session_evoked_ECG_R2Rt( session_ecg, sessions_info(i), ecg_bna_cfg.event_triggers, ecg_bna_cfg );
+%             
         elseif ecg_bna_cfg.process_LFP
             session_ecg_filename = fullfile(sessions_info(i).proc_ecg_fldr, ['session_ecg_' sessions_info(i).session '.mat']);
             if exist(session_ecg_filename, 'file')
@@ -108,105 +109,91 @@ for v = 1:length(versions)
             fprintf('Analysing for session %s\n', session_name);
             
             % Read LFP data
-            if isfield(sessions_info(i), 'Input_LFP') && ~isempty(sessions_info(i).Input_LFP) && ecg_bna_cfg.process_LFP
-                %sessions_info(i) = ecg_bna_process_combined_LFP_ECG(sessions_info(i), ecg_bna_cfg); %this one should be fixed
-                sessions_info(i).Input=sessions_info(i).Input_LFP{1}; %% this means only one site file per session...
-                sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
-                sessions_info(i) = lfp_tfa_process_LFP( sessions_info(i), ecg_bna_cfg );
-            end
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP')) || any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-                ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
-                ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
-                % read the processed lfp mat files for all sites of this session
-                sites_lfp_files = dir(fullfile(sessions_info(i).proc_lfp_fldr, ['site_lfp_pow_' sessions_info(i).Monkey(1:3) '_' sessions_info(i).Date '*.mat']));
-                session_proc_lfp = [];
-                for file = {sites_lfp_files.name}
-                    %fprintf('Reading processed LFP for site %s\n', file{1});
-                    if ~isempty(strfind(file{1}, 'site_lfp_'))
-                        fprintf('Reading processed LFP for %s\n', file{:});
-                        load(fullfile(sessions_info(i).proc_lfp_fldr, file{1}))
-                        session_proc_lfp = [session_proc_lfp site_lfp];
-                    end
-                end
-            end
+            sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
+            % for  all data before june 2023 use " ecg_bna_process_LFP "
+            % and after june "ecg_bna_process_LFP_newTask"
+            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
+%             [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP_newTask(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
             
-            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
-                ecg_bna_compute_session_Rpeak_evoked_LFP_split( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % this one is pretty fixed
-                % ecg_bna_compute_session_Rpeak_evoked_LFP( session_proc_lfp, ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % this one is pretty fixed
-            end
-            if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-                ecg_bna_compute_session_Rpeak_evoked_TFS_split( session_proc_lfp,session_ecg, ecg_bna_cfg.analyse_states, ecg_bna_cfg ); % there is no shuffling here yet
-            end
+            ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
+            ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
+            
+            session_ecg = ecg_bna_combine_shuffled_Rpeaks(session_ecg, Rpeaks,ecg_bna_cfg,session_proc_lfp(1).trials(1).tsample); %% adding rpeaks (and shuffled rpeaks) CAREFUL: this is with 2k sampling frequency
+            ecg_bna_compute_session_Rpeak_triggered_variables( session_proc_lfp,session_ecg,ecg_bna_cfg.analyse_states, ecg_bna_cfg );
             
             clear session_proc_lfp;
-            
-            % tfs_ecg.session(i) = lfp_tfa_plot_session_tfs_ECG( session_ecg, sessions_info(i), lfp_tfa_cfg.event_triggers, lfp_tfa_cfg );
         end
         
     end
     
     %% per session? (why not per site??)
     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
-        Rpeak_evoked_lfp_raw=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_evoked_LFP','Rpeak_evoked_LFP','Per_Session','session_evoked');
+        session_Rpeak_triggered_raw=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_triggered_session_','Per_Session','session_data');
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sessions'))
-            Rpeak_evoked_lfp_raw.sessions_avg = ecg_bna_avg_sites_Rpeak_evoked_LFP(Rpeak_evoked_lfp_raw, ecg_bna_cfg);
+            session_Rpeak_triggered_raw.sessions_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg,'sessions');
         end
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sites'))
-            Rpeak_evoked_lfp_raw.sites_avg = ecg_bna_avg_sessions_Rpeak_evoked_LFP(Rpeak_evoked_lfp_raw, ecg_bna_cfg);
+            session_Rpeak_triggered_raw.sites_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg, 'sites');
         end
-        clear Rpeak_evoked_lfp_raw
-    end
-    if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
-        ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??
-        Rpeak_evoked_lfp_tfr=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_evoked_TFS','LFP_TFR','Per_Session','session_tfs');
-        if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sessions'))
-            Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sessions(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg);
-        end
-        if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sites'))
-            Rpeak_evoked_lfp_tfr.sites_avg = lfp_tfa_avg_tfr_across_sites(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg);
-        end
-        clear Rpeak_evoked_lfp_tfr
-    end
-    if false
         
-        % Average task evoked ECG b2bt - does not exist yet :D
-        
-        % %     % Average task evoked ECG time frequency spectrogram
-        %     tfs_ecg.sessions_avg = lfp_tfa_avg_sessions_ECG_tfs(tfs_ecg, lfp_tfa_cfg);
-        %       Average Rpeak evoked state onset probability
-        
-        %% these functions here are still not clear!!
-        % Average task evoked ECG
-        Rpeak_evoked_ECG                        =load_stuff(sessions_info,'analyse_ecg_fldr','','ECG_evoked_','Rpeak_evoked_ECG','site_evoked_ecg');
-        Rpeak_evoked_ECG.sessions_avg           = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, ecg_bna_cfg);
-        ECG_R2Rt_evoked                         =load_stuff(sessions_info,'analyse_ecg_fldr','','ECG_R2Rt_evoked_','ECG R2Rt','session_evoked_ecg_R2Rt');
-        ECG_R2Rt_evoked.sessions_avg            = ecg_bna_avg_sessions_ECGb2bt_evoked(ECG_R2Rt_evoked, ecg_bna_cfg);
-        Rpeak_evoked_event_prob                 =load_stuff(sessions_info,'analyse_ecg_fldr','','Rpeak_Evoked_state_onsets_','Rpeak_Evoked_states','site_evoked_ecg');
-        Rpeak_evoked_event_prob.sessions_avg    = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets( Rpeak_evoked_event_prob, ecg_bna_cfg);
+        session_data = session_Rpeak_triggered_raw;
+        save(fullfile(ecg_bna_cfg.session_lfp_fldr, ['Rpeak_triggered_session_' session_Rpeak_triggered_raw.session '.mat']), 'session_data');
+        clear session_data
+        clear session_Rpeak_triggered_raw
     end
-    
-    
-    %% average across sessions
-    if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-        SPK=load_stuff(sessions_info,'SPK_fldr','','','per_unit','Output');
-        for i = 1: length(SPK.session)
-            SPK_PSTH{i} =SPK.session(i);
-        end
-        ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info);
-    end
+    %%
+%     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
+%         ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??
+%         Rpeak_evoked_lfp_tfr=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_evoked_TFS','LFP_TFR','Per_Session','session_tfs');
+%         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sessions'))
+%             Rpeak_evoked_lfp_tfr.sessions_avg = lfp_tfa_avg_tfr_across_sessions(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg);
+%         end
+%         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sites'))
+%             Rpeak_evoked_lfp_tfr.sites_avg = lfp_tfa_avg_tfr_across_sites(Rpeak_evoked_lfp_tfr.session, ecg_bna_cfg);
+%         end
+%         clear Rpeak_evoked_lfp_tfr
+%     end
+%     if false
+%         
+%         % Average task evoked ECG b2bt - does not exist yet :D
+%         
+%         % %     % Average task evoked ECG time frequency spectrogram
+%         %     tfs_ecg.sessions_avg = lfp_tfa_avg_sessions_ECG_tfs(tfs_ecg, lfp_tfa_cfg);
+%         %       Average Rpeak evoked state onset probability
+%         
+%         %% these functions here are still not clear!!
+%         % Average task evoked ECG
+%         Rpeak_evoked_ECG                        =load_stuff(sessions_info,'analyse_ecg_fldr','','ECG_evoked_','Rpeak_evoked_ECG','site_evoked_ecg');
+%         Rpeak_evoked_ECG.sessions_avg           = ecg_bna_avg_sessions_Rpeak_evoked_ECG(Rpeak_evoked_ECG, ecg_bna_cfg);
+%         ECG_R2Rt_evoked                         =load_stuff(sessions_info,'analyse_ecg_fldr','','ECG_R2Rt_evoked_','ECG R2Rt','session_evoked_ecg_R2Rt');
+%         ECG_R2Rt_evoked.sessions_avg            = ecg_bna_avg_sessions_ECGb2bt_evoked(ECG_R2Rt_evoked, ecg_bna_cfg);
+%         Rpeak_evoked_event_prob                 =load_stuff(sessions_info,'analyse_ecg_fldr','','Rpeak_Evoked_state_onsets_','Rpeak_Evoked_states','site_evoked_ecg');
+%         Rpeak_evoked_event_prob.sessions_avg    = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets( Rpeak_evoked_event_prob, ecg_bna_cfg);
+%     end
+%     
+%     
+%     %% average across sessions
+%     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+%         SPK=load_stuff(sessions_info,'SPK_fldr','','','per_unit','Output');
+%         for i = 1: length(SPK.session)
+%             SPK_PSTH{i} =SPK.session(i);
+%         end
+%         ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info);
+%     end
 end
 end
 
-function Out=load_stuff(sessions_info,subfield,subfolder,namepart,per,varname)
+
+function Out = load_stuff(sessions_info,subfolder,namepart,per,varname)
 for i = 1:length(sessions_info)
-    if isempty(subfolder) %% unfortunate inconsistent naming
-        monkey=sessions_info(i).Monkey;
+    if ~isempty(subfolder) %% unfortunate inconsistent naming
+        monkey=sessions_info(i).Monkey(1:3);
+        
+        results_folder = fullfile(sessions_info(i).(subfolder),per);
+        to_load = load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
+        Out=to_load.(varname);
     else
-        monkey=['_' sessions_info(i).Monkey(1:3)];
+        error('The Per session folder is empty');
     end
-    results_folder = fullfile(sessions_info(i).(subfield),per,subfolder);
-    to_load=load(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '.mat']),varname);
-    Out.session(i)=to_load.(varname);
 end
 end
