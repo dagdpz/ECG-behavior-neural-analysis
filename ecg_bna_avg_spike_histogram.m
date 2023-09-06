@@ -346,15 +346,17 @@ end
 ha1 = subplot(1,2,1);% pie plot how many
 barpairs =  [Pc_SignFR_rest];
 b = bar(barpairs,'stacked', 'Facecolor','flat' );
-title('Rest: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+title('Rest','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
+ylim([0 100])
 
 ha1 = subplot(1,2,2);% pie plot how many
 barpairs =  [Pc_SignFR_task];
 b = bar(barpairs,'stacked', 'Facecolor','flat' );
-title('Task: non-sig.yellow,iFR-blue,dFR-green','interpreter','none');
+title('Task','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
-
+ylim([0 100])
+legend(b, {'increase FR', 'decrease FR', 'non-significant'}, 'Location', 'Best')
         
 filename= ['Pc_CardiacRelatedUnits'];
 
@@ -553,8 +555,8 @@ if Graph_SelectionCriterion
             end
             
             
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :))/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :)))) ;
-            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_sig, :)) ,SDmean_SEM ,lineProps,1);
+            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :),[], 1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1))) ;
+            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1) ,SDmean_SEM ,lineProps,1);
             title(['Population:  (all significant)' (Ana_TargetBrainArea{i_BrArea}) ' units'],'interpreter','none');
             ylabel('normalized Firing rate (%)','fontsize',14 );
             xlabel('Time relative to R-peak (ms)','fontsize',14 );
@@ -742,8 +744,8 @@ for i_BrArea = 1: length(fieldnames(Out))
                 line((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000 , out.SDsubstractedSDP_normalized(i,:), 'color',[1 0 0] ,'LineWidth', 1);hold on;
             end
         end
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :))/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :)))) ;
-        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_sig, :)) ,SDmean_SEM ,lineProps,1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :), [], 1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1))) ;
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1) ,SDmean_SEM,lineProps,1);
         title(['Population:  (all significant)' (Ana_TargetBrainArea{i_BrArea}) ' units'],'interpreter','none');
         ylabel('normalized Firing rate (%)','fontsize',14 );
         xlabel('Time relative to R-peak (ms)','fontsize',14 );
@@ -779,8 +781,8 @@ for i_BrArea = 1: length(fieldnames(Out))
             
         end
         
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:)))) ;
-        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:)), SDmean_SEM ,lineProps,1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:), 1))) ;
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1), SDmean_SEM ,lineProps,1);
         set(gca,'ylim',[-10, 10]);
         title(['units showing a sig. INCREASE in FR'],'interpreter','none');
         ylabel('normalized Firing rate (%)','fontsize',14 );
@@ -796,14 +798,8 @@ for i_BrArea = 1: length(fieldnames(Out))
             text(-400,1.5, ['Task: units = ' ,num2str(sum(idx_SigDec & idx_sig)) ],'Color','r')
             Color = [1 0 0];
         end
-        if size(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1) < 2
-            
-        else
-            
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:)))) ;
-            
-            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:)), SDmean_SEM ,lineProps,1);
-        end
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:), 1))) ;
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1), SDmean_SEM ,lineProps,1);
         set(gca,'ylim',[-10, 10]);
         title(['units showing a sig. DECREASE in FR'],'interpreter','none');
         ylabel('normalized Firing rate (spike/s)','fontsize',14 );
@@ -1762,8 +1758,8 @@ for i_tsk = 1: numel(TaskTyp)
         end
         
         
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:)))) ;
-        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:)), SDmean_SEM ,lineProps,1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1))) ;
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1), SDmean_SEM ,lineProps,1);
         set(gca,'ylim',[-10, 10]);
         title(['units showing a sig. INCREASE in FR'],'interpreter','none');
         ylabel('normalized Firing rate (%)','fontsize',14 );
@@ -1781,13 +1777,8 @@ for i_tsk = 1: numel(TaskTyp)
             lineProps={'color',Color_BrainArea(i_BrArea,:),'linewidth',3};
             text(-400,1* i_BrArea, [(Ana_TargetBrainArea{i_BrArea}), 'Task: units = ' ,num2str(sum(idx_SigDec & idx_sig)) ],'Color',Color_BrainArea(i_BrArea,:))
         end
-        if size(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1) < 2
-            
-        else
-            
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:)))) ;
-            shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:)), SDmean_SEM ,lineProps,1);
-        end
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1))) ;
+        shadedErrorBar((keys.PSTH_WINDOWS{1,3}:keys.PSTH_binwidth:keys.PSTH_WINDOWS{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1), SDmean_SEM ,lineProps,1);
         set(gca,'ylim',[-10, 10]);
         title([(TaskTyp{i_tsk}), 'units showing a sig. DECREASE in FR'],'interpreter','none');
         ylabel('normalized Firing rate (spike/s)','fontsize',14 );
