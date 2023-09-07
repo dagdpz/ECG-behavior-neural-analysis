@@ -46,8 +46,9 @@ for v = 1:length(versions)
     
     %% per session processing..
     for i = 1:length(sessions_info)
-        session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        
+        session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];        
+        load(sessions_info(i).Input_trials);
+
         % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
         if exist(seed_filename,'file')
@@ -61,7 +62,7 @@ for v = 1:length(versions)
             Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
         end
         if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg); %% conditions are still a mess here
+            ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg,trials); %% conditions are still a mess here
         end
         
         if ecg_bna_cfg.process_ECG
@@ -112,7 +113,7 @@ for v = 1:length(versions)
             sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
             % for  all data before june 2023 use " ecg_bna_process_LFP "
             % and after june "ecg_bna_process_LFP_newTask"
-            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
+            [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP(sessions_info(i), ecg_bna_cfg, trials); % using new function based on the new data type 
 %             [sessions_info(i), session_proc_lfp]= ecg_bna_process_LFP_newTask(sessions_info(i), ecg_bna_cfg); % using new function based on the new data type 
             
             ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');

@@ -52,6 +52,7 @@ else
         % quick but hopefully soon no more necessary fix of same block being
         % split (should be fixed in spike analysis, reason is we have split
         % blocks in combined monkeypsych and TDT files)
+        by_block(arrayfun(@(x) isempty(x.trial),by_block))=[];
         for b=1:numel(by_block)
         all_blocks(b)=by_block(b).trial(1).block;
         end

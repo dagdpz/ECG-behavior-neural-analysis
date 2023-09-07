@@ -1,4 +1,4 @@
-function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg)
+function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg,trials)
 savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 ecg_bna_cfg.n_permutations=1000; %100;
@@ -66,8 +66,16 @@ for u=1:numel(population)
     pop=population(u);
     unit_ID=population(u).unit_ID;
     target =population(u).target;
+    
+    T=ph_get_unit_trials(pop,trials);
+    
+    T_acc=[T.accepted] & [T.completed];
+    T=T(T_acc);
+    pop.trial=pop.trial(T_acc);
+    
+    
     %% Make sure we only take overlapping blocks
-    blocks_unit=unique([pop.trial.block]);
+    blocks_unit=unique([pop.block]);
     blocks=intersect(blocks_unit,Rblocks);
     b=ismember(Rblocks,blocks);
     
@@ -75,7 +83,7 @@ for u=1:numel(population)
         L=condition_labels{tasktype};
         Output.(L).unit_ID{u}         = unit_ID;
         Output.(L).target{u}          = target;
-        Output.(L).quantSNR(u,:)      = population(u).quantSNR;
+        Output.(L).quantSNR(u,:)      = pop.avg_SNR;
         Output.(L).SD(u,:)            = NaN(size(BINS));
         Output.(L).SD_SEM(u,:)        = NaN(size(BINS));
         Output.(L).SDP(u,:)           = NaN(size(BINS));
@@ -94,13 +102,14 @@ for u=1:numel(population)
         Nooutput.(L).Rts_perm={NaN;NaN};
         
         %% here we could potentially further reduce trials
-        tr=ismember([pop.trial.block],blocks) & [pop.trial.type]==tasktype;
-        trcell=num2cell(pop.trial(tr));
+        tr=ismember([T.block],blocks) & [T.type]==tasktype;
+        popcell=num2cell(pop.trial(tr));
+        trcell=num2cell(T(tr));
         
         % add trial onset time to each spike so its basically one stream again
         % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
         % removing overlapping spikes here            % add trial onset time         % add block separator
-        arrival_times=cellfun(@(x) x.arrival_times(x.arrival_times>x.states_onset(x.states==1)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false);
+        arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==1)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
         trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell);
         trial_ends=cellfun(@(x) x.states_onset(x.states==98)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
         trial_ends=[trial_ends{:}];

@@ -1,4 +1,4 @@
-function [session_info, allsites_lfp]= ecg_bna_process_LFP( session_info, lfp_tfa_cfg )
+function [session_info, allsites_lfp]= ecg_bna_process_LFP( session_info, lfp_tfa_cfg,trials )
 
 % lfp_tfa_process_LFP - function to read in the trial-wise LFP data for all
 % sites recorded in a session, compute the LFP time frequency spectrogram,
@@ -58,28 +58,34 @@ results_fldr = fullfile(session_info.proc_results_fldr);
 if ~exist(results_fldr, 'dir')
     mkdir(results_fldr);
 end
-load(session_info.Input_LFP{:}, 'sites');
+
+%% this is new
+sitesdir=fileparts(session_info.Input_LFP{:});
+[sitefiles]=dir(session_info.Input_LFP{:});
 
 % structure array to store lfp data for all sites
 % to be used for cross power spectrum calculation
 allsites_lfp = [];
 
-for i = 1:length(sites)
+for i = 1:length(sitefiles)
+    load([sitesdir filesep sitefiles(i).name], 'sites');
     
     % struct to save data for a site
     site_lfp = struct();
     fprintf('=============================================================\n');
-    fprintf('Processing site, %s\n', sites(i).site_ID);
-    site_lfp.session = sites(i).site_ID(1:12);
-    site_lfp.site_ID = sites(i).site_ID;
-    site_lfp.target = sites(i).target;
-    site_lfp.recorded_hemisphere = upper(sites(i).target(end));
+    fprintf('Processing site, %s\n', sites.site_ID);
+    site_lfp.session = sites.site_ID(1:12);
+    site_lfp.site_ID = sites.site_ID;
+    site_lfp.target = sites.target;
+    site_lfp.recorded_hemisphere = upper(sites.target(end));
     %site_lfp.ref_hemisphere = lfp_tfa_cfg.ref_hemisphere;
-    site_lfp.xpos = sites(i).grid_x;
-    site_lfp.ypos = sites(i).grid_y;
-    site_lfp.zpos = sites(i).electrode_depth;
+    site_lfp.xpos = sites.grid_x;
+    site_lfp.ypos = sites.grid_y;
+    site_lfp.zpos = sites.electrode_depth;
     
-    sitetrials=[sites(i).trial];
+    %sitetrials=[sites.trial];
+    
+    sitetrials=ph_get_unit_trials(sites,trials);
     positions=[sitetrials.tar_pos]-[sitetrials.fix_pos];
     hemifields=num2cell(sign(real(positions)));
     fixations=num2cell([sitetrials.fix_pos]);
@@ -87,14 +93,16 @@ for i = 1:length(sites)
     [sitetrials.position]=deal(positions{:});
     [sitetrials.hemifield]=deal(hemifields{:});
     [sitetrials.fixation]=deal(fixations{:});
-    [sites(i).trial]=sitetrials;
     
-    sites(i)=ph_LR_to_CI(lfp_tfa_cfg,sites(i));  %% convert... 
+    %sites=ph_LR_to_CI(lfp_tfa_cfg,sites);  %% convert... 
+    sitetrials=ph_LR_to_CI(lfp_tfa_cfg,sites,sitetrials);  %% convert...
+    [sites.trial]=sitetrials; 
     
+    lfp_samples=[0 cumsum(sites.LFP_samples)];
     %% now loop through each trial for this site to do what exactly?
-    for t = 1:length(sites(i).trial)
+    for t = 1:length(sites.trial)
 %         % convert hand and space information into string labels (for some reason)
-%         hf=sites(i).trial(t).hemifield;
+%         hf=sites.trial(t).hemifield;
 %         
 %         % reach space
 %         if hf == -1
@@ -105,7 +113,7 @@ for i = 1:length(sites)
 %             reach_space = 'N';
 %         end      
 %         
-%         rh = sites(i).trial(t).reach_hand; % 1 = left, 2 = right
+%         rh = sites.trial(t).reach_hand; % 1 = left, 2 = right
 %         % reach hand
 %         if rh == 1
 %             reach_hand = 'I';
@@ -123,9 +131,10 @@ for i = 1:length(sites)
         
         %% retrieve LFP data
         
-        start_time = (sites(i).trial(t).TDT_LFPx_tStart); % trial start time
-        fs = sites(i).trial(t).TDT_LFPx_SR; % sample rate
-        LFP = sites(i).trial(t).LFP; % LFP data
+        start_time = (sites.trial(t).TDT_LFPx_tStart); % trial start time
+        fs = sites.trial(t).TDT_LFPx_SR; % sample rate
+        %LFP = sites.trial(t).LFP; % LFP data
+         LFP = sites.LFP((lfp_samples(t)+1):lfp_samples(t+1)); % LFP data
         ts = (1/fs); % sample time
         nsamples = numel(LFP);
         end_time = start_time + (ts*(nsamples-1));
@@ -137,22 +146,22 @@ for i = 1:length(sites)
         site_lfp.trials(t).tsample     = ts;
 
         %% need information about which trial it was(originally?)
-        site_lfp.trials(t).n  = sites(i).trial(t).n;
+        site_lfp.trials(t).n  = sites.trial(t).n;
         
         % save retrieved data into struct
                 
-        perturbation = sites(i).trial(t).perturbation; % 0 = control
+        perturbation = sites.trial(t).perturbation; % 0 = control
         if isnan(perturbation)
             perturbation = 0;
         end        
         site_lfp.trials(t).perturbation  = perturbation;
-        site_lfp.trials(t).completed    = sites(i).trial(t).completed;
-        site_lfp.trials(t).success      = sites(i).trial(t).success;
-        site_lfp.trials(t).type         = sites(i).trial(t).type;
-        site_lfp.trials(t).effector     = sites(i).trial(t).effector;
-        site_lfp.trials(t).run          = sites(i).trial(t).run;
-        site_lfp.trials(t).block        = sites(i).trial(t).block;
-        site_lfp.trials(t).choice_trial = sites(i).trial(t).choice;
+        site_lfp.trials(t).completed    = sites.trial(t).completed;
+        site_lfp.trials(t).success      = sites.trial(t).success;
+        site_lfp.trials(t).type         = sites.trial(t).type;
+        site_lfp.trials(t).effector     = sites.trial(t).effector;
+        site_lfp.trials(t).run          = sites.trial(t).run;
+        site_lfp.trials(t).block        = sites.trial(t).block;
+        site_lfp.trials(t).choice_trial = sites.trial(t).choice;
                 
         % flag to mark noisy trials, default False, filled in by lfp_tfa_reject_noisy_lfp.m
         site_lfp.trials(t).noisy = 0;
@@ -160,11 +169,11 @@ for i = 1:length(sites)
         % get state onset times and onset samples - test and delete
         site_lfp.trials(t).states = struct();
         
-        for s = 1:length(sites(i).trial(t).states)
+        for s = 1:length(sites.trial(t).states)
             % get state ID
-            state_id = sites(i).trial(t).states(s);
+            state_id = sites.trial(t).states(s);
             % get state onset time
-            state_onset = sites(i).trial(t).states_onset(sites(i).trial(t).states == state_id);
+            state_onset = sites.trial(t).states_onset(sites.trial(t).states == state_id);
             % get sample number of state onset time
             state_onset_sample = find(abs(timestamps - state_onset) == min(abs(timestamps - state_onset)));
             % save into struct
