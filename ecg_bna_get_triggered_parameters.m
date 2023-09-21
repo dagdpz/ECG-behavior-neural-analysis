@@ -162,19 +162,19 @@ for sh = 1: n_shuffles
         % problem a) wrapping for circular phase to be taken as closest to the average pahse
         % problem b) scaling of std and confidence interval
         
-        itpc.std(sh,:,:)    = repmat(nanstd(abs(mean(exp(1i*cat_phase), 1)), 0, 3),1,1,length(tfr_time));
+        itpc.std(sh,:,:)    = repmat(nanstd(abs(mean(exp(1i*cat_phase), 1)), 0, 3),[1,1,length(tfr_time)]);
         itpc.conf95_high(sh,:,:)  = prctile(cat_phase,97.5,1);
         itpc.conf95_low(sh,:,:)   = prctile(cat_phase,2.5,1);
         
         cat_phaseBP = cat(1,trigg.phaseBP{:});
         % should we caclculate std over all time points in each freq (?)
         itpcbp.mean(sh,:,:) = abs(nanmean(exp(1i*cat_phaseBP), 1));
-        itpcbp.std(sh,:,:) = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),1,1,length(lfp_time));
+        itpcbp.std(sh,:,:) = repmat(nanstd(abs(mean(exp(1i*cat_phaseBP), 1)), 0, 3),[1,1,length(lfp_time)]);
         
         % adding power bandpassed mean & std
         cat_powBP = cat(1,trigg.powBP{:});
         powbp.mean(sh,:,:) = nanmean(cat_powBP , 1);
-        powbp.std(sh,:,:) = repmat(nanstd(nanmean(cat_powBP , 1), 0, 3),1,1,length(lfp_time));
+        powbp.std(sh,:,:) = repmat(nanstd(nanmean(cat_powBP , 1), 0, 3),[1,1,length(lfp_time)]);
         
         % evoked LFP average
         cat_lfp = vertcat(trigg.lfp{:});
