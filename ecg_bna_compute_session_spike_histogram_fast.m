@@ -1,4 +1,4 @@
-function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg)
+function Output=ecg_bna_compute_session_spike_histogram_fast(session_info,Rpeaks,ecg_bna_cfg)
 savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 ecg_bna_cfg.n_permutations=1000; %100;
