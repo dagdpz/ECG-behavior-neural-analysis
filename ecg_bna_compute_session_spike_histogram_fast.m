@@ -119,6 +119,14 @@ for u=1:numel(population)
         RPEAK_ts_perm=[Rpeaks(b).shuffled_ts];
         [SD_all_trials, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
         
+        %% compute raster
+        AT = AT';
+        bins = ecg_bna_cfg.analyse_states{3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{4};
+        spikeTimesByRpeak = arrayfun(@(x) AT(AT > x + ecg_bna_cfg.analyse_states{3} & AT < x + ecg_bna_cfg.analyse_states{4})-x, RPEAK_ts(2:end), 'Uniformoutput', false); % figure out arrival times 0.5s before and after the current R-peak, center around R-peak (timepoint 0)
+        rasterByRpeak = cellfun(@(x) histc(x, bins), spikeTimesByRpeak, 'UniformOutput', false);
+        raster = cat(1, rasterByRpeak{:});
+        raster = logical(raster); % values >1 will become 1 anyway
+        
         %% define which parts of the continous PSTH are during a trial
         trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
         trial_ends_samples=floor((trial_ends-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
@@ -147,6 +155,7 @@ for u=1:numel(population)
         Output.(L).NrTrials(u,:)      = sum(tr);
         Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
         Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
+        Output.(L).raster             = raster;
         
         Nooutput.(L).Rts=realPSTHs.RTs{1};
         Nooutput.(L).Rts_perm=shuffledPSTH.RTs;
@@ -185,6 +194,44 @@ for u=1:numel(population)
     end
     
     if savePlot
+        figure; % raster
+%         set(gcf, 'Position', [2054 104 1436 891])
+        sgtitle(['Raster_' unit_ID,'__',target ],'interpreter','none');
+        for tasktype=1:numel(condition_labels)
+            subplot(1,2,tasktype)
+            hold on
+            L=condition_labels{tasktype};
+            col=condition_colors{tasktype};
+            if isfield(Output.(L), 'raster')
+                % figure out how many R-peaks we have and if < 100, plot
+                % everything; if > 100, choose only 100
+                if size(Output.(L).raster,1) <= 100
+                    stepSize = 1; % just step through all the Rpeaks one by one
+                else
+                    % choose median intervals of linearly spaced intervals
+                    % between 1 and the number of Rpeaks
+                    stepSize = median(diff(round(linspace(1, size(Output.(L).raster,1), 100))));
+                end
+                % plot spikes only for 100 Rpeaks or everything if we have
+                % fewer
+                a = 1; % introduce row counter
+                for RpeakNum = 1:stepSize:size(Output.(L).raster,1)
+                    x = Output.(L).raster(RpeakNum,:);
+                    line([bins; bins], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
+                    a = a + 1;
+                end
+                title([{L ': 50-ms bins, ', '100 R-peak intervals out of ' num2str(size(Output.(L).raster,1)) ' (linearly spaced)'}])
+            end
+            xlabel('Time from R-peak, ms')
+            ylabel('Number of Plotted Row')
+            box on
+        end
+
+        filename= ['Raster_' unit_ID, '__' target];
+        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
+        close(gcf);
+        
+        
         figure; %% PSTH
         title(['PSTH_' unit_ID,'__',target ],'interpreter','none');
         hold on
