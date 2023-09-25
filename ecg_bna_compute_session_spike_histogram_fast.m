@@ -222,6 +222,7 @@ for u=1:numel(population)
                 end
                 title([{L ': 50-ms bins, ', '100 R-peak intervals out of ' num2str(size(Output.(L).raster,1)) ' (linearly spaced)'}])
             end
+            ylim([0 100])
             xlabel('Time from R-peak, ms')
             ylabel('Number of Plotted Row')
             box on
