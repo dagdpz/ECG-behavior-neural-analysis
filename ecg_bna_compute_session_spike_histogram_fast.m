@@ -132,7 +132,8 @@ for u=1:numel(population)
         shuffledPSTH=compute_PSTH(RPEAK_ts_perm(:,2:end),SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
         SD=do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
         
-        Output.(L).SD(u,:)            = SD.SD_mean ;
+        Output.(L).SD(u,:)            = SD.SD_mean;
+        Output.(L).SD_STD(u,:)        = SD.SD_STD;
         Output.(L).SD_SEM(u,:)        = SD.SD_SEM ;
         Output.(L).SDP(u,:)           = SD.SDPmean ;
         Output.(L).SDPCL(u,:)         = SD.SDPconf(1,:) ;
@@ -261,7 +262,8 @@ for p=1:size(RPEAK_samples,1)
     RT=RT(during_trial_index(RS));
     RS=RS(during_trial_index(RS));
     PSTH = SD(bsxfun(@plus,RS',bins));
-    out.mean(p,:)=mean(PSTH);
+    out.mean(p,:)=mean(PSTH, 1);
+    out.std(p,:) = std(PSTH, [], 1);
     out.SEM(p,:)=sterr(PSTH);
     out.n_events(p)=numel(RS);
     out.RTs{p}=RT;
@@ -285,14 +287,14 @@ function [SD,BINS]=do_statistics(Real,Shuffled,BINS,cfg)
 definition='max';
 
 SD_mean=Real.mean;
-SD_SEM=Real.SEM;
 
 SDPmean=nanmean(Shuffled.mean,1);
 SDPconf(1,:)=abs(prctile(Shuffled.mean,2.5,1)-SDPmean);
 SDPconf(2,:)=abs(prctile(Shuffled.mean,97.5,1)-SDPmean);
 
-SD.SD_mean=SD_mean;
-SD.SD_SEM=SD_SEM;
+SD.SD_mean=Real.mean;
+SD.SD_STD=Real.std;
+SD.SD_SEM=Real.SEM;
 SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 
