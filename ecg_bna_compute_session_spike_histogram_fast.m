@@ -97,7 +97,7 @@ for u=1:numel(population)
         Nooutput.(L).Rts_perm={NaN;NaN};
         
         %% here we could potentially further reduce trials
-        tr=ismember([pop.trial.block],blocks) & [pop.trial.type]==tasktype;
+        tr=ismember([pop.trial.block],blocks) & [pop.trial.type]==tasktype & [pop.trial.completed]==1; % take only completed trials for the suitable blocks and task type (for instructed saccade those are rewarded ones and for signal-detection theory apporach they are hits, misses, correct rejections, and false alarms)
         trcell=num2cell(pop.trial(tr));
         
         % add trial onset time to each spike so its basically one stream again
