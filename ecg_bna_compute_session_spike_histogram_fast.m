@@ -189,37 +189,39 @@ for u=1:numel(population)
     
     if savePlot
         figure; % raster
-%         set(gcf, 'Position', [2054 104 1436 891])
+        set(gcf, 'Position', [651 277 1112 430])
         sgtitle(['Raster_' unit_ID,'__',target ],'interpreter','none');
         for tasktype=1:numel(condition_labels)
             subplot(1,2,tasktype)
             hold on
+            set(gca, 'XTick', BINS(1:10:end), 'XTickLabel', BINS(1:10:end))
+            ylim([0 100])
+            xlabel('Time from R-peak, s')
+            ylabel('Number of Plotted Row')
+            box on
             L=condition_labels{tasktype};
             col=condition_colors{tasktype};
-            if isfield(Output.(L), 'raster')
+            if ~isnan(Output.(L).raster{u})
                 % figure out how many R-peaks we have and if < 100, plot
                 % everything; if > 100, choose only 100
-                if size(Output.(L).raster,1) <= 100
+                if size(Output.(L).raster{u},1) <= 100
                     stepSize = 1; % just step through all the Rpeaks one by one
                 else
                     % choose median intervals of linearly spaced intervals
                     % between 1 and the number of Rpeaks
-                    stepSize = median(diff(round(linspace(1, size(Output.(L).raster,1), 100))));
+                    stepSize = median(diff(round(linspace(1, size(Output.(L).raster{u},1), 100))));
                 end
                 % plot spikes only for 100 Rpeaks or everything if we have
                 % fewer
                 a = 1; % introduce row counter
-                for RpeakNum = 1:stepSize:size(Output.(L).raster,1)
-                    x = Output.(L).raster(RpeakNum,:);
-                    line([bins; bins], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
+                for RpeakNum = 1:stepSize:size(Output.(L).raster{u},1)
+                    x = Output.(L).raster{u}(RpeakNum,:);
+                    line([BINS; BINS], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
                     a = a + 1;
                 end
-                title([{L ': 50-ms bins, ', '100 R-peak intervals out of ' num2str(size(Output.(L).raster,1)) ' (linearly spaced)'}])
+                title({[L ': 10-ms bins, '], ['100 R-peak intervals out of ' num2str(size(Output.(L).raster{u},1))], '(linearly spaced)'})
             end
-            ylim([0 100])
-            xlabel('Time from R-peak, ms')
-            ylabel('Number of Plotted Row')
-            box on
+            
         end
 
         filename= ['Raster_' unit_ID, '__' target];
