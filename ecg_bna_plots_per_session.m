@@ -238,7 +238,7 @@ for cn= 1:numel(data.condition)
             end
             
             % mark state onsets
-            state_ticks=round(concat.tfr_time(state_samples));
+            state_ticks=round(concat.tfr_time(state_samples)*10)/10;
             set(gca,'xtick',state_samples(~isnan(state_ticks)))
             set(gca,'xticklabels', state_ticks(~isnan(state_ticks)), 'fontsize', 8)
             set(gca,'xticklabelrotation', 45)
