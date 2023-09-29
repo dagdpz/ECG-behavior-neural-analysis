@@ -9,7 +9,6 @@ end
 
 BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
 condition_labels={'Rest','Task'};
-condition_colors={'b','r'};
 
 % Rpeaks derived from concatenated ECG data [First_trial_INI.ECG1 trial.TDT_ECG1]
 %load(session_info.Input_ECG);
@@ -183,104 +182,9 @@ for u=1:numel(population)
         
     end
     
-    if savePlot
-        figure; % raster
-        set(gcf, 'Position', [651 277 1112 430])
-        sgtitle(['Raster_' unit_ID,'__',target ],'interpreter','none');
-        for tasktype=1:numel(condition_labels)
-            subplot(1,2,tasktype)
-            hold on
-            set(gca, 'XTick', BINS(1:10:end), 'XTickLabel', BINS(1:10:end))
-            ylim([0 100])
-            xlabel('Time from R-peak, s')
-            ylabel('Number of Plotted Row')
-            box on
-            L=condition_labels{tasktype};
-            col=condition_colors{tasktype};
-            if ~isnan(Output.(L).raster{u})
-                % figure out how many R-peaks we have and if < 100, plot
-                % everything; if > 100, choose only 100
-                if size(Output.(L).raster{u},1) <= 100
-                    stepSize = 1; % just step through all the Rpeaks one by one
-                else
-                    % choose median intervals of linearly spaced intervals
-                    % between 1 and the number of Rpeaks
-                    stepSize = median(diff(round(linspace(1, size(Output.(L).raster{u},1), 100))));
-                end
-                % plot spikes only for 100 Rpeaks or everything if we have
-                % fewer
-                a = 1; % introduce row counter
-                for RpeakNum = 1:stepSize:size(Output.(L).raster{u},1)
-                    x = Output.(L).raster{u}(RpeakNum,:);
-                    line([BINS; BINS], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
-                    a = a + 1;
-                end
-                title({[L ': 10-ms bins, '], ['100 R-peak intervals out of ' num2str(size(Output.(L).raster{u},1))], '(linearly spaced)'})
-            end
-            
-        end
-
-        filename= ['Raster_' unit_ID, '__' target];
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
-        close(gcf);
-        
-        
-        figure; %% PSTH
-        title(['PSTH_' unit_ID,'__',target ],'interpreter','none');
-        hold on
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            col=condition_colors{tasktype};
-            lineProps={'color',col,'linewidth',1};
-            shadedErrorBar(BINS,Output.(L).SD(u,:),Output.(L).SD_SEM(u,:),lineProps,1);
-            lineProps={'color',col,'linewidth',1,'linestyle',':'};
-            shadedErrorBar(BINS,Output.(L).SDP(u,:),[Output.(L).SDPCu(u,:);Output.(L).SDPCL(u,:)],lineProps,1);
-            ypos=NaN;
-            if Output.(L).sig_sign(u,:)==-1;
-                ypos=min(Output.(L).SD(u,:))*-1;
-            elseif Output.(L).sig_sign(u,:)==1;
-                ypos=max(Output.(L).SD(u,:));
-            end
-            to_plot=Output.(L).sig(u,:);to_plot(to_plot==0)=NaN;
-            plot(BINS,to_plot*ypos,col,'linewidth',5);
-        end
-        y_lims=get(gca,'ylim');
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            text(BINS(10),y_lims(2)-diff(y_lims)*tasktype*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials(u,:)), ' events = ' ,num2str(Output.(L).NrEvents(u,:)) ],'Color',condition_colors{tasktype});
-        end
-        ylabel('Firing rate');
-        xlabel('time to Rpeak');
-        filename= ['PSTH_' unit_ID, '__' target];
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
-        close(gcf);
-        
-        figure; %% interval distribution
-        title(['Rpeak_intervals_' unit_ID,'__',target ],'interpreter','none');
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            col=condition_colors{tasktype};
-            subplot(2,1,tasktype);
-            hold on
-            histbins=0.2:0.02:0.8;
-            H=hist(diff(Nooutput.(L).Rts),histbins);
-            plot(histbins,H,'linewidth',2,'color',col);
-            for p=1:numel(Nooutput.(L).Rts_perm)
-                H(p,:)=hist(diff(Nooutput.(L).Rts_perm{p}),histbins);
-            end
-            lineProps={'color','k','linewidth',1,'linestyle',':'};
-            shadedErrorBar(histbins,mean(H,1),std(H,1),lineProps,1);
-            ylabel('N');
-            xlabel('Rpeak interval');
-            title('grey is mean and std of surrogates');
-        end
-        filename= ['Rpeak_intervals_' unit_ID, '__' target];
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
-        close(gcf);
-    end % pdf by run
 end
 %% save output
-save([basepath_to_save, filesep, session_info.session],'Output')
+save([basepath_to_save, filesep, session_info.session],'Output', 'Nooutput')
 end
 
 function out=compute_PSTH(RPEAK_ts,RAST,SD,PSTH_time,during_trial_index,cfg)
