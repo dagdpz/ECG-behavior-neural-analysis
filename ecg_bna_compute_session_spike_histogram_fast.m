@@ -144,11 +144,12 @@ for u=1:numel(population)
         Output.(L).NrTrials(u,:)      = sum(tr);
         Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
         Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
-        Output.(L).raster{u}          = realPSTHs.raster;
+        Output.(L).raster{u}          = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
         
         Nooutput.(L).Rts=realPSTHs.RTs{1};
         Nooutput.(L).Rts_perm=shuffledPSTH.RTs;
         
+        clear realPSTHs SD
         
         %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
         if Sanity_check %% this needs to be fixed as well, this might be incorrect after least update...
@@ -324,7 +325,6 @@ switch cfg.kernel_type
 end
 PSTH_time=trial_onsets(1):cfg.PSTH_binwidth:trial_ends(end);
 RAST = hist(AT,PSTH_time);
-RAST = logical(RAST); % logical replaces all numbers >0 with 1 and reduces memory load
 SD= conv(RAST,Kernel,'same');
 end
 
