@@ -3,11 +3,6 @@ savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 remove_ini=0;   % to remove inter-trial intervals from ECG peaks (useful if ITI spikes were excluded during waveclus preprocessing)
                 %% !! this caused drift !
-ecg_bna_cfg.n_permutations=1000; %100;
-ecg_bna_cfg.significance_window=[-0.25 0.25];
-ecg_bna_cfg.PSTH_binwidth=0.01;
-ecg_bna_cfg.kernel_type='gaussian';
-ecg_bna_cfg.gaussian_kernel=0.02;
 
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
@@ -24,7 +19,6 @@ Output = [];
     
 %% compute surrogates first!(?)
 shuffled_Rpeaks = ecg_bna_get_shuffled_Rpeak_fast(session_proc_lfp(i).trials, nshuffles);
-
 
 for u=1:numel(population)
     pop=population(u);
