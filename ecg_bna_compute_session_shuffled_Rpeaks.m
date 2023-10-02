@@ -41,7 +41,7 @@ for b=1:numel(out)
                                                                    % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid  
     grace_window=mean(out(b).R2R_valid)/2;                         % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
     allowed_jitter_range=std(out(b).R2R_valid);                    % one-sided std of of normally distributed jitter values
-    RPEAK_ts=RPEAK_ts(out(b).idx_valid_R2R_consec);                % take only Rpeaks surrounded by valid R2R
+    RPEAK_ts=RPEAK_ts(valid_idx);                % take only Rpeaks surrounded by valid R2R
     RPEAKS_intervals=diff(RPEAK_ts);                               % These are the intervals of our valid Rpeaks, the ones we are going to jitter
     
     %% shuffling the VALID R2R intervals to append at the end of our jittered intervals, 
