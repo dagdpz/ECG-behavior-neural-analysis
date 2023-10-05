@@ -25,21 +25,24 @@ for v = 1:length(versions)
     ecg_bna_cfg = ecg_bna_define_settings(github_folder,project,version);
     
     %% read tuning table?
-    %     keys=struct;
-    %     keys=ph_general_settings(project,keys);
-    %     project_specific_settings=[keys.db_folder 'ph_project_settings.m'];
-    %     run(project_specific_settings)
-    %     version_specific_settings=[keys.db_folder ecg_bna_cfg.spikes_version filesep 'ph_project_version_settings.m'];
-    %     run(version_specific_settings)
-    %     keys.tuning_table={'unit_ID'};
-    %     keys.tt.tasktypes           = {'dist_2Diff_sac'};
-    %     keys.tt.stimulustype                   =[1,2,3]; %% removed 0 ?
-    %     keys.tt.difficulty                     =[0,1,2]; %% removed 4 ?
-    %     keys.tt.success                        =[0,1];
-    %     keys.cal.min_trials_per_condition       =4;
-    %     keys.monkey=''; %% empty because we ignore which monkey it is basically
-    %     keys=ph_tuning_table_correction(keys);
-    
+        keys=struct;
+        keys=ph_general_settings(project,keys);
+        project_specific_settings=[keys.db_folder 'ph_project_settings.m'];
+        run(project_specific_settings)
+        version_specific_settings=[keys.db_folder ecg_bna_cfg.spikes_version filesep 'ph_project_version_settings.m'];
+        run(version_specific_settings)
+        keys.anova_table_file=[keys.basepath_to_save ecg_bna_cfg.spikes_version filesep 'tuning_table_combined_CI.mat'];
+        keys.tuning_table=ph_load_tuning_table(keys); %% load tuning table
+        keys.tt.tasktypes= {'Fsac_opt';'Vsac_opt'};
+        keys.tt.SNR_rating=keys.cal.SNR_rating;
+        keys.tt.stability_rating=keys.cal.stablity; %:(
+        keys.tt.Single_rating=keys.cal.single_rating; %% :(
+        keys.tt.FR=keys.cal.FR; %:(
+        keys.tt.n_spikes=keys.cal.n_spikes; %% :(
+        keys.monkey=''; %% empty because we ignore which monkey it is basically
+        keys=ph_tuning_table_correction(keys);
+        ecg_bna_cfg.unit_IDS=keys.tuning_table(2:end,1);
+        
     %% Get info about sessions to be analysed
     % Read the info about sessions to analyse
     sessions_info = ecg_bna_cfg.session_info;
