@@ -23,7 +23,7 @@ for untNum = 1:length(Output.Task.target)
     
     figure; % raster
     set(gcf, 'Position', [641    40   892   956])
-    sgtitle([unit_ID,'__',target ],'interpreter','none');
+    title([unit_ID,'__',target ],'interpreter','none');
     for tasktype=1:numel(condition_labels)
         subplot(3,2,tasktype)
         hold on

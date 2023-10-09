@@ -77,10 +77,9 @@ for u=1:numel(population)
         L=condition_labels{tasktype};
         Output.(L).unit_ID{u}         = unit_ID;
         Output.(L).target{u}          = target;
-        %% check those 3 names
-        Output.(L).quantSNR(u,:)         = pop.avg_SNR;
-        Output.(L).Single_rating(u,:)    = pop.Single_rating;
-        Output.(L).stability_rating(u,:) = pop.avg_stability;
+        Output.(L).quantSNR(u,:)         = population(u).SNR_rating;
+        Output.(L).Single_rating(u,:)    = population(u).Single_rating;
+        Output.(L).stability_rating(u,:) = population(u).stability_rating;
         Output.(L).SD(u,:)            = NaN(size(BINS));
         Output.(L).SD_STD(u,:)           = NaN(size(BINS));
         Output.(L).SD_SEM(u,:)        = NaN(size(BINS));

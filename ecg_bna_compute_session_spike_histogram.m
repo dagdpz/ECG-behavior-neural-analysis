@@ -1,11 +1,6 @@
 function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg,trials)
 savePlot = 1;
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
-ecg_bna_cfg.n_permutations=1000; %100;
-ecg_bna_cfg.significance_window=[-0.25 0.25];
-ecg_bna_cfg.PSTH_binwidth=0.01;
-ecg_bna_cfg.kernel_type='gaussian';
-ecg_bna_cfg.gaussian_kernel=0.02;
 
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
@@ -14,7 +9,6 @@ end
 
 BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
 condition_labels={'Rest','Task'};
-condition_colors={'b','r'};
 
 % Rpeaks derived from concatenated ECG data [First_trial_INI.ECG1 trial.TDT_ECG1]
 %load(session_info.Input_ECG);
@@ -83,8 +77,12 @@ for u=1:numel(population)
         L=condition_labels{tasktype};
         Output.(L).unit_ID{u}         = unit_ID;
         Output.(L).target{u}          = target;
-        Output.(L).quantSNR(u,:)      = pop.avg_SNR;
+        %% check those 3 names
+        Output.(L).quantSNR(u,:)         = pop.avg_SNR;
+        Output.(L).Single_rating(u,:)    = pop.avg_single_rating;
+        Output.(L).stability_rating(u,:) = pop.avg_stability;
         Output.(L).SD(u,:)            = NaN(size(BINS));
+        Output.(L).SD_STD(u,:)           = NaN(size(BINS));
         Output.(L).SD_SEM(u,:)        = NaN(size(BINS));
         Output.(L).SDP(u,:)           = NaN(size(BINS));
         Output.(L).SDPCL(u,:)         = NaN(size(BINS));
@@ -98,6 +96,8 @@ for u=1:numel(population)
         Output.(L).NrTrials(u,:)      = NaN;
         Output.(L).NrEvents(u,:)      = NaN;
         Output.(L).FR(u,:)            = NaN;
+        Output.(L).raster{u}             = NaN;
+        
         Nooutput.(L).Rts=NaN;
         Nooutput.(L).Rts_perm={NaN;NaN};
         
@@ -123,7 +123,7 @@ for u=1:numel(population)
         AT(AT>trial_ends(end))=[];
         RPEAK_ts=[Rpeaks(b).RPEAK_ts];
         RPEAK_ts_perm=[Rpeaks(b).shuffled_ts];
-        [SD_all_trials, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
+        [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
         
         %% define which parts of the continous PSTH are during a trial
         trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
@@ -134,11 +134,12 @@ for u=1:numel(population)
             during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
         end
         
-        realPSTHs=compute_PSTH(RPEAK_ts(2:end),SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
-        shuffledPSTH=compute_PSTH(RPEAK_ts_perm(:,2:end),SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
+        realPSTHs=compute_PSTH(RPEAK_ts(2:end),RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
+        shuffledPSTH=compute_PSTH(RPEAK_ts_perm(:,2:end),RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
         SD=do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
         
         Output.(L).SD(u,:)            = SD.SD_mean ;
+        Output.(L).SD_STD(u,:)        = SD.SD_STD;
         Output.(L).SD_SEM(u,:)        = SD.SD_SEM ;
         Output.(L).SDP(u,:)           = SD.SDPmean ;
         Output.(L).SDPCL(u,:)         = SD.SDPconf(1,:) ;
@@ -152,10 +153,12 @@ for u=1:numel(population)
         Output.(L).NrTrials(u,:)      = sum(tr);
         Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
         Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
+        Output.(L).raster{u}          = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
         
         Nooutput.(L).Rts=realPSTHs.RTs{1};
         Nooutput.(L).Rts_perm=shuffledPSTH.RTs;
         
+        clear realPSTHs SD
         
         %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
         if Sanity_check %% this needs to be fixed as well, this might be incorrect after least update...
@@ -189,66 +192,12 @@ for u=1:numel(population)
         
     end
     
-    if savePlot
-        figure; %% PSTH
-        title(['PSTH_' unit_ID,'__',target ],'interpreter','none');
-        hold on
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            col=condition_colors{tasktype};
-            lineProps={'color',col,'linewidth',1};
-            shadedErrorBar(BINS,Output.(L).SD(u,:),Output.(L).SD_SEM(u,:),lineProps,1);
-            lineProps={'color',col,'linewidth',1,'linestyle',':'};
-            shadedErrorBar(BINS,Output.(L).SDP(u,:),[Output.(L).SDPCu(u,:);Output.(L).SDPCL(u,:)],lineProps,1);
-            ypos=NaN;
-            if Output.(L).sig_sign(u,:)==-1;
-                ypos=min(Output.(L).SD(u,:))*-1;
-            elseif Output.(L).sig_sign(u,:)==1;
-                ypos=max(Output.(L).SD(u,:));
-            end
-            to_plot=Output.(L).sig(u,:);to_plot(to_plot==0)=NaN;
-            plot(BINS,to_plot*ypos,col,'linewidth',5);
-        end
-        y_lims=get(gca,'ylim');
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            text(BINS(10),y_lims(2)-diff(y_lims)*tasktype*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials(u,:)), ' events = ' ,num2str(Output.(L).NrEvents(u,:)) ],'Color',condition_colors{tasktype});
-        end
-        ylabel('Firing rate');
-        xlabel('time to Rpeak');
-        filename= ['PSTH_' unit_ID, '__' target];
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
-        close(gcf);
-        
-        figure; %% interval distribution
-        title(['Rpeak_intervals_' unit_ID,'__',target ],'interpreter','none');
-        for tasktype=1:numel(condition_labels)
-            L=condition_labels{tasktype};
-            col=condition_colors{tasktype};
-            subplot(2,1,tasktype);
-            hold on
-            histbins=0.2:0.02:0.8;
-            H=hist(diff(Nooutput.(L).Rts),histbins);
-            plot(histbins,H,'linewidth',2,'color',col);
-            for p=1:numel(Nooutput.(L).Rts_perm)
-                H(p,:)=hist(diff(Nooutput.(L).Rts_perm{p}),histbins);
-            end
-            lineProps={'color','k','linewidth',1,'linestyle',':'};
-            shadedErrorBar(histbins,mean(H,1),std(H,1),lineProps,1);
-            ylabel('N');
-            xlabel('Rpeak interval');
-            title('grey is mean and std of surrogates');
-        end
-        filename= ['Rpeak_intervals_' unit_ID, '__' target];
-        export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
-        close(gcf);
-    end % pdf by run
 end
 %% save output
-save([basepath_to_save, filesep, session_info.session],'Output')
+save([basepath_to_save, filesep, session_info.session],'Output', 'Nooutput')
 end
 
-function out=compute_PSTH(RPEAK_ts,SD,PSTH_time,during_trial_index,cfg)
+function out=compute_PSTH(RPEAK_ts,RAST,SD,PSTH_time,during_trial_index,cfg)
 RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.PSTH_binwidth);
 bins_before=round(cfg.analyse_states{3}/cfg.PSTH_binwidth);
 bins_after=round(cfg.analyse_states{4}/cfg.PSTH_binwidth);
@@ -266,15 +215,20 @@ for p=1:size(RPEAK_samples,1)
     RS=RPEAK_samples(p,~isnan(RPEAK_samples(p,:)));
     RT=RT(during_trial_index(RS));
     RS=RS(during_trial_index(RS));
-    PSTH = SD(bsxfun(@plus,RS',bins));
-    out.mean(p,:)=mean(PSTH);
+    idx_by_trial = bsxfun(@plus,RS',bins); % bsxfun produces a RPEAK-(nBins-1) matrix with samples taken from SDF for each R-peak
+    if size(RPEAK_samples,1) == 1
+        out.raster = RAST(idx_by_trial);
+    end
+    PSTH = SD(idx_by_trial); 
+    out.mean(p,:)=mean(PSTH, 1);
+    out.std(p,:) = std(PSTH, [], 1);
     out.SEM(p,:)=sterr(PSTH);
     out.n_events(p)=numel(RS);
     out.RTs{p}=RT;
 end
 end
 
-function [SD,PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg)
+function [SD,RAST,PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg)
 %% make SD across all trials appended (no average)!
 switch cfg.kernel_type
     case 'gaussian'
@@ -284,21 +238,22 @@ switch cfg.kernel_type
         Kernel=ones(1,n_bins)/n_bins/cfg.PSTH_binwidth; %%*1000 cause a one full spike in one 1ms bin means 1000sp/s locally
 end
 PSTH_time=trial_onsets(1):cfg.PSTH_binwidth:trial_ends(end);
-SD= conv(hist(AT,PSTH_time),Kernel,'same');
+RAST = hist(AT,PSTH_time);
+SD= conv(RAST,Kernel,'same');
 end
 
 function [SD,BINS]=do_statistics(Real,Shuffled,BINS,cfg)
 definition='max';
 
 SD_mean=Real.mean;
-SD_SEM=Real.SEM;
 
 SDPmean=nanmean(Shuffled.mean,1);
 SDPconf(1,:)=abs(prctile(Shuffled.mean,2.5,1)-SDPmean);
 SDPconf(2,:)=abs(prctile(Shuffled.mean,97.5,1)-SDPmean);
 
-SD.SD_mean=SD_mean;
-SD.SD_SEM=SD_SEM;
+SD.SD_mean=Real.mean;
+SD.SD_STD=Real.std;
+SD.SD_SEM=Real.SEM;
 SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 

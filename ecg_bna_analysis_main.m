@@ -68,11 +68,9 @@ for v = 1:length(versions)
         if ecg_bna_cfg.process_LFP || ecg_bna_cfg.process_ECG || ecg_bna_cfg.process_spikes
             Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
         end
-        if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            %% LUBA uses ecg_bna_compute_session_spike_histogram_fast 
+        if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))            
             ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg,trials); %% conditions are still a mess here
-            %% this function is used by Luba to plot
-             ecg_bna_plot_session_spike_histogram(sessions_info(i),ecg_bna_cfg);
+            ecg_bna_plot_session_spike_histogram(sessions_info(i),ecg_bna_cfg);
         end
         
         if ecg_bna_cfg.process_ECG
