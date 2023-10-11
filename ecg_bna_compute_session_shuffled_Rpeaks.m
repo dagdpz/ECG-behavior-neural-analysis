@@ -24,13 +24,14 @@ for b=1:numel(out)
     if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)
         Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
+        Rpeaks(b).RR_durations = [];
         Rpeaks(b).shuffled_ts=[];
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
         continue
     end
     
     RPEAK_ts=out(b).Rpeak_t;    
-    [~,consecutive_idx]=ismember(out(b).R2R_t(out(b).idx_valid_R2R_consec),out(b).Rpeak_t);
+    [~,consecutive_idx]=ismember(out(b).R2R_t(out(b).idx_valid_R2R_consec),out(b).Rpeak_t); % indexing of consecutive_idx corrsponds to out(b).Rpeak_t
     valid_idx=consecutive_idx-1;
     %valid_idx=out(b).idx_valid_R2R_consec-1;                       % idx of R_peaks surrounded by valid R2R intervals
     next_invalid=diff(valid_idx)~=1;                               % is the next Rpeak invalid (i.e. followed by invalid R2R interval)
@@ -62,6 +63,7 @@ for b=1:numel(out)
     RPEAK_ts_p(RPEAK_ts_p>max(RPEAK_ts)+allowed_jitter_range)=NaN;
     RPEAK_ts_p(:,all(isnan(RPEAK_ts_p),1))=[];
     Rpeaks(b).RPEAK_ts=RPEAK_ts+offset_blocks_Rpeak(b);         % this offset is just a trick to be able to append Rpeaks across blocks easily
+    Rpeaks(b).RR_durations=out(b).R2R_valid(out(b).idx_valid_R2R_consec); % durations of RR-intervals (the corresponding ends of those intervals are in RPEAK_ts)
     Rpeaks(b).shuffled_ts=RPEAK_ts_p+offset_blocks_Rpeak(b);
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+allowed_jitter_range*2;
 end
