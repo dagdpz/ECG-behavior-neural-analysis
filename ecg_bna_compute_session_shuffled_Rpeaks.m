@@ -46,7 +46,7 @@ for b=1:numel(out)
 	allowed_jitter_range=std(out(b).R2R_valid);                    % one-sided std of normally distributed jitter values
     RPEAKS_intervals_p = [repmat(RPEAK_ts(1),N,1) repmat(RPEAKS_intervals,N,1)+randn(N,length(RPEAKS_intervals))*allowed_jitter_range perm]; % jittering every interval!
     RPEAK_ts_p         = cumsum(RPEAKS_intervals_p,2);
-    RPEAK_ts_dur       = diff(RPEAK_ts_p,1,2);
+    RPEAK_ts_dur       = [zeros(N,1) diff(RPEAK_ts_p,1,2)];
     
     %% figure out consecutive RR-intervals - we do it only after jittering because we need to know durations of jittered intervals corresponding to the consecutive ones
     [~,consecutive_idx]=ismember(out(b).R2R_t(out(b).idx_valid_R2R_consec),out(b).Rpeak_t); % indexing of consecutive_idx corrsponds to out(b).Rpeak_t
@@ -61,24 +61,25 @@ for b=1:numel(out)
     
     %% take data corresponding to consecutive R-peaks
     RPEAK_ts     = RPEAK_ts(valid_idx);                                  % take only Rpeaks surrounded by valid R2R
-%     RPEAK_ts_p   = RPEAK_ts_p(:, valid_idx);
-%     RPEAK_ts_dur = RPEAK_ts_dur(:, valid_idx);
+    RPEAK_dur    = out(b).R2R_valid(out(b).idx_valid_R2R_consec-1);      % 
     
     %% remove jittered Rpeaks and corresponding durations that fell into invalid segments
     for iv=1:numel(iv_starts)
-        RPEAK_ts_p(RPEAK_ts_p>iv_starts(iv)+grace_window & RPEAK_ts_p<iv_ends(iv)-grace_window)=NaN;
-        RPEAK_ts_dur(RPEAK_ts_p>iv_starts(iv)+grace_window & RPEAK_ts_p<iv_ends(iv)-grace_window)=NaN;
+        idx2exclude_1 = RPEAK_ts_p>iv_starts(iv)+grace_window & RPEAK_ts_p<iv_ends(iv)-grace_window;
+        RPEAK_ts_p   (idx2exclude_1) = NaN;
+        RPEAK_ts_dur (idx2exclude_1) = NaN;
     end
-    RPEAK_ts_p(RPEAK_ts_p>max(RPEAK_ts)+allowed_jitter_range)=NaN;
-    RPEAK_ts_dur(RPEAK_ts_p>max(RPEAK_ts)+allowed_jitter_range)=NaN;
+    idx2exclude_2 = RPEAK_ts_p>max(RPEAK_ts)+allowed_jitter_range;
+    RPEAK_ts_p    (idx2exclude_2) = NaN;
+    RPEAK_ts_dur  (idx2exclude_2) = NaN;
     
-    RPEAK_ts_p(:,all(isnan(RPEAK_ts_p),1))=[];
-    RPEAK_ts_dur(:,all(isnan(RPEAK_ts_p),1))=[];
+    RPEAK_ts_p   (:,all(isnan(RPEAK_ts_p),1)) = [];
+    RPEAK_ts_dur (:,all(isnan(RPEAK_ts_dur),1)) = [];
     
     Rpeaks(b).RPEAK_ts=RPEAK_ts+offset_blocks_Rpeak(b);         % this offset is just a trick to be able to append Rpeaks across blocks easily
-    Rpeaks(b).RR_durations=out(b).R2R_valid(out(b).idx_valid_R2R_consec); % durations of RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).RPEAK_ts)
+    Rpeaks(b).RPEAK_dur=RPEAK_dur; % durations of RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).RPEAK_ts)
     Rpeaks(b).shuffled_ts=RPEAK_ts_p+offset_blocks_Rpeak(b);
-    Rpeaks(b).shuffled_dur = RPEAK_ts_dur;
+    Rpeaks(b).shuffled_dur = RPEAK_ts_dur; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+allowed_jitter_range*2;
 end
 
