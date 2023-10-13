@@ -52,9 +52,16 @@ avg = struct();
 targets = {session_raw.sites(:).target};
 targets = unique(targets);
 for t = 1:length(targets)
-    % 
-    sites_for_this_target = ismember({session_raw.sites.target},targets{t});
-    target_sites = session_raw.sites(sites_for_this_target);
+    %
+%     %% case for averaging session averages
+%     switch across
+%         case 'sites'
+            sites_for_this_target = ismember({session_raw.sites.target},targets{t});
+            target_sites = session_raw.sites(sites_for_this_target);
+%         case 'sessions'
+%             sites_for_this_target = ismember({session_raw.sites_avg.target},targets{t});
+%             target_sites = session_raw.sites_avg(sites_for_this_target);
+%     end
     %
     nTargetSites = numel(find(strcmp(targets{t},{target_sites.target})));
     avg.(across)(t).target = targets{t};

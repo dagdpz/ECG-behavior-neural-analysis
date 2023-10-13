@@ -151,7 +151,7 @@ for v = 1:length(versions)
             if ~exist(session_result_folder, 'dir')
                 mkdir(session_result_folder);
             end
-            save(fullfile(session_result_folder, ['Rpeak_triggered_session_' session_data.session '.mat']), 'session_data');
+            save(fullfile(session_result_folder, ['Rpeak_triggered_session_' session_data.session '.mat']), 'session_data');        
             clear session_proc_lfp site_data session_data;
             
         end
@@ -160,7 +160,23 @@ for v = 1:length(versions)
     
     %% per session? (why not per site??)
     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_LFP'))
+        %% eventually, we want 3 things (all of this is target wise):
         session_Rpeak_triggered_raw=load_stuff(sessions_info,'analyse_lfp_fldr','Rpeak_triggered_session_','Per_Session','session_data');
+            % a) average across sites for each session (first cosntruct this)
+            %% the same function should be able to either 
+            % b) average of those session averages (append all session averages, and average)
+                     % as a part of this, add scatter plots
+            
+            % c) GRAND average across all sites <-- (append all sites, and average)
+                     % as a part of this, add scatter plots
+        
+%         %% loop through sessions
+%         for s=1:numel(sessions_info)
+%         session_Rpeak_triggered_raw(s)=load_stuff(sessions_info(s),'analyse_lfp_fldr','Rpeak_triggered_session_','Per_Session','session_data');
+%         session_Rpeak_triggered_raw(s).sites_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg, 'sites');
+% 
+%         end
+        
         if any(strcmp(ecg_bna_cfg.compute_avg_across, 'sessions'))
             session_Rpeak_triggered_raw.sessions_avg = ecg_bna_avg_site_and_sessions_Rpeak_triggered_results(session_Rpeak_triggered_raw, ecg_bna_cfg,'sessions');
         end
