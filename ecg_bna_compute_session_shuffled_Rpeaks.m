@@ -59,20 +59,6 @@ for b=1:numel(out)
                                                                    % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid  
     grace_window=mean(out(b).R2R_valid)/2;                         % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
     
-%% This figure plots all R-peaks and consecutive R-peaks to make sure our selection procedure does the right thing
-%     figure
-%     hold on
-%     for this_index_wont_be_used = 1:length(iv_starts)
-%         f= fill([iv_starts(this_index_wont_be_used) iv_starts(this_index_wont_be_used) ...
-%             iv_ends(this_index_wont_be_used) iv_ends(this_index_wont_be_used) ...
-%             iv_starts(this_index_wont_be_used)], ...
-%             [0 1 1 0 0], 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-%     end
-%     st1 = stem(out(b).Rpeak_t, ones(length(out(b).Rpeak_t),1)); % all the R-peaks from out.Rpeak_t
-%     st2 = stem(RPEAK_ts(valid_idx), 0.5*ones(length(RPEAK_ts(valid_idx)), 1),'g'); % plot consecutive R-peaks
-%     legend([f st1 st2], {'Invalid Time Window', 'All R-peaks', 'Only Consecutive R-peaks'})
-%     xlabel('Time, s')
-    
     %% take data corresponding to consecutive R-peaks
     RPEAK_ts     = RPEAK_ts(valid_idx);                                  % take only Rpeaks surrounded by valid R2R
     RPEAK_dur    = out(b).R2R_valid(out(b).idx_valid_R2R_consec-1);      % 
@@ -95,6 +81,21 @@ for b=1:numel(out)
     Rpeaks(b).shuffled_ts=RPEAK_ts_p+offset_blocks_Rpeak(b);
     Rpeaks(b).shuffled_dur = RPEAK_ts_dur; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+allowed_jitter_range*2;
+    
+    %% This figure plots all R-peaks and consecutive R-peaks to make sure our selection procedure does the right thing
+%     figure
+%     hold on
+%     for this_index_wont_be_used = 1:length(iv_starts)
+%         f= fill([iv_starts(this_index_wont_be_used) iv_starts(this_index_wont_be_used) ...
+%             iv_ends(this_index_wont_be_used) iv_ends(this_index_wont_be_used) ...
+%             iv_starts(this_index_wont_be_used)], ...
+%             [0 1 1 0 0], 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+%     end
+%     st1 = stem(out(b).Rpeak_t, ones(length(out(b).Rpeak_t),1)); % all the R-peaks from out.Rpeak_t
+%     st2 = stem(out(b).R2R_t, 0.75*ones(length(out(b).R2R_t),1));
+%     st3 = stem(RPEAK_ts, 0.5*ones(length(RPEAK_ts), 1),'g'); % plot consecutive R-peaks
+%     legend([f st1 st2 st3], {'Invalid Time Window', 'All R-peaks', 'Ends of valid RRs', 'Consecutive R-peaks: 1 valid RR before & 1 valid RR after'})
+%     xlabel('Time, s')
 end
 
 end
