@@ -9,8 +9,6 @@ end
 BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
 condition_labels={'Rest','Task'};
 
-% Rpeaks derived from concatenated ECG data [First_trial_INI.ECG1 trial.TDT_ECG1]
-%load(session_info.Input_ECG);
 load(session_info.Input_spikes);
 
 offset_blocks_Rpeak=[Rpeaks.offset];
@@ -40,25 +38,26 @@ for u=1:numel(population)
         Output.(L).quantSNR(u,:)         = pop.avg_SNR;
         Output.(L).Single_rating(u,:)    = pop.avg_single_rating;
         Output.(L).stability_rating(u,:) = pop.avg_stability;
-        Output.(L).SD(u,:)            = NaN(size(BINS));
+        Output.(L).SD(u,:)               = NaN(size(BINS));
         Output.(L).SD_STD(u,:)           = NaN(size(BINS));
-        Output.(L).SD_SEM(u,:)        = NaN(size(BINS));
-        Output.(L).SDP(u,:)           = NaN(size(BINS));
-        Output.(L).SDPCL(u,:)         = NaN(size(BINS));
-        Output.(L).SDPCu(u,:)         = NaN(size(BINS));
-        Output.(L).sig_all(u,:)       = zeros(size(BINS));
-        Output.(L).sig(u,:)           = zeros(size(BINS));
-        Output.(L).sig_FR_diff(u,:)   = NaN;
-        Output.(L).sig_time(u,:)      = NaN;
-        Output.(L).sig_n_bins(u,:)    = 0;
-        Output.(L).sig_sign(u,:)      = 0;
-        Output.(L).NrTrials(u,:)      = NaN;
-        Output.(L).NrEvents(u,:)      = NaN;
-        Output.(L).FR(u,:)            = NaN;
+        Output.(L).SD_SEM(u,:)           = NaN(size(BINS));
+        Output.(L).SDP(u,:)              = NaN(size(BINS));
+        Output.(L).SDPCL(u,:)            = NaN(size(BINS));
+        Output.(L).SDPCu(u,:)            = NaN(size(BINS));
+        Output.(L).sig_all(u,:)          = zeros(size(BINS));
+        Output.(L).sig(u,:)              = zeros(size(BINS));
+        Output.(L).sig_FR_diff(u,:)      = NaN;
+        Output.(L).sig_time(u,:)         = NaN;
+        Output.(L).sig_n_bins(u,:)       = 0;
+        Output.(L).sig_sign(u,:)         = 0;
+        Output.(L).NrTrials(u,:)         = NaN;
+        Output.(L).NrEvents(u,:)         = NaN;
+        Output.(L).FR(u,:)               = NaN;
         Output.(L).raster{u}             = NaN;
-        
-        Nooutput.(L).Rts=NaN;
-        Nooutput.(L).Rts_perm={NaN;NaN};
+        Output.(L).Rts{u}                = NaN; % RR ends
+        Output.(L).Rds{u}                = NaN; % RR durations
+        Output.(L).Rts_perm{u}           = {NaN;NaN};
+        Output.(L).Rds_perm{u}           = {NaN;NaN};
         
         %% here we could potentially further reduce trials
         tr=ismember([T.block],blocks) & [T.type]==tasktype;
@@ -83,7 +82,8 @@ for u=1:numel(population)
         RPEAK_ts=[Rpeaks(b).RPEAK_ts];
         RPEAK_ts_perm=[Rpeaks(b).shuffled_ts];
         [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
-        
+        RPEAK_dur = [Rpeaks(b).RPEAK_dur];
+        RPEAK_dur_perm = [Rpeaks(b).shuffled_dur];
         %% define which parts of the continous PSTH are during a trial
         trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
         trial_ends_samples=floor((trial_ends-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
@@ -93,9 +93,9 @@ for u=1:numel(population)
             during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
         end
         
-        realPSTHs=compute_PSTH(RPEAK_ts(2:end),RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
-        shuffledPSTH=compute_PSTH(RPEAK_ts_perm(:,2:end),RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
-        SD=do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
+        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
+        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
+        SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
         
         Output.(L).SD(u,:)            = SD.SD_mean ;
         Output.(L).SD_STD(u,:)        = SD.SD_STD;
@@ -113,9 +113,10 @@ for u=1:numel(population)
         Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
         Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
         Output.(L).raster{u}          = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-        
-        Nooutput.(L).Rts=realPSTHs.RTs{1};
-        Nooutput.(L).Rts_perm=shuffledPSTH.RTs;
+        Output.(L).Rts{u}             = realPSTHs.RTs{1};
+        Output.(L).Rds{u}             = realPSTHs.RDs{1}; % put RR durations to plot those in the histograms later
+        Output.(L).Rts_perm{u}        = shuffledPSTH.RTs;
+        Output.(L).Rds_perm{u}        = shuffledPSTH.RDs;
         
         clear realPSTHs SD
         
@@ -153,27 +154,35 @@ for u=1:numel(population)
     
 end
 %% save output
-save([basepath_to_save, filesep, session_info.session],'Output', 'Nooutput')
+save([basepath_to_save, filesep, session_info.session],'Output')
 end
 
-function out=compute_PSTH(RPEAK_ts,RAST,SD,PSTH_time,during_trial_index,cfg)
+function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)
 RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.PSTH_binwidth);
 bins_before=round(cfg.analyse_states{3}/cfg.PSTH_binwidth);
 bins_after=round(cfg.analyse_states{4}/cfg.PSTH_binwidth);
 bins=bins_before:bins_after;
 
 %% remove samples that would land outside
-RPEAK_ts(RPEAK_samples>=numel(SD)-bins_after)=NaN;
-RPEAK_samples(RPEAK_samples>=numel(SD)-bins_after)=NaN;
-RPEAK_ts(RPEAK_samples<=-bins_before)=NaN;
-RPEAK_samples(RPEAK_samples<=-bins_before)=NaN;
+rpeaks2exclude = ...
+    RPEAK_samples>=numel(SD)-bins_after | RPEAK_samples<=-bins_before;
 
-%% distinguish between shuffled and real data?
+RPEAK_ts(rpeaks2exclude)       = NaN;
+RPEAK_samples(rpeaks2exclude)  = NaN;
+RPEAK_dur(rpeaks2exclude)      = NaN;
+
+%% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of reshuffled data
 for p=1:size(RPEAK_samples,1)
-    RT=RPEAK_ts(p,~isnan(RPEAK_samples(p,:)));
-    RS=RPEAK_samples(p,~isnan(RPEAK_samples(p,:)));
-    RT=RT(during_trial_index(RS));
-    RS=RS(during_trial_index(RS));
+    RT=RPEAK_ts(p,~isnan(RPEAK_samples(p,:)));      % take time-stamps
+    RS=RPEAK_samples(p,~isnan(RPEAK_samples(p,:))); % take samples
+    RD=RPEAK_dur(p,~isnan(RPEAK_samples(p,:)));     % take durations
+    
+    within_trial_idx = during_trial_index(RS);
+    
+    RT=RT(within_trial_idx);
+    RS=RS(within_trial_idx);
+    RD=RD(within_trial_idx);
+    
     idx_by_trial = bsxfun(@plus,RS',bins); % bsxfun produces a RPEAK-(nBins-1) matrix with samples taken from SDF for each R-peak
     if size(RPEAK_samples,1) == 1
         out.raster = RAST(idx_by_trial);
@@ -184,6 +193,7 @@ for p=1:size(RPEAK_samples,1)
     out.SEM(p,:)=sterr(PSTH);
     out.n_events(p)=numel(RS);
     out.RTs{p}=RT;
+    out.RDs{p}=RD;
 end
 end
 

@@ -5,11 +5,11 @@ basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
-load([basepath_to_save, filesep, session_info.session],'Output', 'Nooutput')
+load([basepath_to_save, filesep, session_info.session],'Output')
 
 % figure out the present units and check that they match in Task and Rest
 if ~isequal(Output.Task.target, Output.Rest.target)
-    error('Numbers and names of units don''t match for task ans rest')
+    error('Numbers and names of units don''t match for task and rest')
 end
 
 condition_labels = fieldnames(Output);
@@ -95,10 +95,10 @@ for untNum = 1:length(Output.Task.target)
         hold on
         box on
         histbins=0.2:0.02:0.8;
-        H=hist(diff(Nooutput.(L).Rts),histbins);
+        H=hist(Output.(L).Rds{untNum},histbins);
         plot(histbins,H,'linewidth',2,'color',col);
-        for p=1:numel(Nooutput.(L).Rts_perm)
-            H(p,:)=hist(diff(Nooutput.(L).Rts_perm{p}),histbins);
+        for p=1:numel(Output.(L).Rts_perm{untNum})
+            H(p,:)=hist(Output.(L).Rds_perm{untNum}{p},histbins);
         end
         lineProps={'color','k','linewidth',1,'linestyle',':'};
         shadedErrorBar(histbins,mean(H,1),std(H,1),lineProps,1);
