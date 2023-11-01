@@ -1,24 +1,23 @@
-% clear all, close all
+function ecg_bna_compute_ECG_related_spikePhase(session_info,Rpeaks,ecg_bna_cfg)
 
-sessionDate = '20230511';
+basepath_to_save=[session_info.SPK_fldr filesep 'cardioballistic'];
+if ~exist(basepath_to_save,'dir')
+    mkdir(basepath_to_save);
+end
 
-nReshuffles = 1000;
-
-Fs = 24414; % sampling frequency of BB signal, Hz
+%% settings for this analysis - subject to be moved to the ecg_bna_cfg
+nReshuffles = ecg_bna_cfg.n_permutations;
+Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
 wf_times_ms = 1000 * (1/Fs:1/Fs:32/Fs); % in ms
 wf_times_interp_ms = 1000 * (1/4/Fs:1/4/Fs:32/Fs); % in ms
 peak_id = 10; % sample number of the trough in the spike waveform
 phase_bins          = linspace(0, 2*pi, 64);
 % phase_bin_centers   = phase_bins + phase_bins(2)/2;
+WCfolder    = ['Y:\Data\Sortcodes\Magnus_phys\' session_info.Date '\WC\'];
 
-dataFolder  = 'Y:\Projects\Pulv_bodysignal\ephys\ECG_TaskRest_Magnus_merged\';
-reshuffleFolder = 'Y:\Projects\Pulv_bodysignal\Magnus_ECG_waveform\';
-WCfolder    = ['Y:\Data\Sortcodes\Magnus_phys\' sessionDate '\WC\'];
 
-% load(['Y:\Projects\Pulv_bodysignal\Magnus_ECG_waveform\' sessionDate '_ecg.mat'])
-load([dataFolder 'population_Magnus_' sessionDate '.mat'])
-load([dataFolder 'by_block_Magnus_' sessionDate '.mat']) % by_block structure comes from here
-load([reshuffleFolder 'Magnus_' sessionDate '_shuffled_Rpeaks.mat'])
+load(session_info.Input_spikes); % 'population' structure comes from here
+load(session_info.Input_trials); % 'trial' structure comes from here
 
 % one needs a population and a by_block file to make it work
 for unitNum = 1:5%length(population)
@@ -36,14 +35,10 @@ for unitNum = 1:5%length(population)
     end
     disp(['Processing unit ' num2str(unitNum) ' out of ' num2str(length(population))])
     % 0. Prepare data variables
-    states_onset = arrayfun(@(x) {x.trial.states_onset}, by_block, 'UniformOutput', false);
-    states_onset = [states_onset{:}];
-    states = arrayfun(@(x) {x.trial.states}, by_block, 'UniformOutput', false);
-    states = [states{:}];
-    TDT_ECG1_t0_from_rec_start = arrayfun(@(x) {x.trial.TDT_ECG1_t0_from_rec_start}, by_block, 'UniformOutput', false);
-    TDT_ECG1_t0_from_rec_start = [TDT_ECG1_t0_from_rec_start{:}];
-    block_nums = arrayfun(@(x) {x.trial.block}, by_block, 'UniformOutput', false);
-    block_nums = [block_nums{:}];
+    states_onset               = {trials.states_onset};
+    states                     = {trials.states};
+    TDT_ECG1_t0_from_rec_start = {trials.TDT_ECG1_t0_from_rec_start};
+    block_nums                 = {trials.block};
     % compute RR-intervals
     valid_RRinterval_ends =             single([Rpeaks.RPEAK_ts]);
     valid_RRinterval_starts =           single(valid_RRinterval_ends - [Rpeaks.RPEAK_dur]);
@@ -69,7 +64,7 @@ for unitNum = 1:5%length(population)
     data.single_rating                        = population(unitNum).avg_single_rating;
     data.spike_phases_radians                 = eventPhases;
     
-    [counts,~,bin] = histcounts(data.spike_phases_radians, phase_bins);
+    [~,~,bin] = histcounts(data.spike_phases_radians, phase_bins);
     
     data.waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
     waveforms_upsampled                       = interpft(data.waveforms_microvolts, 32*4, 2);
@@ -151,8 +146,9 @@ for unitNum = 1:5%length(population)
     data.pearson_p = temp_p(2,1);
 	% III. Put all results together
 	
-    save([reshuffleFolder 'AMP' filesep data.unitId '_spikes_ECGphase.mat'], 'data', '-v7.3')
+    save([basepath_to_save filesep data.unitId '_spikes_ECGphase.mat'], 'data', '-v7.3')
     clear data
+end
 end
 
 function spikes_realigned_microV = shift2peak(wf_times_interp_ms, waveforms_upsampled)
