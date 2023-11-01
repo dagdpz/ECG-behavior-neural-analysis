@@ -14,17 +14,47 @@ load(session_info.Input_trials);
 
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
+
+% preallocate 'Output' structure
+for tasktype=1:2
+    Output.(condition_labels{tasktype}).unit_ID           = {population.unit_ID};
+    Output.(condition_labels{tasktype}).target            = {population.target};
+    Output.(condition_labels{tasktype}).quantSNR          = [population.avg_SNR];
+    Output.(condition_labels{tasktype}).Single_rating     = [population.avg_single_rating];
+    Output.(condition_labels{tasktype}).stability_rating  = [population.avg_stability];
+    Output.(condition_labels{tasktype}).SD                = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).SD_STD            = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).SD_SEM            = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).SDP               = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).SDPCL             = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).SDPCu             = single(nan(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).sig_all           = single(zeros(length(population), length(BINS)));
+	Output.(condition_labels{tasktype}).sig               = single(zeros(length(population), length(BINS)));
+    Output.(condition_labels{tasktype}).sig_FR_diff       = single(nan(length(population),1));
+	Output.(condition_labels{tasktype}).sig_time          = single(nan(length(population),1));
+	Output.(condition_labels{tasktype}).sig_n_bins        = single(zeros(length(population),1));
+	Output.(condition_labels{tasktype}).sig_sign          = single(zeros(length(population),1));
+	Output.(condition_labels{tasktype}).NrTrials          = single(nan(length(population),1));
+	Output.(condition_labels{tasktype}).NrEvents          = single(nan(length(population),1));
+	Output.(condition_labels{tasktype}).FR                = single(nan(length(population),1));
+	Output.(condition_labels{tasktype}).raster            = cell(length(population),1);
+	Output.(condition_labels{tasktype}).Rts               = cell(length(population),1); % RR ends
+	Output.(condition_labels{tasktype}).Rds               = cell(length(population),1); % RR durations
+	Output.(condition_labels{tasktype}).Rts_perm          = repmat({cell(1,ecg_bna_cfg.n_permutations)}, length(population), 1);
+	Output.(condition_labels{tasktype}).Rds_perm          = repmat({cell(1,ecg_bna_cfg.n_permutations)}, length(population), 1);
+end
+
 for u=1:numel(population)
+    tic
     pop=population(u);
-    unit_ID=population(u).unit_ID;
-    target =population(u).target;
+%     unit_ID  = population(u).unit_ID;
+%     target   = population(u).target;
     
     T=ph_get_unit_trials(pop,trials);
     
     T_acc=[T.accepted] & [T.completed];
     T=T(T_acc);
     pop.trial=pop.trial(T_acc);
-    
     
     %% Make sure we only take overlapping blocks
     blocks_unit=unique([pop.block]);
@@ -33,32 +63,32 @@ for u=1:numel(population)
     
     for tasktype=1:2
         L=condition_labels{tasktype};
-        Output.(L).unit_ID{u}         = unit_ID;
-        Output.(L).target{u}          = target;
+%         Output.(L).unit_ID{u}         = unit_ID;
+%         Output.(L).target{u}          = target;
+%         Output.(L).quantSNR(u,:)         = pop.avg_SNR;
+%         Output.(L).Single_rating(u,:)    = pop.avg_single_rating;
+%         Output.(L).stability_rating(u,:) = pop.avg_stability;
         %% check those 3 names
-        Output.(L).quantSNR(u,:)         = pop.avg_SNR;
-        Output.(L).Single_rating(u,:)    = pop.avg_single_rating;
-        Output.(L).stability_rating(u,:) = pop.avg_stability;
-        Output.(L).SD(u,:)               = NaN(size(BINS));
-        Output.(L).SD_STD(u,:)           = NaN(size(BINS));
-        Output.(L).SD_SEM(u,:)           = NaN(size(BINS));
-        Output.(L).SDP(u,:)              = NaN(size(BINS));
-        Output.(L).SDPCL(u,:)            = NaN(size(BINS));
-        Output.(L).SDPCu(u,:)            = NaN(size(BINS));
-        Output.(L).sig_all(u,:)          = zeros(size(BINS));
-        Output.(L).sig(u,:)              = zeros(size(BINS));
-        Output.(L).sig_FR_diff(u,:)      = NaN;
-        Output.(L).sig_time(u,:)         = NaN;
-        Output.(L).sig_n_bins(u,:)       = 0;
-        Output.(L).sig_sign(u,:)         = 0;
-        Output.(L).NrTrials(u,:)         = NaN;
-        Output.(L).NrEvents(u,:)         = NaN;
-        Output.(L).FR(u,:)               = NaN;
-        Output.(L).raster{u}             = NaN;
-        Output.(L).Rts{u}                = NaN; % RR ends
-        Output.(L).Rds{u}                = NaN; % RR durations
-        Output.(L).Rts_perm{u}           = {NaN;NaN};
-        Output.(L).Rds_perm{u}           = {NaN;NaN};
+%         Output.(L).SD(u,:)               = NaN(size(BINS));
+%         Output.(L).SD_STD(u,:)           = NaN(size(BINS));
+%         Output.(L).SD_SEM(u,:)           = NaN(size(BINS));
+%         Output.(L).SDP(u,:)              = NaN(size(BINS));
+%         Output.(L).SDPCL(u,:)            = NaN(size(BINS));
+%         Output.(L).SDPCu(u,:)            = NaN(size(BINS));
+%         Output.(L).sig_all(u,:)          = zeros(size(BINS));
+%         Output.(L).sig(u,:)              = zeros(size(BINS));
+%         Output.(L).sig_FR_diff(u,:)      = NaN;
+%         Output.(L).sig_time(u,:)         = NaN;
+%         Output.(L).sig_n_bins(u,:)       = 0;
+%         Output.(L).sig_sign(u,:)         = 0;
+%         Output.(L).NrTrials(u,:)         = NaN;
+%         Output.(L).NrEvents(u,:)         = NaN;
+%         Output.(L).FR(u,:)               = NaN;
+%         Output.(L).raster{u}             = NaN;
+%         Output.(L).Rts{u}                = NaN; % RR ends
+%         Output.(L).Rds{u}                = NaN; % RR durations
+%         Output.(L).Rts_perm{u}           = {NaN;NaN};
+%         Output.(L).Rds_perm{u}           = {NaN;NaN};
         
         %% here we could potentially further reduce trials
         tr=ismember([T.block],blocks) & [T.type]==tasktype;
@@ -152,10 +182,10 @@ for u=1:numel(population)
         end
         
     end
-    
+    toc
 end
 %% save output
-save([basepath_to_save, filesep, session_info.session],'Output')
+save([basepath_to_save, filesep, session_info.session],'Output', '-v7.3')
 end
 
 function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)
