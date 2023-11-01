@@ -1,4 +1,4 @@
-function ecg_bna_compute_ECG_related_spikePhase(session_info,Rpeaks,ecg_bna_cfg)
+function ecg_bna_compute_session_ECG_related_spikePhase(session_info,Rpeaks,ecg_bna_cfg)
 
 basepath_to_save=[session_info.SPK_fldr filesep 'cardioballistic'];
 if ~exist(basepath_to_save,'dir')
