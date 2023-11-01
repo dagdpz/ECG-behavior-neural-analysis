@@ -54,7 +54,6 @@ for v = 1:length(versions)
         java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
             
         session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        load(sessions_info(i).Input_trials);
         
         % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed

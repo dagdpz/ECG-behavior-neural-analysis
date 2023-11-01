@@ -1,4 +1,4 @@
-function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg,trials)
+function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg)
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
@@ -10,6 +10,7 @@ BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.anal
 condition_labels={'Rest','Task'};
 
 load(session_info.Input_spikes);
+load(session_info.Input_trials);
 
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
