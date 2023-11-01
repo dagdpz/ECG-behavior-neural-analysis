@@ -1,8 +1,8 @@
-clear all, close all
+function ecg_bna_plot_session_ECG_related_spikePhase(session_info,ecg_bna_cfg)
 
-saveFolder = 'Y:\Projects\Pulv_bodysignal\Magnus_ECG_waveform\AMP\';
+dataFolder = [session_info.SPK_fldr filesep 'cardioballistic' filesep];
 
-Fs = 24414; % sampling frequency of BB signal
+Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
 wf_times_ms = 1000 * (1/Fs:1/Fs:32/Fs); % in ms
 wf_times_interp_ms = 1000 * (1/4/Fs:1/4/Fs:32/Fs); % in ms
 peak_id = 10; % sample number of the trough in the spike waveform
@@ -105,7 +105,7 @@ phase_bins = linspace(0, 2*pi, 63);
 % xlabel('Pearson Correlation Coefficient')
 % ylabel('Unit Count')
 
-for ii = 1:116
+for ii = 1:115
     
     unitNum = ['00' num2str(ii)];
     if ii < 100
@@ -114,7 +114,7 @@ for ii = 1:116
         unitNum = unitNum(end-2:end);
     end
     
-    dataFile = [saveFolder 'Mag_20230511_' unitNum '_spikes_ECGphase.mat'];
+    dataFile = [dataFolder 'Mag_20230511_' unitNum '_spikes_ECGphase.mat'];
     if exist(dataFile,'file')
         load(dataFile, 'data')
     else
@@ -179,6 +179,10 @@ for ii = 1:116
     ylabel('Heart-Cycle Phase')
     set(gca, 'XTickLabel', [], 'YTickLabel', [])
     
+    filename= ['Spikes_PolarPSTH__' data.unitId, '_' data.target];
+    export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    close(gcf);
+    
     %% Distributions of features
     f2 = figure;
     set(f2, 'Position', [784   148   942   797])
@@ -211,6 +215,10 @@ for ii = 1:116
     hold on
     xlabel('REP, ms');
     ylabel('Spike Counts')
+    
+    filename= ['Distributions_AMP_HW_TPW_REP__' data.unitId, '_' data.target];
+    export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    close(gcf);
     
     %% Real and reshuffled data
     f3 = figure;
@@ -282,6 +290,10 @@ for ii = 1:116
     xlabel('Heart-cycle Phase (0-2pi)')
     ylabel('REP, ms')
     
+    filename= ['PSTH_overlaid_Feature_Dynamics__' data.unitId, '_' data.target];
+    export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    close(gcf);
+    
     %% cosine fitted plots
     f4 = figure;
     set(f4, 'Position', [784   148   942   797])
@@ -299,33 +311,9 @@ for ii = 1:116
     subplot(2,2,4)
     fitCardiacModulation(phase_bins, data.REP_ms_byBin', {'REP'}, 1);
     
-%     ax = subplot(2,6,7);
-%     xlim([0 360])
-%     box on
-%     shadedErrorBar(phase_bins*360/2/pi,data.AMP_microV_byBin,ones(length(phase_bins),1),{'color','b','linewidth',1});
-%     title({'Spike Amplitude at the Trough (AMP) +/- 1 SD:', '1 - computed amplitude spike by spike', '2 - averaged amplitudes by bin'})
-%     xlabel('Heart-Cycle Phase, degrees')
-%     ylabel('AMP, μV')
-%     
-%     subplot(2,6,8)
-%     box on
-%     hold on
-%     fill([phase_bins fliplr(phase_bins) phase_bins(1)]*360/2/pi, ...
-%         [data.AMP_upperPrctile_97_5 fliplr(data.AMP_lowerPrctile_2_5) data.AMP_upperPrctile_97_5(1)], ...
-%         'b', 'FaceALpha', 0.2, 'EdgeColor', 'none')
-% %     line(phase_bins(1:end-1)*360/2/pi, [AMP_reshuffled.mean_by_phase], 'Color', [0.5 0.5 0.5 0.5])
-%     line(phase_bins*360/2/pi, data.AMP_microV_byBin, 'Color', [0 0 1], 'LineWidth', 2)
-%     set(gca, 'XLim', get(ax,'XLim'), 'YLim', get(ax,'YLim'))
-%     title({'Same AMP: ', 'Blue - Smoothed with pi/8 window'})
-%     legend({'95% Confidence interval (1000 reshuffles)', 'Smoothed Average Peak Amplitude'}, 'Location', 'Best')
-
-%     subplot(2,6,10)
-%     plot(phase_bins(1:end-1)*360/2/pi, data.AMP.mean_by_bin)
-%     set(gca, 'XLim', get(ax,'XLim'), 'YLim', get(ax,'YLim'))
-%     title({'Spike Amplitude at the Trough (AMP):', '1 - averaged spikes by bin', '2 - took amplitudes'})
-    
-%     exportgraphics(gcf, [saveFolder data.unitId '_' data.target '.pdf'])
-%     close(gcf)
+    filename= ['Cosine_Fitted__' data.unitId, '_' data.target];
+    export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    close(gcf);
 
     close all
     
