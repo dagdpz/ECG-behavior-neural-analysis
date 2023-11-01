@@ -20,7 +20,7 @@ load(session_info.Input_spikes); % 'population' structure comes from here
 load(session_info.Input_trials); % 'trial' structure comes from here
 
 % one needs a population and a by_block file to make it work
-for unitNum = 1:5%length(population)
+for unitNum = 1:length(population)
     
     % find the corresponding WC file
     chNum = ['00' num2str(population(unitNum).channel)];
@@ -62,6 +62,7 @@ for unitNum = 1:5%length(population)
     data.SNR                                  = population(unitNum).avg_SNR;
     data.stability                            = population(unitNum).avg_stability;
     data.single_rating                        = population(unitNum).avg_single_rating;
+    data.FR                                   = mean([population(unitNum).FR_average]);
     data.spike_phases_radians                 = eventPhases;
     
     [~,~,bin] = histcounts(data.spike_phases_radians, phase_bins);
