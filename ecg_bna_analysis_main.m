@@ -125,7 +125,7 @@ for v = 1:length(versions)
             % for  all data before june 2023 use " ecg_bna_process_LFP "
             % and after june "ecg_bna_process_LFP_newTask"
             
-            
+            load(sessions_info(i).Input_trials);
             
             ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
             ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
