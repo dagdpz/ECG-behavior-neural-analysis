@@ -47,8 +47,6 @@ end
 for u=1:numel(population)
     tic
     pop=population(u);
-%     unit_ID  = population(u).unit_ID;
-%     target   = population(u).target;
     
     T=ph_get_unit_trials(pop,trials);
     
@@ -63,32 +61,6 @@ for u=1:numel(population)
     
     for tasktype=1:2
         L=condition_labels{tasktype};
-%         Output.(L).unit_ID{u}         = unit_ID;
-%         Output.(L).target{u}          = target;
-%         Output.(L).quantSNR(u,:)         = pop.avg_SNR;
-%         Output.(L).Single_rating(u,:)    = pop.avg_single_rating;
-%         Output.(L).stability_rating(u,:) = pop.avg_stability;
-        %% check those 3 names
-%         Output.(L).SD(u,:)               = NaN(size(BINS));
-%         Output.(L).SD_STD(u,:)           = NaN(size(BINS));
-%         Output.(L).SD_SEM(u,:)           = NaN(size(BINS));
-%         Output.(L).SDP(u,:)              = NaN(size(BINS));
-%         Output.(L).SDPCL(u,:)            = NaN(size(BINS));
-%         Output.(L).SDPCu(u,:)            = NaN(size(BINS));
-%         Output.(L).sig_all(u,:)          = zeros(size(BINS));
-%         Output.(L).sig(u,:)              = zeros(size(BINS));
-%         Output.(L).sig_FR_diff(u,:)      = NaN;
-%         Output.(L).sig_time(u,:)         = NaN;
-%         Output.(L).sig_n_bins(u,:)       = 0;
-%         Output.(L).sig_sign(u,:)         = 0;
-%         Output.(L).NrTrials(u,:)         = NaN;
-%         Output.(L).NrEvents(u,:)         = NaN;
-%         Output.(L).FR(u,:)               = NaN;
-%         Output.(L).raster{u}             = NaN;
-%         Output.(L).Rts{u}                = NaN; % RR ends
-%         Output.(L).Rds{u}                = NaN; % RR durations
-%         Output.(L).Rts_perm{u}           = {NaN;NaN};
-%         Output.(L).Rds_perm{u}           = {NaN;NaN};
         
         %% here we could potentially further reduce trials
         tr=ismember([T.block],blocks) & [T.type]==tasktype;
