@@ -1,5 +1,7 @@
 function ecg_bna_plot_session_spike_histogram(session_info, ecg_bna_cfg)
 
+histbins=0.2:0.02:0.8; % bins for RR duration histogram
+
 % find the current datafile
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
@@ -92,19 +94,16 @@ for untNum = 1:length(Output.Task.target)
         L=condition_labels{tasktype};
         col=condition_colors{tasktype};
         subplot(3,2,tasktype+4);
-        hold on
+%         hold on
         box on
-        histbins=0.2:0.02:0.8;
-        H=hist(Output.(L).Rds{untNum},histbins);
-        plot(histbins,H,'linewidth',2,'color',col);
-        for p=1:numel(Output.(L).Rts_perm{untNum})
-            H(p,:)=hist(Output.(L).Rds_perm{untNum}{p},histbins);
-        end
-        lineProps={'color','k','linewidth',1,'linestyle',':'};
-        shadedErrorBar(histbins,mean(H,1),std(H,1),lineProps,1);
+        yyaxis left
+        histogram(Output.(L).Rds{untNum},histbins, 'FaceColor', col)
         ylabel('N');
-        xlabel('Rpeak interval');
-        title('grey is mean and std of surrogates');
+        yyaxis right
+        histogram(Output.(L).Rds_perm{untNum},histbins, 'FaceColor', [0.5 0.5 0.5])
+        ylabel('N');
+        xlabel('RR Duration, s');
+        title('grey - jittered RRs');
     end
     filename= ['Raster_PSTH_Rintervals_' unit_ID, '__' target];
     export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
