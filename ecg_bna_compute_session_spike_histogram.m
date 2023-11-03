@@ -40,8 +40,7 @@ for tasktype=1:2
 	Output.(condition_labels{tasktype}).raster            = cell(length(population),1);
 	Output.(condition_labels{tasktype}).Rts               = cell(length(population),1); % RR ends
 	Output.(condition_labels{tasktype}).Rds               = cell(length(population),1); % RR durations
-	Output.(condition_labels{tasktype}).Rts_perm          = repmat({cell(1,ecg_bna_cfg.n_permutations)}, length(population), 1);
-	Output.(condition_labels{tasktype}).Rds_perm          = repmat({cell(1,ecg_bna_cfg.n_permutations)}, length(population), 1);
+	Output.(condition_labels{tasktype}).Rds_perm          = cell(1,length(population));
 end
 
 for u=1:numel(population)
@@ -116,12 +115,11 @@ for u=1:numel(population)
         Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
         Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
         Output.(L).raster{u}          = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-        Output.(L).Rts{u}             = realPSTHs.RTs{1};
-        Output.(L).Rds{u}             = realPSTHs.RDs{1}; % put RR durations to plot those in the histograms later
-        Output.(L).Rts_perm{u}        = shuffledPSTH.RTs;
-        Output.(L).Rds_perm{u}        = shuffledPSTH.RDs;
+        Output.(L).Rts{u}             = single(realPSTHs.RTs{1});
+        Output.(L).Rds{u}             = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
+        Output.(L).Rds_perm{u}        = single([shuffledPSTH.RDs{:}]);
         
-        clear realPSTHs SD
+        clear realPSTHs shuffledPSTH SD
         
         %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
         if Sanity_check %% this needs to be fixed as well, this might be incorrect after least update...
