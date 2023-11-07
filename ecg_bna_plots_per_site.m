@@ -219,7 +219,7 @@ for cn= 1:numel(data.condition)
         collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
         
         % horizontal lines to separate frequency bands
-        fbandstart = [2, 4, 8, 12, 18, 32, 80];
+        fbandstart = unique(cfg.tfr.frequency_bands(:))';
         fbandstart_idx = zeros(size(fbandstart));
         for f = fbandstart
             f_idx = find(abs(concat.freq - f) == min(abs(concat.freq - f)), 1, 'first');
@@ -275,13 +275,11 @@ for cn= 1:numel(data.condition)
     line([0 0], ylim, 'color', 'k');
     significance = double(squeeze(concat.powbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
     significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
-   % if ~all(all(isnan(diff(significance,1,2))))
-        multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
-        significance=significance.*repmat(multiplicator',1,size(significance,2));
-        sig_x=repmat(concat.lfp_time,size(concat.powbp,2),1);
-        X=~all(isnan(diff(significance,1,2)),2);
-        line(sig_x(X,:)', significance(X,:)','linewidth',3);
-   % end
+    multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
+    significance=significance.*repmat(multiplicator',1,size(significance,2));
+    sig_x=repmat(concat.lfp_time,size(concat.powbp,2),1);
+    X=~all(isnan(diff(significance,1,2)),2);
+    line(sig_x(X,:)', significance(X,:)','linewidth',3);
     legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
     title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
@@ -300,17 +298,15 @@ for cn= 1:numel(data.condition)
     stp = (ylm(2)-ylm(1))/20;
     ylm(1)=ylm(1)-size(concat.itpcbp,2)*stp;
     set(gca,'Ylim',ylm);
-    line([0 0], ylm, 'color', 'k');    
+    line([0 0], ylm, 'color', 'k');
     
     significance = double(squeeze(concat.itpcbp_sgnf));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
     significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
-    %if ~all(all(isnan(diff(significance,1,2))))
-        multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
-        significance=significance.*repmat(multiplicator',1,size(significance,2));
-        sig_x=repmat(concat.lfp_time,size(concat.itpcbp,2),1);
-        X=~all(isnan(diff(significance,1,2)),2);
-        line(sig_x(X,:)', significance(X,:)','linewidth',3);
-    %end
+    multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
+    significance=significance.*repmat(multiplicator',1,size(significance,2));
+    sig_x=repmat(concat.lfp_time,size(concat.itpcbp,2),1);
+    X=~all(isnan(diff(significance,1,2)),2);
+    line(sig_x(X,:)', significance(X,:)','linewidth',3);
     legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
     title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
@@ -334,7 +330,9 @@ for cn= 1:numel(data.condition)
     significance(significance==0)=NaN;
     significance=significance.*ylm(1);
     % adding the signifiance horizontal lines:
-    plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+    if ~all(isnan(diff(significance,1,2)),2);
+        plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
+    end
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
     % end
     

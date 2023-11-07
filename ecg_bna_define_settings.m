@@ -70,10 +70,6 @@ for i = 1:length(ecg_bna_cfg.session_info)
     ecg_bna_cfg.session_info(i).SPK_fldr            = ecg_bna_cfg.SPK_root_results_fldr;
 end
 
-% add the level of gaussian smoothing for evoked_LFP plots, or other plots
-% that needs smoothing:
-ecg_bna_cfg.smoothWin = 20;
-
 % save settings struct
 save(fullfile(ecg_bna_cfg.ECG_root_results_fldr, ['ecg_bna_settings_' num2str(ecg_bna_cfg.version) '.mat']), 'ecg_bna_cfg');
 end
