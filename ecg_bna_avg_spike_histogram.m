@@ -377,7 +377,8 @@ end
 %%
 ha1 = subplot(1,2,1);% pie plot how many
 barpairs =  [Pc_SignFR_rest];
-b = bar(barpairs,'stacked', 'Facecolor','flat' );
+b = bar(barpairs,'stacked');%, 'Facecolor','flat' 
+b(3).FaceColor = [1 1 1];
 title('Rest','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
 ylim([0 100])
@@ -385,7 +386,8 @@ ylabel('Percentage of Units, %')
 
 ha1 = subplot(1,2,2);% pie plot how many
 barpairs =  [Pc_SignFR_task];
-b = bar(barpairs,'stacked', 'Facecolor','flat' );
+b = bar(barpairs,'stacked', 'Facecolor','flat');
+b(3).FaceColor = [1 1 1];
 title('Task','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
 ylim([0 100])
