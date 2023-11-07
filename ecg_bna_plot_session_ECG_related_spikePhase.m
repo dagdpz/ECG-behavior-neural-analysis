@@ -108,25 +108,12 @@ condition_colors={[0 0 1 0.1],[1 0 0 0.1]};
 % xlabel('Pearson Correlation Coefficient')
 % ylabel('Unit Count')
 
-for ii = 1:115
+load([dataFolder session_info.session '_spikes_ECGphase.mat'], 'data')
+
+for untNum = 1:length(data.unitId)
     
-    unitNum = ['00' num2str(ii)];
-    if ii < 100
-        unitNum = unitNum(end-1:end);
-    else
-        unitNum = unitNum(end-2:end);
-    end
-    
-    dataFile = [dataFolder 'Mag_20230511_' unitNum '_spikes_ECGphase.mat'];
-    if exist(dataFile,'file')
-        load(dataFile, 'data')
-    else
-        continue
-    end
     % with the current Fs and number of samples per spike I have 1.4 ms per
     % spike
-    
-
     
     %% AMP - absolute magnitude at the trough
     %     %% HW - in ms corresponding to the total time that the EAP trough is below half AMP
@@ -139,8 +126,8 @@ for ii = 1:115
     %     HWbyPhase_std  = arrayfun(@(x) std(HW(bin == x)), unique(bin));
     
     %%
-    sgtitleText = {[data.unitId '_' data.target ' ch ' num2str(data.channel) ';'  ' unit ...'], ...
-        ['FR, Hz: ' num2str(data.FR) '; SNR: ' num2str(data.SNR) '; Fano Factor: ' num2str(data.stability) '; % of ISIs < 3 ms: '  num2str(100 * data.single_rating) '%']};
+    sgtitleText = {[data.unitId{untNum} '_' data.target{untNum}], ... %  ' ch ' num2str(data.channel) ';'  ' unit ...'
+        ['FR, Hz: ' num2str(data.FR(untNum)) '; SNR: ' num2str(data.quantSNR(untNum)) '; Fano Factor: ' num2str(data.stability_rating(untNum)) '; % of ISIs < 3 ms: '  num2str(100 * data.Single_rating(untNum)) '%']};
     % ['AMP_MI = ' num2str(data.AMP_MI(1)) '; p = ' num2str(data.Task.AMP_MI(2))]
     
     %% Overall picture of waveforms and PSTHs
@@ -152,20 +139,20 @@ for ii = 1:115
     box on
     hold on
     for tasktype = 1:2
-        line(wf_times_interp_ms, data.(condition_labels{tasktype}).waveforms_upsampled_microvolts(1:300:end, :), 'Color', condition_colors{tasktype})
-        line(repmat([wf_times_interp_ms(1) wf_times_interp_ms(end)],4,1)', repmat(data.(condition_labels{tasktype}).thresholds_microV,1,2)', 'Color', 'r')
+        line(wf_times_interp_ms, data.(condition_labels{tasktype}).waveforms_upsampled_microvolts{untNum}(1:300:end, :), 'Color', condition_colors{tasktype})
+        line(repmat([wf_times_interp_ms(1) wf_times_interp_ms(end)],4,1)', repmat(data.thresholds_microV{untNum},1,2)', 'Color', 'r')
     end
     xlim([wf_times_interp_ms(1) wf_times_interp_ms(end)])
     xlabel('Time, ms')
     ylabel('Voltage, μV')
     title({'Example Waveforms: ', ...
-        ['\color{blue}Rest: ' num2str(size(data.Rest.waveforms_upsampled_microvolts(1:300:end,:),1)) ' out of ' num2str(size(data.Rest.waveforms_upsampled_microvolts,1))], ...
-        ['\color{red}Task: ' num2str(size(data.Task.waveforms_upsampled_microvolts(1:300:end,:),1)) ' out of ' num2str(size(data.Task.waveforms_upsampled_microvolts,1))]})
+        ['\color{blue}Rest: ' num2str(size(data.Rest.waveforms_upsampled_microvolts{untNum}(1:300:end,:),1)) ' out of ' num2str(size(data.Rest.waveforms_upsampled_microvolts{untNum},1))], ...
+        ['\color{red}Task: ' num2str(size(data.Task.waveforms_upsampled_microvolts{untNum}(1:300:end,:),1)) ' out of ' num2str(size(data.Task.waveforms_upsampled_microvolts{untNum},1))]})
     
     subplot(2,2,2)
     box on
     for tasktype = 1:2
-        h = histcounts(data.(condition_labels{tasktype}).spike_phases_radians, 64);
+        h = histcounts(data.(condition_labels{tasktype}).spike_phases_radians{untNum}, 64);
         h = h / mean(h);
         polarplot(phase_bins,h, 'Color', condition_colors{tasktype}(1:3))
         hold on
@@ -179,7 +166,7 @@ for ii = 1:115
     title('Average WFs by bin: \color{blue}Rest and \color{red}Task')
     hold on
     for tasktype = 1:2
-        line(wf_times_interp_ms, data.(condition_labels{tasktype}).waveforms_byBin_microvolts, 'Color', condition_colors{tasktype})
+        line(wf_times_interp_ms, data.(condition_labels{tasktype}).waveforms_byBin_microvolts{untNum}, 'Color', condition_colors{tasktype})
     end
     hold off
     box on
@@ -188,7 +175,7 @@ for ii = 1:115
     set(gca, 'XLim', get(ax_sp,'XLim'), 'YLim', get(ax_sp,'YLim'))
     
     subplot(2,2,4)
-    imagesc(data.Rest.waveforms_byBin_microvolts - mean(data.Rest.waveforms_byBin_microvolts,1))
+    imagesc(data.Rest.waveforms_byBin_microvolts{untNum} - mean(data.Rest.waveforms_byBin_microvolts{untNum},1))
     cbar = colorbar;
     cbar.Title.String = '\Delta Spike Amplitude, μV';
     caxis([-3 3])
@@ -197,7 +184,7 @@ for ii = 1:115
     ylabel('Heart-Cycle Phase')
     set(gca, 'XTickLabel', [], 'YTickLabel', [])
     
-    filename= ['Spikes_PolarPSTH__' data.unitId, '_' data.target];
+    filename= ['Spikes_PolarPSTH__' data.unitId{untNum}, '_' data.target{untNum}];
     export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
     
@@ -217,11 +204,11 @@ for ii = 1:115
 %     end
     hold on
     for tasktype = 1:2
-        histogram(abs(data.(condition_labels{tasktype}).AMP_microV), [0:5:350], 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(abs(data.(condition_labels{tasktype}).AMP_microV{untNum}), [0:5:350], 'FaceColor', condition_colors{tasktype}(1:3))
     end
     hold off
-    xline(data.(condition_labels{tasktype}).thresholds_microV(1), 'Color', 'r')
-    xline(data.(condition_labels{tasktype}).thresholds_microV(2), 'Color', 'r')
+    xline(data.thresholds_microV{untNum}(1), 'Color', 'r')
+    xline(data.thresholds_microV{untNum}(2), 'Color', 'r')
     xlabel('AMP, μV');
     ylabel('Spike Counts')
     xlim([0 350])
@@ -233,7 +220,7 @@ for ii = 1:115
     box on
     hold on
     for tasktype = 1:2
-        histogram(abs(data.(condition_labels{tasktype}).HW_ms), [0:0.005:0.5], 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(abs(data.(condition_labels{tasktype}).HW_ms{untNum}), [0:0.005:0.5], 'FaceColor', condition_colors{tasktype}(1:3))
     end
     hold off
     xlim([0 0.5])
@@ -245,7 +232,7 @@ for ii = 1:115
     box on
     hold on
     for tasktype = 1:2
-        histogram(abs(data.(condition_labels{tasktype}).TPW_ms), 100, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(abs(data.(condition_labels{tasktype}).TPW_ms{untNum}), 100, 'FaceColor', condition_colors{tasktype}(1:3))
     end
     hold off
     xlabel('TPW, ms');
@@ -256,14 +243,14 @@ for ii = 1:115
     box on
     hold on
     for tasktype = 1:2
-        histogram(abs(data.(condition_labels{tasktype}).REP_ms), 100, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(abs(data.(condition_labels{tasktype}).REP_ms{untNum}), 100, 'FaceColor', condition_colors{tasktype}(1:3))
     end
     hold off
     xlabel('REP, ms');
     ylabel('Spike Counts')
     title('REP: X-axis Adjusts for Each Unit')
     
-    filename= ['Distributions_AMP_HW_TPW_REP__' data.unitId, '_' data.target];
+    filename= ['Distributions_AMP_HW_TPW_REP__' data.unitId{untNum}, '_' data.target{untNum}];
     export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
     
@@ -275,16 +262,16 @@ for ii = 1:115
     for tasktype = 1:2
         subplot(3,5,tasktype)
         yyaxis left
-        histogram(abs(data.(condition_labels{tasktype}).spike_phases_radians), phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(abs(data.(condition_labels{tasktype}).spike_phases_radians{untNum}), phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
         ylabel('Spike Counts')
         yyaxis right
         filledArea = fill([phase_bins(1:end-1) fliplr(phase_bins(1:end-1)) phase_bins(1)], ...
-            [data.(condition_labels{tasktype}).AMP_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5) data.(condition_labels{tasktype}).AMP_upperPrctile_97_5(1)], ...
+            [data.(condition_labels{tasktype}).AMP_upperPrctile_97_5(untNum,:) fliplr(data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5(untNum,:)) data.(condition_labels{tasktype}).AMP_upperPrctile_97_5(untNum,1)], ...
             [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
         hold on;
-        p1 = plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin,'-k','LineWidth',2);
-        p2 = plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2);
-        title(['AMP: MI = ' num2str(data.(condition_labels{tasktype}).AMP_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).AMP_MI(2))])
+        p1 = plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin{untNum},'-k','LineWidth',2);
+        p2 = plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed(untNum,:), '-', 'Color', 'w', 'LineWidth',2);
+        title(['AMP: MI = ' num2str(data.(condition_labels{tasktype}).AMP_MI(untNum,1)) '; p = ' num2str(data.(condition_labels{tasktype}).AMP_MI(untNum,2))])
         xlim([0 2*pi])
         xlabel('Heart-cycle Phase (0-2pi)')
         ylabel('AMP, microvolts')
@@ -296,16 +283,16 @@ for ii = 1:115
     for tasktype = 1:2
         subplot(3,5,3+tasktype)
         yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(data.(condition_labels{tasktype}).spike_phases_radians{untNum}, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
         ylabel('Spike Counts')
         yyaxis right
         fill([phase_bins(1:end-1) fliplr(phase_bins(1:end-1)) phase_bins(1)], ...
-            [data.(condition_labels{tasktype}).HW_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).HW_lowerPrctile_2_5) data.(condition_labels{tasktype}).HW_upperPrctile_97_5(1)], ...
+            [data.(condition_labels{tasktype}).HW_upperPrctile_97_5(untNum,:) fliplr(data.(condition_labels{tasktype}).HW_lowerPrctile_2_5(untNum,:)) data.(condition_labels{tasktype}).HW_upperPrctile_97_5(untNum,1)], ...
             [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
         hold on;
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2);
-        title(['HW: MI = ' num2str(data.(condition_labels{tasktype}).HW_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).HW_MI(2))])
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin{untNum},'-k','LineWidth',2);
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin_smoothed(untNum,:), '-', 'Color', 'w', 'LineWidth',2);
+        title(['HW: MI = ' num2str(data.(condition_labels{tasktype}).HW_MI(untNum,1)) '; p = ' num2str(data.(condition_labels{tasktype}).HW_MI(untNum,2))])
         xlim([0 2*pi])
         xlabel('Heart-cycle Phase (0-2pi)')
         ylabel('HW, ms')
@@ -314,16 +301,16 @@ for ii = 1:115
     for tasktype = 1:2
         subplot(3,5,10+tasktype)
         yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(data.(condition_labels{tasktype}).spike_phases_radians{untNum}, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
         ylabel('Spike Counts')
         yyaxis right
         fill([phase_bins(1:end-1) fliplr(phase_bins(1:end-1)) phase_bins(1)], ...
-            [data.(condition_labels{tasktype}).TPW_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5) data.(condition_labels{tasktype}).TPW_upperPrctile_97_5(1)], ...
+            [data.(condition_labels{tasktype}).TPW_upperPrctile_97_5(untNum,:) fliplr(data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5(untNum,:)) data.(condition_labels{tasktype}).TPW_upperPrctile_97_5(untNum,1)], ...
             [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
         hold on;
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2)
-        title(['TPW: MI = ' num2str(data.(condition_labels{tasktype}).TPW_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).TPW_MI(2))])
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin{untNum},'-k','LineWidth',2);
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed(untNum,:), '-', 'Color', 'w', 'LineWidth',2)
+        title(['TPW: MI = ' num2str(data.(condition_labels{tasktype}).TPW_MI(untNum,1)) '; p = ' num2str(data.(condition_labels{tasktype}).TPW_MI(untNum,2))])
         xlim([0 2*pi])
         xlabel('Heart-cycle Phase (0-2pi)')
         ylabel('TPW, ms')
@@ -332,22 +319,22 @@ for ii = 1:115
     for tasktype = 1:2
         subplot(3,5,13+tasktype)
         yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
+        histogram(data.(condition_labels{tasktype}).spike_phases_radians{untNum}, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
         ylabel('Spike Counts')
         yyaxis right
         fill([phase_bins(1:end-1) fliplr(phase_bins(1:end-1)) phase_bins(1)], ...
-            [data.(condition_labels{tasktype}).REP_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).REP_lowerPrctile_2_5) data.(condition_labels{tasktype}).REP_upperPrctile_97_5(1)], ...
+            [data.(condition_labels{tasktype}).REP_upperPrctile_97_5(untNum,:) fliplr(data.(condition_labels{tasktype}).REP_lowerPrctile_2_5(untNum,:)) data.(condition_labels{tasktype}).REP_upperPrctile_97_5(untNum,1)], ...
             [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none')
         hold on
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2)
-        title(['AMP: MI = ' num2str(data.(condition_labels{tasktype}).REP_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).REP_MI(2))])
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin{untNum},'-k','LineWidth',2);
+        plot(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin_smoothed(untNum,:), '-', 'Color', 'w', 'LineWidth',2)
+        title(['AMP: MI = ' num2str(data.(condition_labels{tasktype}).REP_MI(untNum,1)) '; p = ' num2str(data.(condition_labels{tasktype}).REP_MI(untNum,2))])
         xlim([0 2*pi])
         xlabel('Heart-cycle Phase (0-2pi)')
         ylabel('REP, ms')
     end
     
-    filename= ['PSTH_overlaid_Feature_Dynamics__' data.unitId, '_' data.target];
+    filename= ['PSTH_overlaid_Feature_Dynamics__' data.unitId{untNum}, '_' data.target{untNum}];
     export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
     
@@ -358,22 +345,49 @@ for ii = 1:115
     
     for tasktype = 1:2
         subplot(3,5,tasktype)
-        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin', {[condition_labels{tasktype} ' AMP']}, 1, 263);
+        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).AMP_microV_byBin{untNum}', {[condition_labels{tasktype} ' AMP']}, 1, 263);
         
         subplot(3,5,3+tasktype)
-        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin', {[condition_labels{tasktype} ' HW']}, 1, 264);
+        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).HW_ms_byBin{untNum}', {[condition_labels{tasktype} ' HW']}, 1, 264);
         
         subplot(3,5,10+tasktype)
-        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin', {[condition_labels{tasktype} ' TPW']}, 1, 269);
+        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).TPW_ms_byBin{untNum}', {[condition_labels{tasktype} ' TPW']}, 1, 269);
         
         subplot(3,5,13+tasktype)
-        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin', {[condition_labels{tasktype} ' REP']}, 1);
+        fitCardiacModulation(phase_bins(1:end-1), data.(condition_labels{tasktype}).REP_ms_byBin{untNum}', {[condition_labels{tasktype} ' REP']}, 1);
     end
     
-    filename= ['Cosine_Fitted__' data.unitId, '_' data.target];
+    filename= ['Cosine_Fitted__' data.unitId{untNum}, '_' data.target{untNum}];
     export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
-
+    
+    %% results of correlation analysis
+    f5 = figure;
+    set(f5, 'Position', [381 424 1450 398])
+    sgtitle(sgtitleText, 'interpreter', 'none')
+    
+    for tasktype = 1:2
+        subplot(1,4,tasktype)
+        plot(data.(condition_labels{tasktype}).FRbyRR_Hz{untNum}, data.(condition_labels{tasktype}).cycleDurations_s{untNum}, '.', 'Color', condition_colors{tasktype}(1:3))
+        xlabel('Firing Rate per Heart Cycle, Hz')
+        ylabel('Heart Cycle Duration, s')
+    end
+    
+    subplot(1,4,4)
+    box on
+    hold on
+    for tasktype = 1:2
+        plot(data.cc_lag_list, data.(condition_labels{tasktype}).pearson_r(:,untNum), 'Color', condition_colors{tasktype}(1:3))
+    end
+    ylim([-0.5 0.5])
+    xlabel('Lag: Number of Heart Cycles Shifted')
+    ylabel('Correlation Coefficient')
+    legend(condition_labels)
+    
+    filename= ['FR_RR_Correlations__' data.unitId{untNum}, '_' data.target{untNum}];
+    export_fig([dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    close(gcf);
+    
     close all
     
 end
