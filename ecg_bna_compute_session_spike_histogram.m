@@ -40,7 +40,7 @@ for tasktype=1:2
 	Output.(condition_labels{tasktype}).raster            = cell(length(population),1);
 	Output.(condition_labels{tasktype}).Rts               = cell(length(population),1); % RR ends
 	Output.(condition_labels{tasktype}).Rds               = cell(length(population),1); % RR durations
-	Output.(condition_labels{tasktype}).Rds_perm          = cell(1,length(population));
+	Output.(condition_labels{tasktype}).Rds_perm          = cell(length(population),1);
 end
 
 for u=1:numel(population)
@@ -118,6 +118,7 @@ for u=1:numel(population)
         Output.(L).Rts{u}             = single(realPSTHs.RTs{1});
         Output.(L).Rds{u}             = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
         Output.(L).Rds_perm{u}        = single([shuffledPSTH.RDs{:}]);
+        
         
         clear realPSTHs shuffledPSTH SD
         
