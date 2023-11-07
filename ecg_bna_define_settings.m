@@ -45,7 +45,7 @@ if ~exist(ecg_bna_cfg.SPK_root_results_fldr, 'dir')
 end
 
 % get conditions to be included in the analysis
-ecg_bna_cfg.conditions          = lfp_tfa_compare_conditions(ecg_bna_cfg);
+%ecg_bna_cfg.conditions          = lfp_tfa_compare_conditions(ecg_bna_cfg);
 ecg_bna_cfg.noise.results_folder= ecg_bna_cfg.LFP_root_results_fldr;                            % folder to save noise rejection results
 ecg_bna_cfg.results_folder      = ecg_bna_cfg.LFP_root_results_fldr;                            % folder to save baseline results
 ecg_bna_cfg.proc_ecg_folder     = [ecg_bna_cfg.ECG_root_results_fldr filesep 'Processed ECG'];  % folder to save ecg processing results

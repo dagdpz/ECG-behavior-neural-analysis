@@ -1,8 +1,8 @@
-function site_lfp= ecg_bna_process_LFP( sites, lfp_tfa_cfg,trials )
+function site_lfp= ecg_bna_process_LFP( sites, cfg,ts_original )
 
 % lfp_tfa_process_LFP - function to read in the trial-wise LFP data for all
 % sites recorded in a session, compute the LFP time frequency spectrogram,
-% detect the noisy trials, and compute site-wise baseline power
+% detect the noisy trials, and compute site-wise baseline pow
 %
 % USAGE:
 %	session_info = lfp_tfa_process_LFP( session_info, lfp_tfa_cfg )
@@ -53,96 +53,107 @@ function site_lfp= ecg_bna_process_LFP( sites, lfp_tfa_cfg,trials )
 % lfp_tfa_compute_site_baseline
 
 % struct to save data for a site
-site_lfp = struct();
+site_lfp = rmfield(sites,'LFP');
 fprintf('=============================================================\n');
 fprintf('Processing site, %s\n', sites.site_ID);
 site_lfp.session = sites.site_ID(1:12);
-site_lfp.site_ID = sites.site_ID;
-site_lfp.target = sites.target;
 site_lfp.recorded_hemisphere = upper(sites.target(end));
-site_lfp.xpos = sites.grid_x;
-site_lfp.ypos = sites.grid_y;
-site_lfp.zpos = sites.electrode_depth;
 
-sitetrials=ph_get_unit_trials(sites,trials);
-positions=[sitetrials.tar_pos]-[sitetrials.fix_pos];
-hemifields=num2cell(sign(real(positions)));
-fixations=num2cell([sitetrials.fix_pos]);
-positions=num2cell(positions);
-[sitetrials.position]=deal(positions{:});
-[sitetrials.hemifield]=deal(hemifields{:});
-[sitetrials.fixation]=deal(fixations{:});
-sitetrials=ph_LR_to_CI(lfp_tfa_cfg,sites,sitetrials);  %% convert...
 
-[sites.trial]=sitetrials;
+N_cycles=cfg.tfr.n_cycles;
+frequencies = cfg.tfr.foi;
+frequency_bands=cfg.tfr.frequency_bands;
+morlet_borders=1/min(frequencies)*N_cycles/2;
+s = N_cycles./(2*pi*frequencies);
 
-lfp_samples=[0 cumsum(sites.LFP_samples)];
+ts=round(cfg.tfr.timestep/ts_original);
 
-%% now loop through each trial for this site to do what exactly?
-for t = 1:length(sites.trial)
+% fT parameters (use next-pow-of-2)
+time = -morlet_borders:1*ts_original:morlet_borders;
+n_wavelet     = length(time);
+
+
+site_lfp.tfs.resampling_factor=1/ts;
+site_lfp.tfs.sr=1/ts_original/ts;
+sizepreallocator=[size(frequency_bands,1),floor(numel(sites.LFP)/ts)];
+site_lfp.tfs.phabp=NaN(sizepreallocator);
+site_lfp.tfs.powbp=NaN(sizepreallocator);
+sizepreallocator=[numel(frequencies),floor(numel(sites.LFP)/ts)];
+site_lfp.tfs.pha=NaN(sizepreallocator);
+site_lfp.tfs.pow=NaN(sizepreallocator);
+site_lfp.tfs.lfp=NaN([1,floor(numel(sites.LFP)/ts)]);
+
+trials_block=[sites.block];
+blocks_with_LFP=unique(trials_block);
+samples_past=0;
+samples_past_resampled=0;
+
+
+for b=1:numel(blocks_with_LFP) 
+    B=blocks_with_LFP(b);
+    b_samples=trials_block==B;
+    bs=samples_past_resampled+1;
+    be=floor(sum(sites.LFP_samples(b_samples))/ts)+samples_past_resampled;  
+    bs_original=samples_past+1;
+    be_original=sum(sites.LFP_samples(b_samples))+samples_past;  
+    samples_past=be_original;
+    samples_past_resampled=be;    
     
-    %% retrieve LFP data
+    concat_raw = double(sites.LFP(bs_original:be_original));
     
-    start_time = (sites.trial(t).TDT_LFPx_tStart); % trial start time
-    fs = sites.trial(t).TDT_LFPx_SR; % sample rate
-    %LFP = sites.trial(t).LFP; % LFP data
-    LFP = sites.LFP((lfp_samples(t)+1):lfp_samples(t+1)); % LFP data
-    ts = (1/fs); % sample time
-    nsamples = numel(LFP);
-    end_time = start_time + (ts*(nsamples-1));
-    timestamps = linspace(start_time, end_time, nsamples);
+    n_data        = size(concat_raw,2);
+    n_convolution = n_wavelet+n_data;
+    n_conv_pow2   = pow2(nextpow2(n_convolution));
+    half_wavelet_len = ceil(length(time)/2);
     
-    site_lfp.trials(t).lfp_data    = LFP;
-    site_lfp.trials(t).time        = timestamps;
-    site_lfp.trials(t).fsample     = fs;
-    site_lfp.trials(t).tsample     = ts;
+    % get fT of data
+    dataft = fft(concat_raw,n_conv_pow2);
+    site_lfp.tfs.freq             = frequencies;
     
-    %% need information about which trial it was(originally?)
-    site_lfp.trials(t).n  = sites.trial(t).n;
+    site_lfp.tfs.n_samples_per_block(:,b)=[B,be-bs+1];
+    dat=mean(reshape(concat_raw(1:end-mod(size(concat_raw,2), ts)),ts,[]),1);
+    site_lfp.tfs.lfp(1,bs:be)= dat;
     
-    % save retrieved data into struct
     
-    perturbation = sites.trial(t).perturbation; % 0 = control
-    if isnan(perturbation)
-        perturbation = 0;
+    for f=1:length(frequencies)
+        % create wavelet        
+        wavelet = (ts_original/(s(f)*sqrt(2*pi))) * exp(2*1i*pi*frequencies(f).*time) .* exp(-time.^2./(2*(s(f)^2)));   
+        % convolution
+        datconv = ifft(fft(wavelet,n_conv_pow2).*dataft);
+        
+        dat = datconv(1:n_convolution);
+        dat = dat(half_wavelet_len+1:end-half_wavelet_len); % +1 is for one overlap point at the start
+        % resample here:
+        dat = mean(reshape(dat(1:end-mod(size(dat,2), ts)),ts,[]),1);
+        
+        % extract pha values of reshaped data:
+        site_lfp.tfs.pha(f,bs:be)= dat./abs(dat);
+        % extracted Power of each trial
+        site_lfp.tfs.pow(f,bs:be) = abs(dat).^2;        
     end
-    site_lfp.trials(t).perturbation  = perturbation;
-    site_lfp.trials(t).completed    = sites.trial(t).completed;
-    site_lfp.trials(t).success      = sites.trial(t).success;
-    site_lfp.trials(t).type         = sites.trial(t).type;
-    site_lfp.trials(t).effector     = sites.trial(t).effector;
-    site_lfp.trials(t).run          = sites.trial(t).run;
-    site_lfp.trials(t).block        = sites.trial(t).block;
-    site_lfp.trials(t).choice_trial = sites.trial(t).choice;
     
-    % flag to mark noisy trials, default False, filled in by lfp_tfa_reject_noisy_lfp.m
-    site_lfp.trials(t).noisy = 0;
-    
-    % get state onset times and onset samples - test and delete
-    site_lfp.trials(t).states = struct();
-    
-    for s = 1:length(sites.trial(t).states)
-        % get state ID
-        state_id = sites.trial(t).states(s);
-        % get state onset time
-        state_onset = sites.trial(t).states_onset(sites.trial(t).states == state_id);
-        % get sample number of state onset time
-        state_onset_sample = find(abs(timestamps - state_onset) == min(abs(timestamps - state_onset)));
-        % save into struct
-        site_lfp.trials(t).states(s).id = state_id;
-        site_lfp.trials(t).states(s).onset_t  = state_onset;
-        site_lfp.trials(t).states(s).onset_s  = state_onset_sample;
+    for f=1:size(frequency_bands,1)
+        %% think about how to use good filters without causing errors for short periods
+        %  fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
+        %  fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
+        [u, v]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
+        dat = filtfilt(u,v,concat_raw);
+        H=hilbert(dat);
+        H = mean(reshape(H(1:end-mod(size(H,2), ts)),ts,[]),1);
+        absH=abs(H);
+        site_lfp.tfs.phabp(f,bs:be) = H./absH;
+        site_lfp.tfs.powbp(f,bs:be) = absH.^2;               
     end
-    
-    trial_start_t = site_lfp.trials(t).states([site_lfp.trials(t).states.id] == lfp_tfa_cfg.trialinfo.start_state).onset_t + lfp_tfa_cfg.trialinfo.ref_tstart;
-    trial_end_t   = site_lfp.trials(t).states([site_lfp.trials(t).states.id] == lfp_tfa_cfg.trialinfo.end_state).onset_t + lfp_tfa_cfg.trialinfo.ref_tend;
-    site_lfp.trials(t).trialperiod = [trial_start_t, trial_end_t];
 end
+site_lfp.tfs.pha=site_lfp.tfs.pha(:,1:be);
+site_lfp.tfs.pow=site_lfp.tfs.pow(:,1:be);
+site_lfp.tfs.phabp=site_lfp.tfs.phabp(:,1:be);
+site_lfp.tfs.powbp=site_lfp.tfs.powbp(:,1:be);
+site_lfp.tfs.lfp=site_lfp.tfs.lfp(:,1:be);
 
-%% Time frequency spectrogram calculation
-site_lfp = ecg_bna_compute_site_lfp_tfr( site_lfp, lfp_tfa_cfg );
-
-% Noise rejection
-site_lfp = lfp_tfa_reject_noisy_lfp_trials( site_lfp, lfp_tfa_cfg.noise );
+% Noise rejection - is this even still feasable?
+% tic
+% site_lfp = ecg_bna_reject_noisy_lfp_trials( site_lfp, lfp_tfa_cfg.noise );
+% toc
 end
 

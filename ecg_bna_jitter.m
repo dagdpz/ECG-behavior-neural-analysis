@@ -1,4 +1,4 @@
-function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,ecg_bna_cfg)
+function Rpeaks=ecg_bna_jitter(session_info,ecg_bna_cfg)
 load(session_info.Input_ECG);
 
 % get the number of permutations from settings
@@ -35,17 +35,27 @@ for b=1:numel(out)
     
     RPEAK_ts=out(b).Rpeak_t; 
 	RPEAKS_intervals=diff(RPEAK_ts);                               % These are the intervals of our valid Rpeaks, the ones we are going to jitter
-    
-	%% shuffling the VALID R2R intervals to append at the end of our jittered intervals, 
-    %  just in case we randomly end up not covering the entire time window
-    %  Don't worry, most (typically all) of it is going to be removed 
-    [~,ix]=sort(rand(N,length(out(b).R2R_valid)),2);
-    perm=out(b).R2R_valid(ix);
-    
+        
 	%% here we jitter all Rpeak intervals
-	allowed_jitter_range=std(out(b).R2R_valid);                    % one-sided std of normally distributed jitter values
-    RPEAKS_intervals_p = [repmat(RPEAK_ts(1),N,1) repmat(RPEAKS_intervals,N,1)+randn(N,length(RPEAKS_intervals))*allowed_jitter_range perm]; % jittering every interval!
-    RPEAK_ts_p         = cumsum(RPEAKS_intervals_p,2);
+	allowed_jitter_range=max(out(b).R2R_valid)-min(out(b).R2R_valid);%std(out(b).R2R_valid)*6;                    % one-sided std of normally distributed jitter values
+    
+%     Nrandoms=ceil(numel(RPEAK_ts)/2)+1;
+%     jitter_odd1=rand(N,Nrandoms)*allowed_jitter_range;
+%     jitter_odd2=jitter_odd1*-1;
+%     jitter_even1=rand(N,Nrandoms)*allowed_jitter_range;
+%     jitter_even2=jitter_even1*-1;
+%     clear jitterthing
+%     jitterthing(:,1:2:2*Nrandoms)=jitter_odd1+jitter_even2;
+%     jitterthing(:,2:2:2*Nrandoms-1)=jitter_odd2(:,1:end-1)+jitter_even1(:,2:end);
+%     
+    Nrandoms=numel(RPEAK_ts);
+    jitterthing=rand(N,Nrandoms)*allowed_jitter_range;
+    
+    %RPEAKS_intervals_p = [repmat(RPEAK_ts(1),N,1) repmat(RPEAKS_intervals,N,1)]+jitterthing(:,1:numel(RPEAK_ts)); % jittering every interval!
+    %RPEAK_ts_p         = cumsum(RPEAKS_intervals_p,2);
+    
+     RPEAK_ts_p         = repmat(RPEAK_ts,N,1)+jitterthing(:,1:numel(RPEAK_ts));
+    
     RPEAK_ts_dur       = [zeros(N,1) diff(RPEAK_ts_p,1,2)];
     
     %% figure out consecutive RR-intervals - we do it only after jittering because we need to know durations of jittered intervals corresponding to the consecutive ones
@@ -73,7 +83,7 @@ for b=1:numel(out)
     RPEAK_ts_p    (idx2exclude_2) = 0;
     RPEAK_ts_dur  (idx2exclude_2) = NaN;
     
-    RPEAK_ts_p   (:,all(RPEAK_ts_p==0,1)) = [];
+    RPEAK_ts_p   (:,all(isnan(RPEAK_ts_p),1)) = [];
     RPEAK_ts_dur (:,all(isnan(RPEAK_ts_dur),1)) = [];
     
     Rpeaks(b).RPEAK_ts=RPEAK_ts+offset_blocks_Rpeak(b);         % this offset is just a trick to be able to append Rpeaks across blocks easily
