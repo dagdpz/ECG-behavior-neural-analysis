@@ -330,7 +330,7 @@ for cn= 1:numel(data.condition)
     significance(significance==0)=NaN;
     significance=significance.*ylm(1);
     % adding the signifiance horizontal lines:
-    if ~all(isnan(diff(significance,1,2)),2);
+    if ~all(isnan(diff(significance,1,1)),2);
         plot(repmat(concat.lfp_time,size(concat.itpcbp,2),1)', significance','linewidth',3);
     end
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
