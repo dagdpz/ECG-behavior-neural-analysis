@@ -15,34 +15,6 @@ load(session_info.Input_trials);
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
 
-% preallocate 'Output' structure
-for tasktype=1:2
-    Output.(condition_labels{tasktype}).unit_ID           = {population.unit_ID};
-    Output.(condition_labels{tasktype}).target            = {population.target};
-    Output.(condition_labels{tasktype}).quantSNR          = [population.avg_SNR];
-    Output.(condition_labels{tasktype}).Single_rating     = [population.avg_single_rating];
-    Output.(condition_labels{tasktype}).stability_rating  = [population.avg_stability];
-    Output.(condition_labels{tasktype}).SD                = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).SD_STD            = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).SD_SEM            = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).SDP               = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).SDPCL             = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).SDPCu             = single(nan(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).sig_all           = single(zeros(length(population), length(BINS)));
-	Output.(condition_labels{tasktype}).sig               = single(zeros(length(population), length(BINS)));
-    Output.(condition_labels{tasktype}).sig_FR_diff       = single(nan(length(population),1));
-	Output.(condition_labels{tasktype}).sig_time          = single(nan(length(population),1));
-	Output.(condition_labels{tasktype}).sig_n_bins        = single(zeros(length(population),1));
-	Output.(condition_labels{tasktype}).sig_sign          = single(zeros(length(population),1));
-	Output.(condition_labels{tasktype}).NrTrials          = single(nan(length(population),1));
-	Output.(condition_labels{tasktype}).NrEvents          = single(nan(length(population),1));
-	Output.(condition_labels{tasktype}).FR                = single(nan(length(population),1));
-	Output.(condition_labels{tasktype}).raster            = cell(length(population),1);
-	Output.(condition_labels{tasktype}).Rts               = cell(length(population),1); % RR ends
-	Output.(condition_labels{tasktype}).Rds               = cell(length(population),1); % RR durations
-	Output.(condition_labels{tasktype}).Rds_perm          = cell(length(population),1);
-end
-
 for u=1:numel(population)
     tic
     pop=population(u);
@@ -57,6 +29,34 @@ for u=1:numel(population)
     blocks_unit=unique([pop.block]);
     blocks=intersect(blocks_unit,Rblocks);
     b=ismember(Rblocks,blocks);
+    
+    % preallocate 'Output' structure
+    for tasktype=1:2
+        Output.(condition_labels{tasktype}).unit_ID           = pop.unit_ID;
+        Output.(condition_labels{tasktype}).target            = pop.target;
+        Output.(condition_labels{tasktype}).quantSNR          = pop.avg_SNR;
+        Output.(condition_labels{tasktype}).Single_rating     = pop.avg_single_rating;
+        Output.(condition_labels{tasktype}).stability_rating  = pop.avg_stability;
+        Output.(condition_labels{tasktype}).SD                = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SD_STD            = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SD_SEM            = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SDP               = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SDPCL             = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SDPCu             = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).sig_all           = single(zeros(1, length(BINS)));
+        Output.(condition_labels{tasktype}).sig               = single(zeros(1, length(BINS)));
+        Output.(condition_labels{tasktype}).sig_FR_diff       = single(nan(1));
+        Output.(condition_labels{tasktype}).sig_time          = single(nan(1));
+        Output.(condition_labels{tasktype}).sig_n_bins        = single(zeros(1));
+        Output.(condition_labels{tasktype}).sig_sign          = single(zeros(1));
+        Output.(condition_labels{tasktype}).NrTrials          = single(nan(1));
+        Output.(condition_labels{tasktype}).NrEvents          = single(nan(1));
+        Output.(condition_labels{tasktype}).FR                = single(nan(1));
+        Output.(condition_labels{tasktype}).raster            = single(nan(1));
+        Output.(condition_labels{tasktype}).Rts               = single(nan(1)); % RR ends
+        Output.(condition_labels{tasktype}).Rds               = single(nan(1)); % RR durations
+        Output.(condition_labels{tasktype}).Rds_perm          = single(nan(1));
+    end
     
     for tasktype=1:2
         L=condition_labels{tasktype};
@@ -99,26 +99,29 @@ for u=1:numel(population)
         shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
         SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
         
-        Output.(L).SD(u,:)            = SD.SD_mean ;
-        Output.(L).SD_STD(u,:)        = SD.SD_STD;
-        Output.(L).SD_SEM(u,:)        = SD.SD_SEM ;
-        Output.(L).SDP(u,:)           = SD.SDPmean ;
-        Output.(L).SDPCL(u,:)         = SD.SDPconf(1,:) ;
-        Output.(L).SDPCu(u,:)         = SD.SDPconf(2,:) ;
-        Output.(L).sig_all(u,:)       = SD.sig_all;
-        Output.(L).sig(u,:)           = SD.sig;
-        Output.(L).sig_FR_diff(u,:)   = SD.sig_FR_diff;
-        Output.(L).sig_time(u,:)      = SD.sig_time;
-        Output.(L).sig_n_bins(u,:)    = SD.sig_n_bins;
-        Output.(L).sig_sign(u,:)      = SD.sig_sign;
-        Output.(L).NrTrials(u,:)      = sum(tr);
-        Output.(L).NrEvents(u,:)      = realPSTHs.n_events;
-        Output.(L).FR(u,:)            = mean(SD_all_trials); %% not too sure this was the intended one...
-        Output.(L).raster{u}          = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-        Output.(L).Rts{u}             = single(realPSTHs.RTs{1});
-        Output.(L).Rds{u}             = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
-        Output.(L).Rds_perm{u}        = single([shuffledPSTH.RDs{:}]);
-        
+        Output.(L).SD                           = SD.SD_mean ;
+        Output.(L).SD_STD                       = SD.SD_STD;
+        Output.(L).SD_SEM                       = SD.SD_SEM ;
+        Output.(L).SDP                          = SD.SDPmean ;
+        Output.(L).SDPCL                        = SD.SDPconf(1,:) ;
+        Output.(L).SDPCu                        = SD.SDPconf(2,:) ;
+        Output.(L).sig_all                      = SD.sig_all;
+        Output.(L).sig                          = SD.sig;
+        Output.(L).sig_FR_diff                  = SD.sig_FR_diff;
+        Output.(L).sig_time                     = SD.sig_time;
+        Output.(L).sig_n_bins                   = SD.sig_n_bins;
+        Output.(L).sig_sign                     = SD.sig_sign;
+        Output.(L).NrTrials                     = sum(tr);
+        Output.(L).NrEvents                     = realPSTHs.n_events;
+        Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
+        Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
+        Output.(L).Rts                          = single(realPSTHs.RTs{1});
+        Output.(L).Rds                          = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
+        Output.(L).Rds_perm                     = single([shuffledPSTH.RDs{:}]);
+        Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP;
+        Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100;
+        Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP);
+        Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized);
         
         clear realPSTHs shuffledPSTH SD
         
@@ -151,12 +154,12 @@ for u=1:numel(population)
             export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
             close(gcf);
         end
-        
     end
+    %% save output
+	save([basepath_to_save, filesep, pop.unit_ID, '_', pop.target],'Output')
+    clear Output
     toc
 end
-%% save output
-save([basepath_to_save, filesep, session_info.session],'Output', '-v7.3')
 end
 
 function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)

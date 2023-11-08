@@ -7,21 +7,24 @@ basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
-load([basepath_to_save, filesep, session_info.session],'Output')
 
-% figure out the present units and check that they match in Task and Rest
-if ~isequal(Output.Task.target, Output.Rest.target)
-    error('Numbers and names of units don''t match for task and rest')
-end
+fileList = dir([basepath_to_save, filesep, session_info.Monkey(1:3) '_' session_info.Date '*.mat']);
 
-condition_labels = fieldnames(Output);
-condition_colors={'b','r'};
-BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
-
-for untNum = 1:length(Output.Task.target)
+for flNum = 1:length(fileList)
     
-    unit_ID = Output.Task.unit_ID{untNum};
-    target = Output.Task.target{untNum};
+    load([fileList(flNum).folder filesep fileList(flNum).name], 'Output')
+    
+    % figure out the present units and check that they match in Task and Rest
+    if ~isequal(Output.Task.target, Output.Rest.target)
+        error('Numbers and names of units don''t match for task and rest')
+    end
+    
+    condition_labels = fieldnames(Output);
+    condition_colors={'b','r'};
+    BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
+    
+    unit_ID = Output.Task.unit_ID;
+    target = Output.Task.target;
     
     figure; % raster
     set(gcf, 'Position', [641    40   892   956])
@@ -37,25 +40,25 @@ for untNum = 1:length(Output.Task.target)
         box on
         L=condition_labels{tasktype};
         col=condition_colors{tasktype};
-        if ~isnan(Output.(L).raster{untNum})
+        if ~isnan(Output.(L).raster)
             % figure out how many R-peaks we have and if < 100, plot
             % everything; if > 100, choose only 100
-            if size(Output.(L).raster{untNum},1) <= 100
+            if size(Output.(L).raster,1) <= 100
                 stepSize = 1; % just step through all the Rpeaks one by one
             else
                 % choose min interval of linearly spaced intervals
                 % between 1 and the number of Rpeaks
-                stepSize = min(diff(floor(linspace(1, size(Output.(L).raster{untNum},1), 100))));
+                stepSize = min(diff(floor(linspace(1, size(Output.(L).raster,1), 100))));
             end
             % plot spikes only for 100 Rpeaks or everything if we have
             % fewer
             a = 1; % introduce row counter
-            for RpeakNum = 1:stepSize:size(Output.(L).raster{untNum},1)
-                x = Output.(L).raster{untNum}(RpeakNum,:);
+            for RpeakNum = 1:stepSize:size(Output.(L).raster,1)
+                x = Output.(L).raster(RpeakNum,:);
                 line([BINS; BINS], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
                 a = a + 1;
             end
-            title({['Raster for ' L ': 10-ms bins, '], ['100 R-peak intervals out of ' num2str(size(Output.(L).raster{untNum},1))], '(linearly spaced)'})
+            title({['Raster for ' L ': 10-ms bins, '], ['100 R-peak intervals out of ' num2str(size(Output.(L).raster,1))], '(linearly spaced)'})
         end
         
     end
@@ -69,21 +72,21 @@ for untNum = 1:length(Output.Task.target)
         L=condition_labels{tasktype};
         col=condition_colors{tasktype};
         lineProps={'color',col,'linewidth',1};
-        shadedErrorBar(BINS,Output.(L).SD(untNum,:),Output.(L).SD_SEM(untNum,:),lineProps,1);
+        shadedErrorBar(BINS, Output.(L).SD, Output.(L).SD_SEM,lineProps,1);
         lineProps={'color',col,'linewidth',1,'linestyle',':'};
-        shadedErrorBar(BINS,Output.(L).SDP(untNum,:),[Output.(L).SDPCu(untNum,:);Output.(L).SDPCL(untNum,:)],lineProps,1);
+        shadedErrorBar(BINS, Output.(L).SDP, [Output.(L).SDPCu; Output.(L).SDPCL], lineProps,1);
         ypos=NaN;
-        if Output.(L).sig_sign(untNum,:)==-1;
-            ypos=min(Output.(L).SD(untNum,:))*-1;
-        elseif Output.(L).sig_sign(untNum,:)==1;
-            ypos=max(Output.(L).SD(untNum,:));
+        if Output.(L).sig_sign==-1;
+            ypos=min(Output.(L).SD)*-1;
+        elseif Output.(L).sig_sign==1;
+            ypos=max(Output.(L).SD);
         end
-        to_plot=Output.(L).sig(untNum,:);
+        to_plot=Output.(L).sig;
         to_plot(to_plot==0)=NaN;
         plot(BINS,to_plot*ypos,col,'linewidth',5);
         
         y_lims=get(gca,'ylim');
-        text(BINS(10),y_lims(2)-diff(y_lims)*tasktype*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials(untNum,:)), ' events = ' ,num2str(Output.(L).NrEvents(untNum,:)) ],'Color',condition_colors{tasktype});
+        text(BINS(10),y_lims(2)-diff(y_lims)*tasktype*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials), ' events = ' ,num2str(Output.(L).NrEvents) ],'Color',condition_colors{tasktype});
     end
     
     ylabel('Firing rate');
@@ -94,13 +97,13 @@ for untNum = 1:length(Output.Task.target)
         L=condition_labels{tasktype};
         col=condition_colors{tasktype};
         subplot(3,2,tasktype+4);
-%         hold on
+        %         hold on
         box on
         yyaxis left
-        histogram(Output.(L).Rds{untNum},histbins, 'FaceColor', col)
+        histogram(Output.(L).Rds,histbins, 'FaceColor', col)
         ylabel('N');
         yyaxis right
-        histogram(Output.(L).Rds_perm{untNum},histbins, 'FaceColor', [0.5 0.5 0.5])
+        histogram(Output.(L).Rds_perm,histbins, 'FaceColor', [0.5 0.5 0.5])
         ylabel('N');
         xlabel('RR Duration, s');
         title('grey - jittered RRs');
