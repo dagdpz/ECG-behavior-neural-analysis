@@ -49,6 +49,7 @@ for v = 1:length(versions)
     
     %% per session processing..
     perform_per_session_analysis=1; %% move this one to settings
+    only_plotting=0;
     if perform_per_session_analysis
     for i = 1:length(sessions_info)
         java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
