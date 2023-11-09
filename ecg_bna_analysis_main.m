@@ -177,7 +177,7 @@ for v = 1:length(versions)
                 mkdir(session_result_folder);
             end
             save(fullfile(session_result_folder, ['Triggered_session_' triggered_session_data.session '.mat']), 'triggered_session_data');        
-            clear session_proc_lfp site_data session_data;
+            clear session_proc_lfp site_data triggered_session_data;
             
         end
     end
