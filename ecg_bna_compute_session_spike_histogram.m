@@ -56,8 +56,8 @@ for u=1:numel(population)
         Output.(condition_labels{tasktype}).Rts               = single(nan(1)); % RR ends
         Output.(condition_labels{tasktype}).Rds               = single(nan(1)); % RR durations
         Output.(condition_labels{tasktype}).Rds_perm          = single(nan(1));
-        Output.(condition_labels{tasktype}).SDsubstractedSDP            = single(nan(1));
-        Output.(condition_labels{tasktype}).SDsubstractedSDP_normalized = single(nan(1));
+        Output.(condition_labels{tasktype}).SDsubstractedSDP            = single(nan(1, length(BINS)));
+        Output.(condition_labels{tasktype}).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
         Output.(condition_labels{tasktype}).FR_ModIndex_SubtrSDP        = single(nan(1));
         Output.(condition_labels{tasktype}).FR_ModIndex_PcS             = single(nan(1));
     end
