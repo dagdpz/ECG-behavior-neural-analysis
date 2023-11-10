@@ -32,11 +32,11 @@ for u=1:numel(population)
     
     % preallocate 'Output' structure
     for tasktype=1:2
-        Output.(condition_labels{tasktype}).unit_ID           = pop.unit_ID;
-        Output.(condition_labels{tasktype}).target            = pop.target;
-        Output.(condition_labels{tasktype}).quantSNR          = pop.avg_SNR;
-        Output.(condition_labels{tasktype}).Single_rating     = pop.avg_single_rating;
-        Output.(condition_labels{tasktype}).stability_rating  = pop.avg_stability;
+        Output.unit_ID                                        = pop.unit_ID;
+        Output.target                                         = pop.target;
+        Output.quantSNR                                       = pop.avg_SNR;
+        Output.Single_rating                                  = pop.avg_single_rating;
+        Output.stability_rating                               = pop.avg_stability;
         Output.(condition_labels{tasktype}).SD                = single(nan(1, length(BINS)));
         Output.(condition_labels{tasktype}).SD_STD            = single(nan(1, length(BINS)));
         Output.(condition_labels{tasktype}).SD_SEM            = single(nan(1, length(BINS)));
@@ -56,6 +56,10 @@ for u=1:numel(population)
         Output.(condition_labels{tasktype}).Rts               = single(nan(1)); % RR ends
         Output.(condition_labels{tasktype}).Rds               = single(nan(1)); % RR durations
         Output.(condition_labels{tasktype}).Rds_perm          = single(nan(1));
+        Output.(condition_labels{tasktype}).SDsubstractedSDP            = single(nan(1));
+        Output.(condition_labels{tasktype}).SDsubstractedSDP_normalized = single(nan(1));
+        Output.(condition_labels{tasktype}).FR_ModIndex_SubtrSDP        = single(nan(1));
+        Output.(condition_labels{tasktype}).FR_ModIndex_PcS             = single(nan(1));
     end
     
     for tasktype=1:2
