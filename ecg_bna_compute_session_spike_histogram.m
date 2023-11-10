@@ -95,6 +95,9 @@ for u=1:numel(population)
         trial_ends_samples=floor((trial_ends-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
         trial_onset_samples(trial_onset_samples==0)=1;
         during_trial_index=false(size(PSTH_time));
+        drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
+        trial_onset_samples = trial_onset_samples(~drop_samples);
+        trial_ends_samples = trial_ends_samples(~drop_samples);
         for t=1:numel(trial_onset_samples)
             during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
         end
