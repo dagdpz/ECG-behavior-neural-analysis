@@ -1,6 +1,7 @@
 function ecg_bna_plot_session_spike_histogram(session_info, ecg_bna_cfg)
 
 histbins=0.2:0.02:0.8; % bins for RR duration histogram
+condition_labels = {'Rest', 'Task'};
 
 % find the current datafile
 basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
@@ -15,16 +16,16 @@ for flNum = 1:length(fileList)
     load([fileList(flNum).folder filesep fileList(flNum).name], 'Output')
     
     % figure out the present units and check that they match in Task and Rest
-    if ~isequal(Output.Task.target, Output.Rest.target)
+    if ~isequal(Output.target, Output.target)
         error('Numbers and names of units don''t match for task and rest')
     end
     
-    condition_labels = fieldnames(Output);
+%     condition_labels = fieldnames(Output);
     condition_colors={'b','r'};
     BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
     
-    unit_ID = Output.Task.unit_ID;
-    target = Output.Task.target;
+    unit_ID = Output.unit_ID;
+    target = Output.target;
     
     figure; % raster
     set(gcf, 'Position', [641    40   892   956])
