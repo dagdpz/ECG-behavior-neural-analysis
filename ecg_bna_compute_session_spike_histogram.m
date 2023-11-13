@@ -125,10 +125,10 @@ for u=1:numel(population)
         Output.(L).Rts                          = single(realPSTHs.RTs{1});
         Output.(L).Rds                          = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
         Output.(L).Rds_perm                     = single([shuffledPSTH.RDs{:}]);
-        Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP;
-        Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100;
-        Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP);
-        Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized);
+        Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
+        Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
+        Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
+        Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
         
         clear realPSTHs shuffledPSTH SD
         
