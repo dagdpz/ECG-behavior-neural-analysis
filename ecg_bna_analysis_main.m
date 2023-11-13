@@ -219,14 +219,11 @@ for v = 1:length(versions)
     %     end
     %
     %
-    %     %% average across sessions
-    %     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-    %         SPK=load_stuff(sessions_info,'SPK_fldr','','','per_unit','Output');
-    %         for i = 1: length(SPK.session)
-    %             SPK_PSTH{i} =SPK.session(i);
-    %         end
-    %         ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info);
-    %     end
+        %% average across sessions
+        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+            SPK_PSTH=load_spikes(sessions_info,'SPK_fldr','','','per_unit','Output');
+            ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info, ecg_bna_cfg);
+        end
 end
 end 
 
@@ -407,6 +404,52 @@ for i = 1:length(sessions_info)
         Out=to_load.(varname);
     else
         error('The Per session folder is empty');
+    end
+end
+end
+
+function Out=load_spikes(sessions_info,subfield,subfolder,namepart,per,varname)
+condition_labels = {'Rest', 'Task'};
+for i = 1:length(sessions_info)
+    disp(['Session ' num2str(i) ' out of ' num2str(length(sessions_info))])
+    if isempty(subfolder) %% unfortunate inconsistent naming
+        monkey=sessions_info(i).Monkey(1:3);
+    else
+        monkey=['_' sessions_info(i).Monkey(1:3)];
+    end
+    results_folder = fullfile(sessions_info(i).(subfield),per,subfolder);
+    to_load=dir(fullfile(results_folder, [namepart monkey '_' sessions_info(i).Date '*.mat']));
+    tmp = arrayfun(@(x) load([x.folder filesep x.name], varname), to_load, 'UniformOutput', false);
+    
+    % put common parameters in the structure
+    Out{i}.unit_ID = cellfun(@(x) x.Output.unit_ID, tmp, 'UniformOutput', false);
+    Out{i}.target = cellfun(@(x) x.Output.target, tmp, 'UniformOutput', false);
+    Out{i}.quantSNR = cellfun(@(x) x.Output.quantSNR, tmp);
+    Out{i}.Single_rating = cellfun(@(x) x.Output.Single_rating, tmp);
+    Out{i}.stability_rating = cellfun(@(x) x.Output.stability_rating, tmp);
+    
+    field_names = fieldnames(tmp{1}.Output.Rest);
+    for conditionNum = 1:2
+        for fieldNum = 1:length(field_names)
+            if strcmp(field_names{fieldNum}, 'Rts') || ...
+                    strcmp(field_names{fieldNum}, 'Rds') || ...
+                    strcmp(field_names{fieldNum}, 'Rds_perm') || ...
+                    strcmp(field_names{fieldNum}, 'raster') || ...
+                    ischar(tmp{1}.Output.(condition_labels{conditionNum}).(field_names{fieldNum}))
+                Out{i}.(condition_labels{conditionNum}).(field_names{fieldNum}) = ...
+                    cellfun(@(x) cat(1,x.Output.(condition_labels{conditionNum}).(field_names{fieldNum})), tmp, 'UniformOutput', false);
+            else
+                tmp_out = cellfun(@(x) x.Output.(condition_labels{conditionNum}).(field_names{fieldNum}), tmp, 'UniformOutput', false);
+                if strcmp(field_names{fieldNum}, 'SDsubstractedSDP') || ...
+                        strcmp(field_names{fieldNum}, 'SDsubstractedSDP_normalized')
+                    len_tmp_out = cellfun(@length, tmp_out);
+                    tmp_out(len_tmp_out == 1) = {single(nan(1, 51))};
+                end
+                tmp_out = cat(1, tmp_out{:});
+                Out{i}.(condition_labels{conditionNum}).(field_names{fieldNum}) = tmp_out;
+                clear tmp_out
+            end
+        end
     end
 end
 end
