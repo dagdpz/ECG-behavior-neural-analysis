@@ -214,6 +214,10 @@ for v = 1:length(versions)
         clear session_data
         clear session_Rpeak_triggered_raw
     end
+    
+    %%
+    % computing the grand avg over all sites of all sessions in each Target
+    grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg);
     %%
     %     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
     %         ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??
