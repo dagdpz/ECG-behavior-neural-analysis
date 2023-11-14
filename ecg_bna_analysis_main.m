@@ -142,7 +142,8 @@ for v = 1:length(versions)
                 if numel(blocks_not_present_in_triggers)==size(n_LFP_samples_per_block,2)
                    continue; 
                 end
-
+                
+                tfr_samples_to_remove=[];
                 for b=1:numel(blocks_not_present_in_triggers)
                     B=blocks_not_present_in_triggers(b);
                     start_to_remove=sum(n_LFP_samples_per_block(2,n_LFP_samples_per_block(1,:)<B))+1;
@@ -153,13 +154,13 @@ for v = 1:length(versions)
                         FN=FN_tr{f};
                         site_LFP.(FN)(b_idx)=[];
                     end
-                    FN_tfs={'phabp','powbp','pha','pow','lfp'};
-                    for f=1:numel(FN_tfs)
-                        FN=FN_tfs{f};
-                        site_LFP.tfs.(FN)(:,start_to_remove:end_to_remove)=[];
-                    end
+                    tfr_samples_to_remove=[tfr_samples_to_remove start_to_remove:end_to_remove];
                 end
-                
+                FN_tfs={'phabp','powbp','pha','pow','lfp'};
+                for f=1:numel(FN_tfs)
+                    FN=FN_tfs{f};
+                    site_LFP.tfs.(FN)(:,tfr_samples_to_remove)=[];
+                end
                 
                 blockstarts=[1, find(diff([trials.block]))+1];   
                 t_offset_per_block=[[trials(blockstarts).block];[trials(blockstarts).TDT_LFPx_tStart]];                
