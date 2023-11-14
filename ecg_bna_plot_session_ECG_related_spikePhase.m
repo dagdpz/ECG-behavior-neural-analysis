@@ -321,9 +321,15 @@ for untNum = 1:length(fileList)
     
     for tasktype = 1:2
         subplot(1,4,tasktype)
-        plot(data.(condition_labels{tasktype}).FRbyRR_Hz, data.(condition_labels{tasktype}).cycleDurations_s, '.', 'Color', condition_colors{tasktype}(1:3))
+        scatter(data.(condition_labels{tasktype}).FRbyRR_Hz, data.(condition_labels{tasktype}).cycleDurations_s, [], condition_colors{tasktype}(1:3), 'Marker', '.')
+        hold on
+        linTrend = lsline(gca);
+        linTrend.Color = condition_colors{tasktype}(1:3);
         xlabel('Firing Rate per Heart Cycle, Hz')
         ylabel('Heart Cycle Duration, s')
+        box on
+        title([condition_labels{tasktype} ': cc = ' num2str(data.(condition_labels{tasktype}).pearson_r(4)) '; p = ' num2str(data.(condition_labels{tasktype}).pearson_p(4))])
+        legend({'Real Data', 'Least-Square Fit'}, 'Location', 'Best')
     end
     
     subplot(1,4,4)
