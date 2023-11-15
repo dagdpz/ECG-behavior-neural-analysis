@@ -118,22 +118,22 @@ for unitNum = 1:length(population)
             TDT_ECG1_t0_from_rec_start = {trcell.TDT_ECG1_t0_from_rec_start};
             block_nums                 = {trcell.block};
             state1_times               = cellfun(@(x,y) x(y == 1), states_onset, states, 'Uniformoutput', false); % trial starts
-%             state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
+            state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
             % compute RR-intervals
             valid_RRinterval_ends      = single([Rpeaks(b).RPEAK_ts]);
             valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).RPEAK_dur]);
             % 0. figure out RR-intervals lying within trials
-%             trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
-%             trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
+            trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
+            trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
             
-%             RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
-%             for RRnum = 1:length(RR_within_trial_idx)
-%                 RR_within_trial_idx(RRnum) = ...
-%                     any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
-%                     valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
-%             end
-%             valid_RRinterval_ends      = valid_RRinterval_ends(RR_within_trial_idx); % get rid of RRs beyond the current set of trials
-%             valid_RRinterval_starts    = valid_RRinterval_starts(RR_within_trial_idx);
+            RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
+            for RRnum = 1:length(RR_within_trial_idx)
+                RR_within_trial_idx(RRnum) = ...
+                    any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
+                    valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
+            end
+            valid_RRinterval_ends      = valid_RRinterval_ends(RR_within_trial_idx); % get rid of RRs beyond the current set of trials
+            valid_RRinterval_starts    = valid_RRinterval_starts(RR_within_trial_idx);
             % 1. take arrival times and the corresponding waveforms
             AT = {popcell.arrival_times};
             WF = {popcell.waveforms};
