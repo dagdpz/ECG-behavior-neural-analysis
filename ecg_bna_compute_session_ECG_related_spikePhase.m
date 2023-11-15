@@ -6,14 +6,13 @@ if ~exist(basepath_to_save,'dir')
 end
 
 %% settings for this analysis - subject to be moved to the ecg_bna_cfg
-N_bins = 64;
-nReshuffles = ecg_bna_cfg.n_permutations;
+ecg_bna_cfg.N_bins = 64;
 Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
 wf_times_ms = 1000 * (1/Fs:1/Fs:32/Fs); % in ms
 wf_times_interp_ms = 1000 * (1/4/Fs:1/4/Fs:32/Fs); % in ms
 peak_id = 10; % sample number of the trough in the spike waveform
-phase_bins          = linspace(0, 2*pi, N_bins+1);
-phase_bin_centers   = 2*pi/N_bins:2*pi/N_bins:2*pi;
+phase_bins          = linspace(0, 2*pi, ecg_bna_cfg.N_bins+1);
+phase_bin_centers   = 2*pi/ecg_bna_cfg.N_bins:2*pi/ecg_bna_cfg.N_bins:2*pi;
 lag_list = [-11 -7 -3 0 3 7 11];
 
 condition_labels={'Rest','Task'};
@@ -56,31 +55,35 @@ for unitNum = 1:length(population)
         data.(condition_labels{tasktype}).spike_phases_radians           = single(NaN);
         data.(condition_labels{tasktype}).waveforms_microvolts           = single(nan(1,32));
         data.(condition_labels{tasktype}).waveforms_upsampled_microvolts = single(nan(1,128));
-        data.(condition_labels{tasktype}).waveforms_byBin_microvolts     = single(nan(1,N_bins));
+        data.(condition_labels{tasktype}).waveforms_byBin_microvolts     = single(nan(1,ecg_bna_cfg.N_bins));
         data.(condition_labels{tasktype}).AMP_microV                     = single(NaN);
         data.(condition_labels{tasktype}).HW_ms                          = single(NaN);
         data.(condition_labels{tasktype}).TPW_ms                         = single(NaN);
         data.(condition_labels{tasktype}).REP_ms                         = single(NaN);
-        data.(condition_labels{tasktype}).AMP_microV_byBin               = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).HW_ms_byBin                    = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).TPW_ms_byBin                   = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).REP_ms_byBin                   = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5           = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).AMP_upperPrctile_97_5          = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).HW_lowerPrctile_2_5            = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).HW_upperPrctile_97_5           = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5           = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).TPW_upperPrctile_97_5          = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).REP_lowerPrctile_2_5           = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).REP_upperPrctile_97_5          = single(nan(1,N_bins));
+        data.(condition_labels{tasktype}).AMP_microV_byBin               = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).HW_ms_byBin                    = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).TPW_ms_byBin                   = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).REP_ms_byBin                   = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).AMP_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).AMP_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).HW_reshuffled_avg              = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).HW_lowerPrctile_2_5            = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).HW_upperPrctile_97_5           = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).TPW_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).TPW_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).REP_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).REP_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).REP_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
         data.(condition_labels{tasktype}).AMP_MI                         = single(nan(1,5));
         data.(condition_labels{tasktype}).HW_MI                          = single(nan(1,5));
         data.(condition_labels{tasktype}).TPW_MI                         = single(nan(1,5));
         data.(condition_labels{tasktype}).REP_MI                         = single(nan(1,5));
-        data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed      = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).HW_ms_byBin_smoothed           = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed          = single(nan(1,N_bins));
-        data.(condition_labels{tasktype}).REP_ms_byBin_smoothed          = single(nan(1,N_bins));
+        data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed      = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).HW_ms_byBin_smoothed           = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed          = single(nan(1,ecg_bna_cfg.N_bins));
+        data.(condition_labels{tasktype}).REP_ms_byBin_smoothed          = single(nan(1,ecg_bna_cfg.N_bins));
         data.(condition_labels{tasktype}).allCorr                        = single(nan(1,6));
         data.(condition_labels{tasktype}).allLinMod                      = single(nan(6,2));
         data.(condition_labels{tasktype}).FRbyRR_Hz                      = single(nan(1,1));
@@ -90,8 +93,8 @@ for unitNum = 1:length(population)
     end
     
     % find the corresponding WC file and load it
-	chNum = data.channel;
-	blkNum = unique([pop.block]);
+    chNum = data.channel;
+    blkNum = unique([pop.block]);
     WCfile = ph_figure_out_waveclus_file_by_channel_and_blocks(chNum, blkNum, session_info);
     WC = load(WCfile);
     if length(WC.thr) == 4
@@ -270,13 +273,14 @@ FRbyRR_Hz = spikeCounts ./ cycleDurations;
 % scatter(cycleDurations, FRbyRR_Hz)
 end
 
-function [lowerPercentile_2_5, upperPercentile_97_5] = compute_reshuffles(data, bin, nReshuffles)
+function [lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled] = compute_reshuffles(data, bin, ecg_bna_cfg)
 %% compute reshuffles
 rng(0)
-[~, reshuffled_spike_order] = sort(rand(nReshuffles, length(data)), 2); % get random order of elements
+[~, reshuffled_spike_order] = sort(rand(ecg_bna_cfg.n_permutations, length(data)), 2); % get random order of elements
 data_reshuffled      = data(reshuffled_spike_order);
-data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), unique(bin), 'UniformOutput', false); % mean by phase
+data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:ecg_bna_cfg.N_bins, 'UniformOutput', false); % mean by phase
 data_reshuffled      = cat(2, data_reshuffled{:});
+average_reshuffled = mean(data_reshuffled, 1, 'omitnan');
 lowerPercentile_2_5    = prctile(data_reshuffled, 2.5, 1);
 upperPercentile_97_5  = prctile(data_reshuffled, 97.5, 1);
 end
