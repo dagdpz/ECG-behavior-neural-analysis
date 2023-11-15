@@ -61,7 +61,7 @@ for untNum = 1:length(fileList)
     for tasktype = 1:2
         h = histcounts(data.(condition_labels{tasktype}).spike_phases_radians, 64);
         h = h / mean(h);
-        polarplot(phase_bin_centers,h, 'Color', condition_colors{tasktype}(1:3))
+        polarplot([phase_bin_centers phase_bin_centers(1)], [h h(1)], 'Color', condition_colors{tasktype}(1:3))
         hold on
     end
     hold off
