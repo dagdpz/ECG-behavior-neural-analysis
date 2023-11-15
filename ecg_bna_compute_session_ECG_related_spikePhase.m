@@ -86,6 +86,14 @@ for unitNum = 1:length(population)
         data.(condition_labels{tasktype}).REP_ms_byBin_smoothed          = single(nan(1,ecg_bna_cfg.N_bins));
         data.(condition_labels{tasktype}).allCorr                        = single(nan(1,6));
         data.(condition_labels{tasktype}).allLinMod                      = single(nan(6,2));
+        data.(condition_labels{tasktype}).AMP_max_consec_bins            = single(nan(1,1));
+        data.(condition_labels{tasktype}).AMP_modulation_index           = single(nan(1,1));
+        data.(condition_labels{tasktype}).HW_max_consec_bins             = single(nan(1,1));
+        data.(condition_labels{tasktype}).HW_modulation_index            = single(nan(1,1));
+        data.(condition_labels{tasktype}).TPW_max_consec_bins            = single(nan(1,1));
+        data.(condition_labels{tasktype}).TPW_modulation_index           = single(nan(1,1));
+        data.(condition_labels{tasktype}).REP_max_consec_bins            = single(nan(1,1));
+        data.(condition_labels{tasktype}).REP_modulation_index           = single(nan(1,1));
         data.(condition_labels{tasktype}).FRbyRR_Hz                      = single(nan(1,1));
         data.(condition_labels{tasktype}).cycleDurations_s               = single(nan(1,1));
         data.(condition_labels{tasktype}).pearson_r                      = single(nan(length(lag_list), 1));
@@ -152,94 +160,140 @@ for unitNum = 1:length(population)
             
             [~,~,bin] = histcounts(data.(tType).spike_phases_radians, phase_bins);
             
-            if length(unique(bin)) == length(phase_bins)-1
+            data.(tType).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
+            waveforms_upsampled                       = interpft(data.(tType).waveforms_microvolts, 32*4, 2);
+            data.(tType).waveforms_upsampled_microvolts       = shift2peak(wf_times_interp_ms, waveforms_upsampled);
+            data.(tType).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(tType).waveforms_upsampled_microvolts(bin == x,:),1), 1:ecg_bna_cfg.N_bins, 'UniformOutput', false);
+            data.(tType).waveforms_byBin_microvolts           = cat(1,data.(tType).waveforms_byBin_microvolts{:});
+            % 7. Calculate spike features with Mosher's procedure
+            tic
+            sMetric = ...
+                struct('extremAmp', cell(length(data.(tType).spike_phases_radians),1), ...
+                'widthHW', cell(length(data.(tType).spike_phases_radians),1), ...
+                'widthTP', cell(length(data.(tType).spike_phases_radians),1), ...
+                'repolTime', cell(length(data.(tType).spike_phases_radians),1));
+            parfor wfNum = 1:length(data.(tType).spike_phases_radians)
+                try
+                    sMetric(wfNum)=spikeWaveMetrics(data.(tType).waveforms_upsampled_microvolts(wfNum,:), 37, Fs*4, 0); % 37 - index of th peak for updsampled data
+                    sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
+                    sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
+                    sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
+                    sMetric(wfNum).repolTime   = sMetric(wfNum).repolTime(1);
+                catch ME
+                    sMetric(wfNum).extremAmp  = nan;
+                    sMetric(wfNum).widthHW    = nan;
+                    sMetric(wfNum).widthTP    = nan;
+                    sMetric(wfNum).repolTime  = nan;
+                end
+            end
+            toc
+            data.(tType).AMP_microV               = [sMetric.extremAmp];
+            data.(tType).HW_ms                    = 10^3 * [sMetric.widthHW];
+            data.(tType).TPW_ms                   = 10^3 * [sMetric.widthTP];
+            data.(tType).REP_ms                   = 10^3 * [sMetric.repolTime];
             
-                data.(tType).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
-                waveforms_upsampled                       = interpft(data.(tType).waveforms_microvolts, 32*4, 2);
-                data.(tType).waveforms_upsampled_microvolts       = shift2peak(wf_times_interp_ms, waveforms_upsampled);
-                data.(tType).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(tType).waveforms_upsampled_microvolts(bin == x,:),1), unique(bin), 'UniformOutput', false);
-                data.(tType).waveforms_byBin_microvolts           = cat(1,data.(tType).waveforms_byBin_microvolts{:});
-                % 7. Calculate spike features with Mosher's procedure
-                tic
-                sMetric = ...
-                    struct('extremAmp', cell(length(data.(tType).spike_phases_radians),1), ...
-                    'widthHW', cell(length(data.(tType).spike_phases_radians),1), ...
-                    'widthTP', cell(length(data.(tType).spike_phases_radians),1), ...
-                    'repolTime', cell(length(data.(tType).spike_phases_radians),1));
-                parfor wfNum = 1:length(data.(tType).spike_phases_radians)
-                    try
-                        sMetric(wfNum)=spikeWaveMetrics(data.(tType).waveforms_upsampled_microvolts(wfNum,:), 37, Fs*4, 0); % 37 - index of th peak for updsampled data
-                        sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
-                        sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
-                        sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
-                        sMetric(wfNum).repolTime   = sMetric(wfNum).repolTime(1);
-                    catch ME
-                        sMetric(wfNum).extremAmp  = nan;
-                        sMetric(wfNum).widthHW    = nan;
-                        sMetric(wfNum).widthTP    = nan;
-                        sMetric(wfNum).repolTime  = nan;
-                    end
+            data.(tType).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(tType).AMP_microV(bin == x)), 1:ecg_bna_cfg.N_bins); % mean by phase
+            data.(tType).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(tType).HW_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
+            data.(tType).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).TPW_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
+            data.(tType).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).REP_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
+            
+            [data.(tType).AMP_lowerPrctile_2_5, data.(tType).AMP_upperPrctile_97_5, data.(tType).AMP_reshuffled_avg] = ...
+                compute_reshuffles(data.(tType).AMP_microV, bin, ecg_bna_cfg);
+            [data.(tType).HW_lowerPrctile_2_5, data.(tType).HW_upperPrctile_97_5, data.(tType).HW_reshuffled_avg] = ...
+                compute_reshuffles(data.(tType).HW_ms, bin, ecg_bna_cfg);
+            [data.(tType).TPW_lowerPrctile_2_5, data.(tType).TPW_upperPrctile_97_5, data.(tType).TPW_reshuffled_avg] = ...
+                compute_reshuffles(data.(tType).TPW_ms, bin, ecg_bna_cfg);
+            [data.(tType).REP_lowerPrctile_2_5, data.(tType).REP_upperPrctile_97_5, data.(tType).REP_reshuffled_avg] = ...
+                compute_reshuffles(data.(tType).REP_ms, bin, ecg_bna_cfg);
+            
+            featureMatrix = ...
+                [data.(tType).AMP_microV_byBin; data.(tType).HW_ms_byBin; ...
+                data.(tType).TPW_ms_byBin; data.(tType).REP_ms_byBin];
+            if size(featureMatrix,1) > 4
+                featureMatrix = featureMatrix';
+                if size(featureMatrix,1) ~= 4
+                    error('Dimensions of feature matrix aren''t suitable for the analysis')
                 end
-                toc
-                data.(tType).AMP_microV               = [sMetric.extremAmp];
-                data.(tType).HW_ms                    = 10^3 * [sMetric.widthHW];
-                data.(tType).TPW_ms                   = 10^3 * [sMetric.widthTP];
-                data.(tType).REP_ms                   = 10^3 * [sMetric.repolTime];
-                
-                data.(tType).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(tType).AMP_microV(bin == x)), unique(bin)); % mean by phase
-                data.(tType).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(tType).HW_ms(bin == x)), unique(bin));
-                data.(tType).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).TPW_ms(bin == x)), unique(bin));
-                data.(tType).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).REP_ms(bin == x)), unique(bin));
-                
-                [data.(tType).AMP_lowerPrctile_2_5, data.(tType).AMP_upperPrctile_97_5] = ...
-                    compute_reshuffles(data.(tType).AMP_microV, bin, nReshuffles);
-                [data.(tType).HW_lowerPrctile_2_5, data.(tType).HW_upperPrctile_97_5] = ...
-                    compute_reshuffles(data.(tType).HW_ms, bin, nReshuffles);
-                [data.(tType).TPW_lowerPrctile_2_5, data.(tType).TPW_upperPrctile_97_5] = ...
-                    compute_reshuffles(data.(tType).TPW_ms, bin, nReshuffles);
-                [data.(tType).REP_lowerPrctile_2_5, data.(tType).REP_upperPrctile_97_5] = ...
-                    compute_reshuffles(data.(tType).REP_ms, bin, nReshuffles);
-                
-                [modIndex,removeNoise,allCorr,allLinMod] = ...
-                    fitCardiacModulation(phase_bins(1:end-1), ...
-                    [data.(tType).AMP_microV_byBin data.(tType).HW_ms_byBin data.(tType).TPW_ms_byBin data.(tType).REP_ms_byBin]', ...
-                    {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
-                
-                % 4 coefficient related to cosine fitting
-                % - the modulation index, the slope of the cosine function
-                % - p-value of the modulation index
-                % - phase of modulation
-                % - p-value of the modulation index ?? (mdl.Rsquared.ordinary)
-                data.(tType).AMP_MI                   = modIndex(1, :);
-                data.(tType).HW_MI                    = modIndex(2, :);
-                data.(tType).TPW_MI                   = modIndex(3, :);
-                data.(tType).REP_MI                   = modIndex(4, :);
-                
-                % store smoothed data for each measure
-                data.(tType).AMP_microV_byBin_smoothed    = removeNoise(1,:);
-                data.(tType).HW_ms_byBin_smoothed         = removeNoise(2,:);
-                data.(tType).TPW_ms_byBin_smoothed        = removeNoise(3,:);
-                data.(tType).REP_ms_byBin_smoothed        = removeNoise(4,:);
-                
-                data.(tType).allCorr                      = allCorr;
-                data.(tType).allLinMod                    = allLinMod;
-                
-                % II. Compute unit firing rate per RR-interval
-                [data.(tType).FRbyRR_Hz, ...
-                    data.(tType).cycleDurations_s] = ...
-                    computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-                % compute correlation with different lag
-                for lagNum = 1:length(lag_list)
-                    [temp_r, temp_p] = corrcoef(data.(tType).FRbyRR_Hz, circshift(data.(tType).cycleDurations_s, lag_list(lagNum)));
-                    data.(tType).pearson_r(lagNum) = temp_r(2,1);
-                    data.(tType).pearson_p(lagNum) = temp_p(2,1);
-                end
+            end
+            
+            [modIndex,removeNoise,allCorr,allLinMod] = ...
+                fitCardiacModulation(phase_bins(1:end-1), ...
+                featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
+            
+            % 4 coefficient related to cosine fitting
+            % - the modulation index, the slope of the cosine function
+            % - p-value of the modulation index
+            % - phase of modulation
+            % - p-value of the modulation index ?? (mdl.Rsquared.ordinary)
+            data.(tType).AMP_MI                   = modIndex(1, :);
+            data.(tType).HW_MI                    = modIndex(2, :);
+            data.(tType).TPW_MI                   = modIndex(3, :);
+            data.(tType).REP_MI                   = modIndex(4, :);
+            
+            % store smoothed data for each measure
+            data.(tType).AMP_microV_byBin_smoothed    = removeNoise(1,:);
+            data.(tType).HW_ms_byBin_smoothed         = removeNoise(2,:);
+            data.(tType).TPW_ms_byBin_smoothed        = removeNoise(3,:);
+            data.(tType).REP_ms_byBin_smoothed        = removeNoise(4,:);
+            
+            data.(tType).allCorr                      = allCorr;
+            data.(tType).allLinMod                    = allLinMod;
+            
+            [data.(tType).AMP_max_consec_bins, data.(tType).AMP_modulation_index] = ...
+                significant_bins(data.(tType).AMP_microV_byBin_smoothed, data.(tType).AMP_lowerPrctile_2_5, data.(tType).AMP_upperPrctile_97_5, data.(tType).AMP_reshuffled_avg);
+            [data.(tType).HW_max_consec_bins, data.(tType).HW_modulation_index] = ...
+                significant_bins(data.(tType).HW_ms_byBin_smoothed, data.(tType).HW_lowerPrctile_2_5, data.(tType).HW_upperPrctile_97_5, data.(tType).HW_reshuffled_avg);
+            [data.(tType).TPW_max_consec_bins, data.(tType).TPW_modulation_index] = ...
+                significant_bins(data.(tType).TPW_ms_byBin_smoothed, data.(tType).TPW_lowerPrctile_2_5, data.(tType).TPW_upperPrctile_97_5, data.(tType).TPW_reshuffled_avg);
+            [data.(tType).REP_max_consec_bins, data.(tType).REP_modulation_index] = ...
+                significant_bins(data.(tType).REP_ms_byBin_smoothed, data.(tType).REP_lowerPrctile_2_5, data.(tType).REP_upperPrctile_97_5, data.(tType).REP_reshuffled_avg);
+            
+            % II. Compute unit firing rate per RR-interval
+            [data.(tType).FRbyRR_Hz, ...
+                data.(tType).cycleDurations_s] = ...
+                computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
+            % compute correlation with different lag
+            for lagNum = 1:length(lag_list)
+                [temp_r, temp_p] = corrcoef(data.(tType).FRbyRR_Hz, circshift(data.(tType).cycleDurations_s, lag_list(lagNum)));
+                data.(tType).pearson_r(lagNum) = temp_r(2,1);
+                data.(tType).pearson_p(lagNum) = temp_p(2,1);
             end
         end
     end
     save([basepath_to_save filesep data.unitId '_' data.target '__spikes_ECGphase.mat'], 'data', '-v7.3')
     clear data
 end
+end
+
+function [max_consec_bins, feature_modulation_index] = significant_bins(average_real, lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled)
+% figure out significant differences of spike feature dynamics
+sig_above = average_real > upperPercentile_97_5;
+sig_below = average_real < lowerPercentile_2_5;
+
+consec_above = diff([0 find(diff(sig_above)) numel(sig_above)]); % number of repetitions of the same element
+consec_below =  diff([0 find(diff(sig_below)) numel(sig_below)]);
+
+if sig_above(1) % if starts with zero
+    clust_above = consec_above(1:2:end); % then take lengths of non-zero clusters
+else
+    clust_above = consec_above(2:2:end);
+end
+
+if sig_below(1) % if starts with zero
+    clust_below = consec_below(1:2:end);
+else
+    clust_below = consec_below(2:2:end);
+end
+
+max_consec_bins = max([clust_above clust_below]); % max number of consecutive significant bins
+
+if isempty(max_consec_bins)
+    max_consec_bins = 0;
+end
+
+feature_modulation_index = ...
+    (max(average_real) - min(average_real)) / mean(average_reshuffled, 'omitnan');
+
 end
 
 function spikes_realigned_microV = shift2peak(wf_times_interp_ms, waveforms_upsampled)
