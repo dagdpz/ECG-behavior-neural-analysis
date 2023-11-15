@@ -5,6 +5,11 @@ if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
 
+%% load list of selected units
+load([session_info.SPK_fldr '\Population\units_after_exclusion.mat'], 'unitList_afterExclusion')
+areaList = cellfun(@(fn) unitList_afterExclusion.(fn), fieldnames(unitList_afterExclusion), 'UniformOutput', false);
+areaList = vertcat(areaList{:});
+
 %% settings for this analysis - subject to be moved to the ecg_bna_cfg
 ecg_bna_cfg.N_bins = 64;
 Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
@@ -21,6 +26,10 @@ load(session_info.Input_spikes, 'population'); % 'population' structure comes fr
 load(session_info.Input_trials, 'trials'); % 'trials' structure comes from here
 
 Rblocks=[Rpeaks.block];
+
+% figure out which units take from this session
+selected_this_session = ismember({population.unit_ID}, areaList);
+population = population(selected_this_session);
 
 for unitNum = 1:length(population)
     
