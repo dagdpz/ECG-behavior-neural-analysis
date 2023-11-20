@@ -273,11 +273,6 @@ for i = 1:length(sessions_info)
                     cellfun(@(x) cat(1,x.Output.(condition_labels{conditionNum}).(field_names{fieldNum})), tmp, 'UniformOutput', false);
             else
                 tmp_out = cellfun(@(x) x.Output.(condition_labels{conditionNum}).(field_names{fieldNum}), tmp, 'UniformOutput', false);
-                if strcmp(field_names{fieldNum}, 'SDsubstractedSDP') || ...
-                        strcmp(field_names{fieldNum}, 'SDsubstractedSDP_normalized')
-                    len_tmp_out = cellfun(@length, tmp_out);
-                    tmp_out(len_tmp_out == 1) = {single(nan(1, 51))};
-                end
                 tmp_out = cat(1, tmp_out{:});
                 Out{i}.(condition_labels{conditionNum}).(field_names{fieldNum}) = tmp_out;
                 clear tmp_out
