@@ -1,5 +1,9 @@
 function ecg_bna_plot_session_spike_histogram(session_info, ecg_bna_cfg)
 
+% check the Matlab version
+v = version('-release');
+v = str2double(v(1:end-1));
+
 histbins=0.2:0.02:0.8; % bins for RR duration histogram
 condition_labels = {'Rest', 'Task'};
 
@@ -27,9 +31,17 @@ for flNum = 1:length(fileList)
     unit_ID = Output.unit_ID;
     target = Output.target;
     
+    sgtitleText = {[Output.unit_ID '_' Output.target], ... %  
+        ['SNR: ' num2str(Output.quantSNR) '; Fano Factor: ' num2str(Output.stability_rating) '; % of ISIs < 3 ms: '  num2str(100 * Output.Single_rating) '%']};
+    
     figure; % raster
     set(gcf, 'Position', [641    40   892   956])
-    title([unit_ID,'__',target ],'interpreter','none');
+    if v < 2016
+        suptitle(sgtitleText,'interpreter','none');
+    else
+        sgtitle(sgtitleText,'interpreter','none')
+    end
+    
     for tasktype=1:numel(condition_labels)
         subplot(3,2,tasktype)
         hold on
@@ -95,7 +107,6 @@ for flNum = 1:length(fileList)
     ylabel('Firing rate');
     xlabel('time to Rpeak');
     
-    title(['Rpeak_intervals_' unit_ID,'__',target ],'interpreter','none');
     for tasktype=1:numel(condition_labels)
         L=condition_labels{tasktype};
         col=condition_colors{tasktype};
