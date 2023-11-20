@@ -59,6 +59,7 @@ for flNum = 1:length(fileList)
                 line([BINS; BINS], [x; 2*x]+a-1, 'Color', col, 'LineWidth', 1)
                 a = a + 1;
             end
+            xline(0)
             title({['Raster for ' L ': 10-ms bins, '], ['100 R-peak intervals out of ' num2str(size(Output.(L).raster,1))], '(linearly spaced)'})
         end
         
@@ -76,6 +77,7 @@ for flNum = 1:length(fileList)
         shadedErrorBar(BINS, Output.(L).SD, Output.(L).SD_SEM,lineProps,1);
         lineProps={'color',col,'linewidth',1,'linestyle',':'};
         shadedErrorBar(BINS, Output.(L).SDP, [Output.(L).SDPCu; Output.(L).SDPCL], lineProps,1);
+        xline(0)
         ypos=NaN;
         if Output.(L).sig_sign==-1;
             ypos=min(Output.(L).SD)*-1;
