@@ -125,7 +125,7 @@ for unitNum = 1:length(population)
         
         %% take trials from the necessary blocks and current tasktype
         tr=ismember([T.block],blocks) & [T.type]==tasktype;
-        if sum(tr)>0 % do calculations only if number of trials > 0
+        if sum(tr)>1 % do calculations only if number of trials > 1
             popcell=pop.trial(tr);
             trcell=T(tr);
             
