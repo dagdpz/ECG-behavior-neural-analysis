@@ -24,24 +24,8 @@ for v = 1:length(versions)
     version = versions{v};
     ecg_bna_cfg = ecg_bna_define_settings(github_folder,project,version);
     
-    %% read tuning table?
-    keys=struct;
-    keys=ph_general_settings(project,keys);
-    project_specific_settings=[keys.db_folder 'ph_project_settings.m'];
-    run(project_specific_settings)
-    version_specific_settings=[keys.db_folder ecg_bna_cfg.spikes_version filesep 'ph_project_version_settings.m'];
-    run(version_specific_settings)
-    keys.anova_table_file=[keys.basepath_to_save ecg_bna_cfg.spikes_version filesep 'tuning_table_combined_CI.mat'];
-    keys.tuning_table=ph_load_tuning_table(keys); %% load tuning table
-    keys.tt.tasktypes= {'Fsac_opt';'Vsac_opt'};
-%     keys.tt.SNR_rating=keys.cal.SNR_rating;
-%     keys.tt.stability_rating=keys.cal.stablity; %:(
-%     keys.tt.Single_rating=keys.cal.single_rating; %% :(
-    keys.tt.FR=keys.cal.FR; %:(
-    keys.tt.n_spikes=keys.cal.n_spikes; %% :(
-    keys.monkey=''; %% empty because we ignore which monkey it is basically
-    keys=ph_tuning_table_correction(keys);
-    ecg_bna_cfg.unit_IDS=keys.tuning_table(2:end,1);
+    %% do spike analysis
+    ecg_bna_spike_analysis_main(project, ecg_bna_cfg)
     
     %% Get info about sessions to be analysed
     % Read the info about sessions to analyse
@@ -52,10 +36,6 @@ for v = 1:length(versions)
     only_plotting=0;
     if perform_per_session_analysis
     for i = 1:length(sessions_info)
-        java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
-            
-        session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
-        
         % First make seed and ecg shuffles, then use those shuffles for all subfunctions
         seed_filename=[ecg_bna_cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
         if exist(seed_filename,'file')
@@ -68,11 +48,7 @@ for v = 1:length(versions)
         if ecg_bna_cfg.process_LFP || ecg_bna_cfg.process_ECG || ecg_bna_cfg.process_spikes
             Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),ecg_bna_cfg);
         end
-        if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))            
-            ecg_bna_compute_session_spike_histogram(sessions_info(i),Rpeaks,ecg_bna_cfg,trials); %% conditions are still a mess here
-            ecg_bna_plot_session_spike_histogram(sessions_info(i),ecg_bna_cfg);
-        end
-        
+            
         if ecg_bna_cfg.process_ECG
             fprintf('Reading ECG for session %s\n', session_name);
             ecg_bna_cfg.session = session_name;
@@ -218,12 +194,6 @@ for v = 1:length(versions)
     %         Rpeak_evoked_event_prob.sessions_avg    = ecg_bna_avg_sessions_Rpeak_evoked_state_onsets( Rpeak_evoked_event_prob, ecg_bna_cfg);
     %     end
     %
-    %
-        %% average across sessions
-        if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
-            SPK_PSTH=load_spikes(sessions_info,'SPK_fldr','','','per_unit','Output');
-            ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info, ecg_bna_cfg);
-        end
 end
 end 
 
