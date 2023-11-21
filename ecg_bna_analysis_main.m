@@ -24,8 +24,10 @@ for v = 1:length(versions)
     version = versions{v};
     ecg_bna_cfg = ecg_bna_define_settings(github_folder,project,version);
     
-    %% do spike analysis
-    ecg_bna_spike_analysis_main(project, ecg_bna_cfg)
+    %% do spike analysis if necessary
+    if ecg_bna_cfg.process_spikes && any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_spike_histogram'))
+        ecg_bna_spike_analysis_main(project, ecg_bna_cfg)
+    end
     
     %% Get info about sessions to be analysed
     % Read the info about sessions to analyse
