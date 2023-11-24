@@ -33,12 +33,12 @@ for v = 1:length(versions)
     run(version_specific_settings)
     keys.anova_table_file=[keys.basepath_to_save ecg_bna_cfg.spikes_version filesep 'tuning_table_combined_CI.mat'];
     keys.tuning_table=ph_load_tuning_table(keys); %% load tuning table
-    keys.tt.tasktypes= {'Fsac_opt';'Vsac_opt'};
     keys.tt.FR=keys.cal.FR; %:(
     keys.tt.n_spikes=keys.cal.n_spikes; %% :(
     keys.monkey=''; %% empty because we ignore which monkey it is basically
     keys=ph_tuning_table_correction(keys); %%applies the criterias
     ecg_bna_cfg.unit_IDS=keys.tuning_table(2:end,1);
+    ecg_bna_cfg.site_IDS=unique(keys.tuning_table(2:end,DAG_find_column_index(keys.tuning_table,'site_ID')));
     
     %% Get info about sessions to be analysed
     % Read the info about sessions to analyse
@@ -217,7 +217,14 @@ for v = 1:length(versions)
     
     %%
     % computing the grand avg over all sites of all sessions in each Target
-    grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg);
+    
+    
+    ecg_bna_cfg.session_lfp_fldr = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Session');
+    ecg_bna_cfg.sites_lfp_fldr   = fullfile(ecg_bna_cfg.analyse_lfp_folder, 'Per_Site');
+    
+%     grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg,'w_units');
+%     grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg,'wo_units');
+    grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg,'all');
     %%
     %     if any(strcmp(ecg_bna_cfg.analyses, 'Rpeak_evoked_TFS'))
     %         ecg_bna_cfg.root_results_fldr=ecg_bna_cfg.results_folder; %??
