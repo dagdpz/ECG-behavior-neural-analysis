@@ -6,9 +6,8 @@ if ~exist(basepath_to_save,'dir')
 end
 
 %% load list of selected units
-load([session_info.SPK_fldr '\Population\units_after_exclusion.mat'], 'unitList_afterExclusion')
-areaList = cellfun(@(fn) unitList_afterExclusion.(fn), fieldnames(unitList_afterExclusion), 'UniformOutput', false);
-areaList = vertcat(areaList{:});
+unit_list = load([session_info.SPK_fldr '\unitInfo_after_exclusion_stableTaskAndRest.mat']);
+unitList = unique(unit_list.unit_ids_after_exclusion);
 
 %% settings for this analysis - subject to be moved to the ecg_bna_cfg
 ecg_bna_cfg.N_bins = 64;
@@ -28,7 +27,7 @@ load(session_info.Input_trials, 'trials'); % 'trials' structure comes from here
 Rblocks=[Rpeaks.block];
 
 % figure out which units take from this session
-selected_this_session = ismember({population.unit_ID}, areaList);
+selected_this_session = ismember({population.unit_ID}, unitList);
 population = population(selected_this_session);
 
 for unitNum = 1:length(population)
