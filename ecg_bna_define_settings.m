@@ -45,7 +45,7 @@ if ~exist(ecg_bna_cfg.SPK_root_results_fldr, 'dir')
 end
 
 % get conditions to be included in the analysis
-ecg_bna_cfg.conditions          = lfp_tfa_compare_conditions(ecg_bna_cfg);
+%ecg_bna_cfg.conditions          = lfp_tfa_compare_conditions(ecg_bna_cfg);
 ecg_bna_cfg.noise.results_folder= ecg_bna_cfg.LFP_root_results_fldr;                            % folder to save noise rejection results
 ecg_bna_cfg.results_folder      = ecg_bna_cfg.LFP_root_results_fldr;                            % folder to save baseline results
 ecg_bna_cfg.proc_ecg_folder     = [ecg_bna_cfg.ECG_root_results_fldr filesep 'Processed ECG'];  % folder to save ecg processing results
@@ -69,10 +69,6 @@ for i = 1:length(ecg_bna_cfg.session_info)
     ecg_bna_cfg.session_info(i).proc_lfp_fldr       = ecg_bna_cfg.proc_lfp_folder;
     ecg_bna_cfg.session_info(i).SPK_fldr            = ecg_bna_cfg.SPK_root_results_fldr;
 end
-
-% add the level of gaussian smoothing for evoked_LFP plots, or other plots
-% that needs smoothing:
-ecg_bna_cfg.smoothWin = 20;
 
 % save settings struct
 save(fullfile(ecg_bna_cfg.ECG_root_results_fldr, ['ecg_bna_settings_' num2str(ecg_bna_cfg.version) '.mat']), 'ecg_bna_cfg');
