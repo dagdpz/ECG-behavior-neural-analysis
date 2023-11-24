@@ -177,82 +177,41 @@ for untNum = 1:length(fileList)
     f3 = figure;
     set(f3, 'Position', [1 41 1920 963])
     sgtitle(sgtitleText, 'interpreter', 'none')
+    feature_list = {'AMP', 'HW', 'TPW', 'REP'};
+    feature_bin_list = {'AMP_microV_byBin', 'HW_ms_byBin', 'TPW_ms_byBin', 'REP_ms_byBin'};
+    smoothed_feature_list = {'AMP_microV_byBin_smoothed', 'HW_ms_byBin_smoothed', 'TPW_ms_byBin_smoothed', 'REP_ms_byBin_smoothed'};
+    subplot_numbers = {[1 2], [4 5], [11 12], [14 15]};
     
-    for tasktype = 1:2
-        subplot(3,5,tasktype)
-        yyaxis left
-        histogram(abs(data.(condition_labels{tasktype}).spike_phases_radians), phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
-        ylabel('Spike Counts')
-        yyaxis right
-        filledArea = fill([phase_bin_centers fliplr(phase_bin_centers) phase_bin_centers(1)], ...
-            [data.(condition_labels{tasktype}).AMP_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5) data.(condition_labels{tasktype}).AMP_upperPrctile_97_5(1)], ...
-            [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
-        hold on;
-        p1 = plot(phase_bin_centers, data.(condition_labels{tasktype}).AMP_microV_byBin,'-k','LineWidth',2);
-        p2 = plot(phase_bin_centers, data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2);
-        yline(data.thresholds_microV(1))
-        yline(data.thresholds_microV(2))
-        title(['AMP: MI = ' num2str(data.(condition_labels{tasktype}).AMP_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).AMP_MI(2))])
-        xlim([0 2*pi])
-        xlabel('Heart-cycle Phase (0-2pi)')
-        ylabel('AMP, microvolts')
-        if tasktype == 1
-%             legend([filledArea p1 p2], {'95% Confidence Interval', 'Average by Bin', 'Rlowess-Smoothed'}, 'Location', 'southoutside')
+    for featureNum = 1:4
+        for tasktype = 1:2
+            subplot(3,5,subplot_numbers{featureNum}(tasktype))
+            yyaxis left
+            histogram(abs(data.(condition_labels{tasktype}).spike_phases_radians), phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
+            ylabel('Spike Counts')
+            currYLims = get(gca, 'YLim');
+            currYLims(2) = 2 * currYLims(2);
+            set(gca, 'YLim', currYLims)
+            yyaxis right
+            filledArea = fill([phase_bin_centers fliplr(phase_bin_centers) phase_bin_centers(1)], ...
+                ...
+                [data.(condition_labels{tasktype}).([feature_list{featureNum} '_upperPrctile_97_5']) ...
+                fliplr(data.(condition_labels{tasktype}).([feature_list{featureNum} '_lowerPrctile_2_5'])) ...
+                data.(condition_labels{tasktype}).([feature_list{featureNum} '_upperPrctile_97_5'])(1)], ...
+                [0 0 0], 'FaceALpha', 0.15, 'EdgeColor', 'none');
+            hold on;
+            p1 = plot(phase_bin_centers, data.(condition_labels{tasktype}).(feature_bin_list{featureNum}),'-k','LineWidth',2);
+            p2 = plot(phase_bin_centers, data.(condition_labels{tasktype}).(smoothed_feature_list{featureNum}), '-', 'Color', condition_colors{tasktype}(1:3), 'LineWidth',2);
+            currYLims = get(gca, 'YLim');
+            currYLims(1) = currYLims(1) - diff(currYLims);
+            set(gca, 'YLim', currYLims)
+            title([feature_list{featureNum} ': MI = ' num2str(data.(condition_labels{tasktype}).([feature_list{featureNum} '_MI'])(1)) '; p = ' num2str(data.(condition_labels{tasktype}).([feature_list{featureNum} '_MI'])(2))])
+            xlim([0 2*pi])
+            xlabel('Heart-cycle Phase (0-2pi)')
+            ylabel([feature_list{featureNum} ', microvolts'])
+            if tasktype == 1
+                %             legend([filledArea p1 p2], {'95% Confidence Interval', 'Average by Bin', 'Rlowess-Smoothed'}, 'Location', 'southoutside')
+            end
         end
-    end
-    
-    for tasktype = 1:2
-        subplot(3,5,3+tasktype)
-        yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
-        ylabel('Spike Counts')
-        yyaxis right
-        fill([phase_bin_centers fliplr(phase_bin_centers) phase_bin_centers(1)], ...
-            [data.(condition_labels{tasktype}).HW_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).HW_lowerPrctile_2_5) data.(condition_labels{tasktype}).HW_upperPrctile_97_5(1)], ...
-            [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
-        hold on;
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).HW_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).HW_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2);
-        title(['HW: MI = ' num2str(data.(condition_labels{tasktype}).HW_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).HW_MI(2))])
-        xlim([0 2*pi])
-        xlabel('Heart-cycle Phase (0-2pi)')
-        ylabel('HW, ms')
-    end
-    
-    for tasktype = 1:2
-        subplot(3,5,10+tasktype)
-        yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bin_centers, 'FaceColor', condition_colors{tasktype}(1:3))
-        ylabel('Spike Counts')
-        yyaxis right
-        fill([phase_bin_centers fliplr(phase_bin_centers) phase_bin_centers(1)], ...
-            [data.(condition_labels{tasktype}).TPW_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5) data.(condition_labels{tasktype}).TPW_upperPrctile_97_5(1)], ...
-            [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none');
-        hold on;
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).TPW_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2)
-        title(['TPW: MI = ' num2str(data.(condition_labels{tasktype}).TPW_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).TPW_MI(2))])
-        xlim([0 2*pi])
-        xlabel('Heart-cycle Phase (0-2pi)')
-        ylabel('TPW, ms')
-    end
-    
-    for tasktype = 1:2
-        subplot(3,5,13+tasktype)
-        yyaxis left
-        histogram(data.(condition_labels{tasktype}).spike_phases_radians, phase_bins, 'FaceColor', condition_colors{tasktype}(1:3))
-        ylabel('Spike Counts')
-        yyaxis right
-        fill([phase_bin_centers fliplr(phase_bin_centers) phase_bin_centers(1)], ...
-            [data.(condition_labels{tasktype}).REP_upperPrctile_97_5 fliplr(data.(condition_labels{tasktype}).REP_lowerPrctile_2_5) data.(condition_labels{tasktype}).REP_upperPrctile_97_5(1)], ...
-            [0 0 0], 'FaceALpha', 0.5, 'EdgeColor', 'none')
-        hold on
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).REP_ms_byBin,'-k','LineWidth',2);
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).REP_ms_byBin_smoothed, '-', 'Color', 'w', 'LineWidth',2)
-        title(['REP: MI = ' num2str(data.(condition_labels{tasktype}).REP_MI(1)) '; p = ' num2str(data.(condition_labels{tasktype}).REP_MI(2))])
-        xlim([0 2*pi])
-        xlabel('Heart-cycle Phase (0-2pi)')
-        ylabel('REP, ms')
     end
     
     filename= ['PSTH_overlaid_Feature_Dynamics__' data.unitId, '_' data.target];
@@ -266,44 +225,56 @@ for untNum = 1:length(fileList)
     
     for tasktype = 1:2
         subplot(3,5,tasktype)
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).AMP_microV_byBin'/nanmean(data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed),'-k','LineWidth',2);
+        plot(phase_bin_centers, data.(condition_labels{tasktype}).AMP_microV_byBin'/nanmean(data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed),':k','LineWidth',1);
         hold on
         plot(phase_bin_centers, ...
             data.(condition_labels{tasktype}).AMP_MI(5)+data.(condition_labels{tasktype}).AMP_MI(1)*cos(phase_bin_centers-data.(condition_labels{tasktype}).AMP_MI(3)), ...
             'Color', condition_colors{tasktype}(1:3),'LineWidth',2);
+        plot(phase_bin_centers, ...
+            data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed / nanmean(data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed), ...
+            '--', 'Color', condition_colors{tasktype}(1:3),'LineWidth',2)
         title(['Motion Index, %: ' num2str(100 * data.(condition_labels{tasktype}).AMP_MI(1)) ...
             ', p = ' num2str(data.(condition_labels{tasktype}).AMP_MI(2))])
         xlabel('Heart-Cycle Phase (0-2pi)')
         ylabel('AMP Signal Change, signal / average(smoothed signal))')
         
         subplot(3,5,3+tasktype)
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).HW_ms_byBin'/nanmean(data.(condition_labels{tasktype}).HW_ms_byBin_smoothed),'-k','LineWidth',2);
+        plot(phase_bin_centers, data.(condition_labels{tasktype}).HW_ms_byBin'/nanmean(data.(condition_labels{tasktype}).HW_ms_byBin_smoothed),':k','LineWidth',1);
         hold on
         plot(phase_bin_centers, ...
             data.(condition_labels{tasktype}).HW_MI(5)+data.(condition_labels{tasktype}).HW_MI(1)*cos(phase_bin_centers-data.(condition_labels{tasktype}).HW_MI(3)), ...
             'Color', condition_colors{tasktype}(1:3),'LineWidth',2);
+        plot(phase_bin_centers, ...
+            data.(condition_labels{tasktype}).HW_ms_byBin_smoothed / nanmean(data.(condition_labels{tasktype}).HW_ms_byBin_smoothed), ...
+            '--', 'Color', condition_colors{tasktype}(1:3),'LineWidth',2)
         title(['Motion Index, %: ' num2str(100 * data.(condition_labels{tasktype}).HW_MI(1)) ...
             ', p = ' num2str(data.(condition_labels{tasktype}).HW_MI(2))])
         xlabel('Heart-Cycle Phase (0-2pi)')
         ylabel('HW Signal Change, signal / average(smoothed signal))')
         
         subplot(3,5,10+tasktype)
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).TPW_ms_byBin'/nanmean(data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed),'-k','LineWidth',2);
+        plot(phase_bin_centers, data.(condition_labels{tasktype}).TPW_ms_byBin'/nanmean(data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed),':k','LineWidth',1);
         hold on
         plot(phase_bin_centers, ...
             data.(condition_labels{tasktype}).TPW_MI(5)+data.(condition_labels{tasktype}).TPW_MI(1)*cos(phase_bin_centers-data.(condition_labels{tasktype}).TPW_MI(3)), ...
             'Color', condition_colors{tasktype}(1:3),'LineWidth',2);
+        plot(phase_bin_centers, ...
+            data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed / nanmean(data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed), ...
+            '--', 'Color', condition_colors{tasktype}(1:3),'LineWidth',2)
         title(['Motion Index, %: ' num2str(100 * data.(condition_labels{tasktype}).TPW_MI(1)) ...
             ', p = ' num2str(data.(condition_labels{tasktype}).TPW_MI(2))])
         xlabel('Heart-Cycle Phase (0-2pi)')
         ylabel('TPW Signal Change, signal / average(smoothed signal))')
         
         subplot(3,5,13+tasktype)
-        plot(phase_bin_centers, data.(condition_labels{tasktype}).REP_ms_byBin'/nanmean(data.(condition_labels{tasktype}).REP_ms_byBin_smoothed),'-k','LineWidth',2);
+        plot(phase_bin_centers, data.(condition_labels{tasktype}).REP_ms_byBin'/nanmean(data.(condition_labels{tasktype}).REP_ms_byBin_smoothed),':k','LineWidth',1);
         hold on
         plot(phase_bin_centers, ...
             data.(condition_labels{tasktype}).REP_MI(5)+data.(condition_labels{tasktype}).REP_MI(1)*cos(phase_bin_centers-data.(condition_labels{tasktype}).REP_MI(3)), ...
             'Color', condition_colors{tasktype}(1:3),'LineWidth',2);
+        plot(phase_bin_centers, ...
+            data.(condition_labels{tasktype}).REP_ms_byBin_smoothed / nanmean(data.(condition_labels{tasktype}).REP_ms_byBin_smoothed), ...
+            '--', 'Color', condition_colors{tasktype}(1:3),'LineWidth',2)
         title(['Motion Index, %: ' num2str(100 * data.(condition_labels{tasktype}).REP_MI(1)) ...
             ', p = ' num2str(data.(condition_labels{tasktype}).REP_MI(2))])
         xlabel('Heart-Cycle Phase (0-2pi)')
