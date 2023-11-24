@@ -24,9 +24,9 @@ mdt_idx = cellfun(@(x) strcmp(x, 'mdT_R') || strcmp(x, 'mdT_L'), Ana_TargetBrain
 Ana_TargetBrainArea(mdt_idx) = deal({'MD'});
 dpul_idx = cellfun(@(x) strcmp(x, 'dPul_R') || strcmp(x, 'dPul_L'), Ana_TargetBrainArea);
 Ana_TargetBrainArea(dpul_idx) = deal({'dPul'});
-% Ana_TargetBrainArea = unique(Ana_TargetBrainArea);
+Ana_TargetBrainArea = unique(Ana_TargetBrainArea);
 
-Ana_TargetBrainArea = {'VPL', 'dPul', 'MD'};
+% Ana_TargetBrainArea = {'VPL', 'dPul', 'MD'};
 
 %% Create function to concatenate the variables per TargetBrainArea
 Out = [];
@@ -103,187 +103,218 @@ end
 
 
 %% Crieria for the dataset
-if OnlyUnits_withRestANDTask
-    for i_BrArea = 1: length(fieldnames(Out))
-        Idx_Units_RestTask = []; Idx_NoSpikes_T = [];  Idx_NoSpikes_R = [];
-        
-        %  Task = NAN and Rest = NAN - should not exist?
-        Idx_NoSpikes_R = find(any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
-        Idx_NoSpikes_T = find(any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2));
-        Idx_NoSpikes_RestTask = intersect( Idx_NoSpikes_T,Idx_NoSpikes_R);
-        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).unit_ID(Idx_NoSpikes_RestTask,:)       %What happenend here?
-        
-        Idx_Spikes_R = ~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2);
-        Idx_Spikes_T = ~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2);
-        Idx_Units_RestTask = ~(Idx_Spikes_T & Idx_Spikes_R);
-        
-        disp([(Ana_TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
-        for i_tsk = 1: numel(TaskTyp)
-            if i_tsk == 1;  Idx = Idx_NoSpikes_R ; else Idx = Idx_NoSpikes_T ; end
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(Idx, :)           = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(Idx, :)       = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(Idx, :)          = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(Idx, :)   = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(Idx)              = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(Idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(Idx)   = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(Idx)= [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(Idx)      = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(Idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(Idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(Idx)     = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(Idx)         = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(Idx)          = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(Idx, :)            = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(Idx, :) = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(Idx)           = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(Idx)                = [] ;
-        end
-        
-        Idx_Spikes_R = find(~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
-        Idx_Spikes_T = find(~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2));
-        Idx_Units_RestTask = intersect(Idx_Spikes_R, Idx_Spikes_T);
-        disp([(Ana_TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
-        
-    end
-end
+% if OnlyUnits_withRestANDTask
+%     for i_BrArea = 1: length(fieldnames(Out))
+%         Idx_Units_RestTask = []; Idx_NoSpikes_T = [];  Idx_NoSpikes_R = [];
+%         
+%         %  Task = NAN and Rest = NAN - should not exist?
+%         Idx_NoSpikes_R = find(any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
+%         Idx_NoSpikes_T = find(any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2));
+%         Idx_NoSpikes_RestTask = intersect( Idx_NoSpikes_T,Idx_NoSpikes_R);
+%         Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).unit_ID(Idx_NoSpikes_RestTask,:)       %What happenend here?
+%         
+%         Idx_Spikes_R = ~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2);
+%         Idx_Spikes_T = ~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2);
+%         Idx_Units_RestTask = ~(Idx_Spikes_T & Idx_Spikes_R);
+%         
+%         disp([(Ana_TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
+%         for i_tsk = 1: numel(TaskTyp)
+%             if i_tsk == 1;  Idx = Idx_NoSpikes_R ; else Idx = Idx_NoSpikes_T ; end
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(Idx, :)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(Idx, :)       = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(Idx, :)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(Idx, :)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(Idx)              = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(Idx)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(Idx)= [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(Idx)      = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(Idx)     = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(Idx)         = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(Idx)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(Idx, :)            = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(Idx, :) = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(Idx)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(Idx)                = [] ;
+%         end
+%         
+%         Idx_Spikes_R = find(~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
+%         Idx_Spikes_T = find(~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{2}).SD]),2));
+%         Idx_Units_RestTask = intersect(Idx_Spikes_R, Idx_Spikes_T);
+%         disp([(Ana_TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
+%         
+%     end
+% end
+%% Exclusion criteria - here we exclude only by the number of R-peaks
+% for i_BrArea = 1: length(fieldnames(Out))
+%     
+%     fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).Rest);
+%     
+%     ids_included = ...
+%         [Out.(Ana_TargetBrainArea{i_BrArea}).Rest.NrEvents] > ecg_bna_cfg.unit_exclusion.nCardiacCycles & ... % find INVALID units with below # of heart cycles
+%         [Out.(Ana_TargetBrainArea{i_BrArea}).Task.NrEvents] > ecg_bna_cfg.unit_exclusion.nCardiacCycles;
+%     
+%     for i_tsk = 1: numel(TaskTyp)
+%         
+%         for fieldNum = 1:length(fieldList)
+%             
+%             if strcmp(fieldList{fieldNum}, 'unit_ID') || strcmp(fieldList{fieldNum}, 'target')
+%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~ids_included);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(ids_included);
+%             else
+%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~ids_included,:);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(ids_included,:);
+%             end
+%         end
+%         
+%     end
+%     
+% end
+
+
 %% Selection criteria - their values are in the ecg_bna_cfg now
-for i_BrArea = 1: length(fieldnames(Out))
-    NanUnits_BeforeExclusion_idx = ...
-        isnan([Out.(Ana_TargetBrainArea{i_BrArea}).Rest.SD(:,1) ...
-        Out.(Ana_TargetBrainArea{i_BrArea}).Task.SD(:,1)]);
-    
-    NanUnits_BeforeExclusion_idx = all(NanUnits_BeforeExclusion_idx,2);
-    
-    for i_tsk = 1: numel(TaskTyp)
-        
-        fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
-        for fieldNum = 1:length(fieldList)
-            if strcmp(fieldList{fieldNum}, 'unit_ID') || strcmp(fieldList{fieldNum}, 'target')
-                Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
-                    Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx);
-            else
-                Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
-                    Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
-            end
-        end
-    end
-end
-
-for i_BrArea = 1: length(fieldnames(Out))
-    disp([Ana_TargetBrainArea{i_BrArea} ' Units before exclusion criteria '])
-    unitList_beforeExclusion.(Ana_TargetBrainArea{i_BrArea}) = ...
-        union(Out.(Ana_TargetBrainArea{i_BrArea}).Rest.unit_ID, Out.(Ana_TargetBrainArea{i_BrArea}).Task.unit_ID);
-    length(unitList_beforeExclusion.(Ana_TargetBrainArea{i_BrArea}))
-end
-
-disp('Saved list of units before exclusion')
-save([basepath_to_save filesep 'units_before_exclusion.mat'], 'unitList_beforeExclusion')
-
-% Tab_ExcludedUnits = [];
-for i_BrArea = 1: length(fieldnames(Out))
-    InVal_unit_ID_Rest = [];
-    for i_tsk = 1: numel(TaskTyp)
-        
-        NanUnits_BeforeExclusion_idx = isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) );
-        NanUnits_BeforeExclusion =  sum(NanUnits_BeforeExclusion_idx);
-        
-        %         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
-        %         for fieldNum = 1:length(fieldList)
-        %             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
-        %                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
-        %         end
-        
-        ValidUnits_BeforeExclusion =  sum(~NanUnits_BeforeExclusion_idx);
-        
-        InVal_idx1 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] > ecg_bna_cfg.unit_exclusion.FR_thresholds(2) | ...
-            [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] < ecg_bna_cfg.unit_exclusion.FR_thresholds(1); % find INVALID units with FR below FR threshold
-        
-        InVal_idx2 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents] < ecg_bna_cfg.unit_exclusion.nCardiacCycles; % find INVALID units with below # of heart cycles
-        
-        InVal_idx3 = ...
-            [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] > ecg_bna_cfg.unit_exclusion.SNR_thresholds(2) | ...
-            [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] < ecg_bna_cfg.unit_exclusion.SNR_thresholds(1); % find INVALID units with SNR below threshold
-        
-        InVal_idx4 = ...
-            [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] > ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(2) | ...
-            [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] < ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(1); % find INVALID units with FR stability below threshold
-        
-%         InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3 | InVal_idx4;
-        InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3;
-        
-        if sum(InVal_idx)
-            InVal_unit_ID = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx);
-            if i_tsk == 1  % task
-                InVal_unit_ID_Rest = InVal_unit_ID;
-                idx_IdentRest_Task = 0;
-                InVal_Nr = repmat(length(InVal_unit_ID), length(InVal_idx), 1);
-                FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
-            else % rest
-                idx_IdentRest_Task =  ismember(InVal_unit_ID, InVal_unit_ID_Rest);
-                InVal_Nr = repmat(length(InVal_unit_ID(~idx_IdentRest_Task)), length(InVal_idx), 1);
-                FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
-                
-            end
-            
-            TaskType = repmat((TaskTyp(i_tsk)), length(InVal_idx), 1);
-            %             if strcmp((Ana_TargetBrainArea{i_BrArea}), 'VPL_R')||   strcmp((Ana_TargetBrainArea{i_BrArea}), 'mdT_L') ||   strcmp((Ana_TargetBrainArea{i_BrArea}), 'mdT_R')
-            %                 BrainArea = repmat({[ '_', (Ana_TargetBrainArea{i_BrArea})]}, length(InVal_idx), 1);
-            %             else
-            BrainArea = repmat((Ana_TargetBrainArea(i_BrArea)), length(InVal_idx), 1);
-            %             end
-            %             Criterium_SpkPerSec = repmat(Criterium_SpkPerSec, length(InVal_idx), 1);
-            %             Criterium_NrCardiacCycles = repmat(Criterium_NrCardiacCycles, length(InVal_idx), 1);
-            Nr_InVal_idx2 = repmat(length(InVal_idx2), length(InVal_idx), 1);
-            Nr_InVal_idx1 = repmat(length(InVal_idx1), length(InVal_idx), 1);
-            NanUnits_BeforeExclusion = repmat(NanUnits_BeforeExclusion, length(InVal_idx), 1);
-            ValidUnits_BeforeExclusion = repmat(ValidUnits_BeforeExclusion, length(InVal_idx), 1);
-            
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(InVal_idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(InVal_idx)   = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(InVal_idx)= [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx)         = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(InVal_idx)          = [] ;
-            
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(InVal_idx, :)           = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(InVal_idx, :)       = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(InVal_idx, :)          = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(InVal_idx, :)   = [] ;
-            
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx)              = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(InVal_idx)      = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(InVal_idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(InVal_idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(InVal_idx)     = [] ;
-            
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents(InVal_idx)        = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrTrials(InVal_idx)        = [] ;
-            
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(InVal_idx, :)            = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(InVal_idx, :) = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(InVal_idx)           = [] ;
-            Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(InVal_idx)                = [] ;
-            
-            NanUnits_AfterExclusion    =  sum(isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
-            ValidUnits_AfterExclusion  =  sum(~isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
-            NanUnits_AfterExclusion    = repmat(NanUnits_AfterExclusion, length(InVal_idx), 1);
-            ValidUnits_AfterExclusion  = repmat(ValidUnits_AfterExclusion, length(InVal_idx), 1);
-            
-            %             ExcludedUnits = table(NanUnits_BeforeExclusion,NanUnits_AfterExclusion, ValidUnits_BeforeExclusion, ValidUnits_AfterExclusion, Criterium_SpkPerSec,Nr_InVal_idx1, FR, Criterium_NrCardiacCycles, Nr_InVal_idx2, TaskType,BrainArea, InVal_unit_ID,InVal_idx,InVal_Nr  );
-            %             Tab_ExcludedUnits = [Tab_ExcludedUnits;ExcludedUnits ];
-        end
-    end
-end
-
-for i_BrArea = 1: length(fieldnames(Out))
-    disp([Ana_TargetBrainArea{i_BrArea} ' Units after exclusion criteria '])
-    unitList_afterExclusion.(Ana_TargetBrainArea{i_BrArea}) = ...
-        union(Out.(Ana_TargetBrainArea{i_BrArea}).Rest.unit_ID, Out.(Ana_TargetBrainArea{i_BrArea}).Task.unit_ID);
-    length(unitList_afterExclusion.(Ana_TargetBrainArea{i_BrArea}))
-end
-
-disp('Saved list of units after exclusion')
-save([basepath_to_save filesep 'units_after_exclusion.mat'], 'unitList_afterExclusion')
+% for i_BrArea = 1: length(fieldnames(Out))
+%     NanUnits_BeforeExclusion_idx = ...
+%         isnan([Out.(Ana_TargetBrainArea{i_BrArea}).Rest.SD(:,1) ...
+%         Out.(Ana_TargetBrainArea{i_BrArea}).Task.SD(:,1)]);
+%     
+%     NanUnits_BeforeExclusion_idx = all(NanUnits_BeforeExclusion_idx,2);
+%     
+%     for i_tsk = 1: numel(TaskTyp)
+%         
+%         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
+%         for fieldNum = 1:length(fieldList)
+%             if strcmp(fieldList{fieldNum}, 'unit_ID') || strcmp(fieldList{fieldNum}, 'target')
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx);
+%             else
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
+%             end
+%         end
+%     end
+% end
+% 
+% for i_BrArea = 1: length(fieldnames(Out))
+%     disp([Ana_TargetBrainArea{i_BrArea} ' Units before exclusion criteria '])
+%     unitList_beforeExclusion.(Ana_TargetBrainArea{i_BrArea}) = ...
+%         union(Out.(Ana_TargetBrainArea{i_BrArea}).Rest.unit_ID, Out.(Ana_TargetBrainArea{i_BrArea}).Task.unit_ID);
+%     length(unitList_beforeExclusion.(Ana_TargetBrainArea{i_BrArea}))
+% end
+% 
+% disp('Saved list of units before exclusion')
+% save([basepath_to_save filesep 'units_before_exclusion.mat'], 'unitList_beforeExclusion')
+% 
+% % Tab_ExcludedUnits = [];
+% for i_BrArea = 1: length(fieldnames(Out))
+%     InVal_unit_ID_Rest = [];
+%     for i_tsk = 1: numel(TaskTyp)
+%         
+%         NanUnits_BeforeExclusion_idx = isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) );
+%         NanUnits_BeforeExclusion =  sum(NanUnits_BeforeExclusion_idx);
+%         
+%         %         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
+%         %         for fieldNum = 1:length(fieldList)
+%         %             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%         %                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
+%         %         end
+%         
+%         ValidUnits_BeforeExclusion =  sum(~NanUnits_BeforeExclusion_idx);
+%         
+%         InVal_idx1 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] > ecg_bna_cfg.unit_exclusion.FR_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] < ecg_bna_cfg.unit_exclusion.FR_thresholds(1); % find INVALID units with FR below FR threshold
+%         
+%         InVal_idx2 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents] < ecg_bna_cfg.unit_exclusion.nCardiacCycles; % find INVALID units with below # of heart cycles
+%         
+%         InVal_idx3 = ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] > ecg_bna_cfg.unit_exclusion.SNR_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] < ecg_bna_cfg.unit_exclusion.SNR_thresholds(1); % find INVALID units with SNR below threshold
+%         
+%         InVal_idx4 = ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] > ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] < ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(1); % find INVALID units with FR stability below threshold
+%         
+% %         InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3 | InVal_idx4;
+%         InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3;
+%         
+%         if sum(InVal_idx)
+%             InVal_unit_ID = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx);
+%             if i_tsk == 1  % task
+%                 InVal_unit_ID_Rest = InVal_unit_ID;
+%                 idx_IdentRest_Task = 0;
+%                 InVal_Nr = repmat(length(InVal_unit_ID), length(InVal_idx), 1);
+%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
+%             else % rest
+%                 idx_IdentRest_Task =  ismember(InVal_unit_ID, InVal_unit_ID_Rest);
+%                 InVal_Nr = repmat(length(InVal_unit_ID(~idx_IdentRest_Task)), length(InVal_idx), 1);
+%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
+%                 
+%             end
+%             
+%             TaskType = repmat((TaskTyp(i_tsk)), length(InVal_idx), 1);
+%             %             if strcmp((Ana_TargetBrainArea{i_BrArea}), 'VPL_R')||   strcmp((Ana_TargetBrainArea{i_BrArea}), 'mdT_L') ||   strcmp((Ana_TargetBrainArea{i_BrArea}), 'mdT_R')
+%             %                 BrainArea = repmat({[ '_', (Ana_TargetBrainArea{i_BrArea})]}, length(InVal_idx), 1);
+%             %             else
+%             BrainArea = repmat((Ana_TargetBrainArea(i_BrArea)), length(InVal_idx), 1);
+%             %             end
+%             %             Criterium_SpkPerSec = repmat(Criterium_SpkPerSec, length(InVal_idx), 1);
+%             %             Criterium_NrCardiacCycles = repmat(Criterium_NrCardiacCycles, length(InVal_idx), 1);
+%             Nr_InVal_idx2 = repmat(length(InVal_idx2), length(InVal_idx), 1);
+%             Nr_InVal_idx1 = repmat(length(InVal_idx1), length(InVal_idx), 1);
+%             NanUnits_BeforeExclusion = repmat(NanUnits_BeforeExclusion, length(InVal_idx), 1);
+%             ValidUnits_BeforeExclusion = repmat(ValidUnits_BeforeExclusion, length(InVal_idx), 1);
+%             
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(InVal_idx)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(InVal_idx)= [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx)         = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(InVal_idx)          = [] ;
+%             
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(InVal_idx, :)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(InVal_idx, :)       = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(InVal_idx, :)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(InVal_idx, :)   = [] ;
+%             
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx)              = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(InVal_idx)      = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(InVal_idx)     = [] ;
+%             
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrTrials(InVal_idx)        = [] ;
+%             
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(InVal_idx, :)            = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(InVal_idx, :) = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(InVal_idx)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(InVal_idx)                = [] ;
+%             
+%             NanUnits_AfterExclusion    =  sum(isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
+%             ValidUnits_AfterExclusion  =  sum(~isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
+%             NanUnits_AfterExclusion    = repmat(NanUnits_AfterExclusion, length(InVal_idx), 1);
+%             ValidUnits_AfterExclusion  = repmat(ValidUnits_AfterExclusion, length(InVal_idx), 1);
+%             
+%             %             ExcludedUnits = table(NanUnits_BeforeExclusion,NanUnits_AfterExclusion, ValidUnits_BeforeExclusion, ValidUnits_AfterExclusion, Criterium_SpkPerSec,Nr_InVal_idx1, FR, Criterium_NrCardiacCycles, Nr_InVal_idx2, TaskType,BrainArea, InVal_unit_ID,InVal_idx,InVal_Nr  );
+%             %             Tab_ExcludedUnits = [Tab_ExcludedUnits;ExcludedUnits ];
+%         end
+%     end
+% end
+% 
+% for i_BrArea = 1: length(fieldnames(Out))
+%     disp([Ana_TargetBrainArea{i_BrArea} ' Units after exclusion criteria '])
+%     unitList_afterExclusion.(Ana_TargetBrainArea{i_BrArea}) = ...
+%         union(Out.(Ana_TargetBrainArea{i_BrArea}).Rest.unit_ID, Out.(Ana_TargetBrainArea{i_BrArea}).Task.unit_ID);
+%     length(unitList_afterExclusion.(Ana_TargetBrainArea{i_BrArea}))
+% end
+% 
+% disp('Saved list of units after exclusion')
+% save([basepath_to_save filesep 'units_after_exclusion.mat'], 'unitList_afterExclusion')
 
 % if saveTable == 1
 % save([basepath_to_save,filesep , 'Table_excludedUnits' ],'Tab_ExcludedUnits');
@@ -311,6 +342,7 @@ end
 hf = figure('Name',sprintf('BarPlot'),'Position',[1000 150 600 400],'PaperPositionMode', 'auto');
 
 for i_BrArea = 1: length(fieldnames(Out))
+    
     for i_tsk = 1: numel(TaskTyp)
         
         out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
@@ -332,9 +364,9 @@ for i_BrArea = 1: length(fieldnames(Out))
 end
 
 subplot(1,2,1);
+colororder([0.8500 0.3250 0.0980; 0 0.4470 0.7410; 1 1 1])
 barpairs =  [Pc_SignFR_rest];
 b = bar(barpairs,'stacked', 'Facecolor','flat');
-b(3).FaceColor = [1 1 1];
 title('Rest','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
 ylim([0 100])
@@ -343,7 +375,6 @@ ylabel('Percentage of Units, %')
 subplot(1,2,2);
 barpairs =  [Pc_SignFR_task];
 b = bar(barpairs,'stacked', 'Facecolor','flat');
-b(3).FaceColor = [1 1 1];
 title('Task','interpreter','none');
 set(gca,'XTickLabel',fieldnames(Out),'fontsize',10);
 ylim([0 100])
@@ -351,8 +382,9 @@ ylim([0 100])
 
 filename= ['Pc_CardiacRelatedUnits'];
 
-if savePlot;
-    save([basepath_to_save,filesep ,filename '.mat'], 'Pc_SignFR_rest', 'Pc_SignFR_task')
+if savePlot
+    save([basepath_to_save,filesep ,filename '.mat'], ...
+        'Pc_SignFR_rest', 'Pc_SignFR_task', 'Nb_SignFR_rest', 'Nb_SignFR_task', 'Ana_TargetBrainArea')
     export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
     close all;
 end
