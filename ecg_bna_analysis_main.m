@@ -18,6 +18,9 @@ function ecg_bna_analysis_main(project,versions)
 
 %% INITIALIZATION
 % loop through settings file
+
+%Lukas was here
+
 ecg_bna_location     =which('ecg_bna_define_settings');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_settings'])-1);
 for v = 1:length(versions)
