@@ -156,7 +156,7 @@ for cn = 1:length(cfg.condition)
         realD = ecg_bna_get_triggered_parameters(site_proc,trig_con_s, width_in_samples);
         
         %% change to dependent on state
-        if isfield(cfg, 'random_permute_triggers') && cfg.random_permute_triggers
+        if true % keep for now, but probably we are going to ALWAYS shuffle
             %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
             trig_con_s=triggers.([event_name '_shuffled']);
             trig_con_s(trig_con_s<LFP_samples_start_con(1)-width_in_samples(1))=0;
@@ -167,12 +167,17 @@ for cn = 1:length(cfg.condition)
             end
             shuffledD = ecg_bna_get_triggered_parameters(site_proc,trig_con_s,width_in_samples);
         else % some sort of dummies
+            shuffledD.pow.mean=zeros(size(realD.pow.mean));
+            shuffledD.pow.std =zeros(size(realD.pow.std));
+            shuffledD.itpc.mean=zeros(size(realD.itpc.mean));
+            shuffledD.itpc.std =zeros(size(realD.itpc.std));
             shuffledD.lfp.mean=zeros(size(realD.lfp.mean));
             shuffledD.lfp.std =zeros(size(realD.lfp.std));
             shuffledD.itpcbp.mean=zeros(size(realD.itpcbp.mean));
             shuffledD.itpcbp.std =zeros(size(realD.itpcbp.std));
             shuffledD.powbp.mean=zeros(size(realD.powbp.mean));
             shuffledD.powbp.std =zeros(size(realD.powbp.std));
+            shuffledD.ntriggers =0;
         end
         
         normalized = ecg_bna_compute_shufflePredictor_normalization_general(realD,shuffledD,cfg);
@@ -186,7 +191,7 @@ for cn = 1:length(cfg.condition)
     end
 end
 
-% plots
+% plots - if we don't shuffle, there will be no shuffled!
 methods= {'real','shuffled','normalized'};
 for mt = 1: numel(methods)
     ecg_bna_plots_per_site( trig, cfg, methods{mt}) % per site!

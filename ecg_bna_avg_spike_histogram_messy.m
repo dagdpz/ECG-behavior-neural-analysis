@@ -36,67 +36,67 @@ for f_brain = 1: length(Ana_TargetBrainArea)
     
     idx_brain = cellfun(@(x) contains(lower(x.target), lower(Ana_TargetBrainArea{f_brain})), SPK_PSTH, 'Uniformoutput', false);
     
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
+    for i_tsk = 1: numel(TaskTyp)
+        
         unit_ID_tmp = cellfun(@(x,y) x.unit_ID(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).unit_ID = [unit_ID_tmp{:}]';
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).unit_ID = [unit_ID_tmp{:}]';
         
         target_tmp = cellfun(@(x,y) x.target(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).target = [target_tmp{:}]';
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).target = [target_tmp{:}]';
         
         quantSNR_tmp = cellfun(@(x,y) x.quantSNR(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).quantSNR = [quantSNR_tmp{:}]';
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).quantSNR = [quantSNR_tmp{:}]';
         
         single_rating_tmp = cellfun(@(x,y) x.Single_rating(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).Single_rating = [single_rating_tmp{:}]';
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).Single_rating = [single_rating_tmp{:}]';
         
         stability_rating_tmp = cellfun(@(x,y) x.stability_rating(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).stability_rating = [stability_rating_tmp{:}]';
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).stability_rating = [stability_rating_tmp{:}]';
         
-        SD_tmp = cellfun(@(x,y) x.(L).SD(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).SD = [SD_tmp{:}]';
+        SD_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).SD(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).SD = [SD_tmp{:}]';
         
-        SDP_tmp = cellfun(@(x,y) x.(L).SDP(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).SDP = [SDP_tmp{:}]';
+        SDP_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).SDP(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).SDP = [SDP_tmp{:}]';
         
-        SD_SEM_tmp = cellfun(@(x,y) x.(L).SD_SEM(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).SD_SEM = [SD_SEM_tmp{:}]';
+        SD_SEM_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).SD_SEM(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).SD_SEM = [SD_SEM_tmp{:}]';
         
-        sig_tmp = cellfun(@(x,y) x.(L).sig(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).sig_period = [sig_tmp{:}]';
+        sig_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).sig(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).sig_period = [sig_tmp{:}]';
         
-        sig_FR_diff_tmp = cellfun(@(x,y) x.(L).sig_FR_diff(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).sig_FR_diff = [sig_FR_diff_tmp{:}]';
+        sig_FR_diff_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).sig_FR_diff(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).sig_FR_diff = [sig_FR_diff_tmp{:}]';
         
-        sig_n_bins_tmp = cellfun(@(x,y) x.(L).sig_n_bins(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).sig_n_bins = [sig_n_bins_tmp{:}]';
+        sig_n_bins_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).sig_n_bins(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).sig_n_bins = [sig_n_bins_tmp{:}]';
         
-        sig_sign_tmp = cellfun(@(x,y) x.(L).sig_sign(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).sig_sign = [sig_sign_tmp{:}]';
+        sig_sign_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).sig_sign(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).sig_sign = [sig_sign_tmp{:}]';
         
-        sig_time_tmp = cellfun(@(x,y) x.(L).sig_time(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).sig_time = [sig_time_tmp{:}]';
+        sig_time_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).sig_time(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).sig_time = [sig_time_tmp{:}]';
         
-        FR_tmp = cellfun(@(x,y) x.(L).FR(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).FR = [FR_tmp{:}]';
+        FR_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).FR(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).FR = [FR_tmp{:}]';
         
-        NrEvents_tmp = cellfun(@(x,y) x.(L).NrEvents(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).NrEvents = [NrEvents_tmp{:}]';
+        NrEvents_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).NrEvents(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).NrEvents = [NrEvents_tmp{:}]';
         
-        NrTrials_tmp = cellfun(@(x,y) x.(L).NrTrials(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).NrTrials = [NrTrials_tmp{:}]';
+        NrTrials_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).NrTrials(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).NrTrials = [NrTrials_tmp{:}]';
         
-        SDsubstractedSDP_tmp = cellfun(@(x,y) x.(L).SDsubstractedSDP(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).SDsubstractedSDP = [SDsubstractedSDP_tmp{:}]';
+        SDsubstractedSDP_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).SDsubstractedSDP(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).SDsubstractedSDP = [SDsubstractedSDP_tmp{:}]';
         
-        SDsubstractedSDP_normalized_tmp = cellfun(@(x,y) x.(L).SDsubstractedSDP_normalized(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).SDsubstractedSDP_normalized = [SDsubstractedSDP_normalized_tmp{:}]';
+        SDsubstractedSDP_normalized_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(y,:)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized = [SDsubstractedSDP_normalized_tmp{:}]';
         
-        FR_ModIndex_SubtrSDP_tmp = cellfun(@(x,y) x.(L).FR_ModIndex_SubtrSDP(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).FR_ModIndex_SubtrSDP = [FR_ModIndex_SubtrSDP_tmp{:}]';
+        FR_ModIndex_SubtrSDP_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP = [FR_ModIndex_SubtrSDP_tmp{:}]';
         
-        FR_ModIndex_PcS_tmp = cellfun(@(x,y) x.(L).FR_ModIndex_PcS(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
-        Out.(Ana_TargetBrainArea{f_brain}).(L).FR_ModIndex_PcS = [FR_ModIndex_PcS_tmp{:}]';
+        FR_ModIndex_PcS_tmp = cellfun(@(x,y) x.(TaskTyp{i_tsk}).FR_ModIndex_PcS(y)', SPK_PSTH, idx_brain, 'Uniformoutput', false);
+        Out.(Ana_TargetBrainArea{f_brain}).(TaskTyp{i_tsk}).FR_ModIndex_PcS = [FR_ModIndex_PcS_tmp{:}]';
         
     end
 end
@@ -118,27 +118,26 @@ end
 %         Idx_Units_RestTask = ~(Idx_Spikes_T & Idx_Spikes_R);
 %         
 %         disp([(Ana_TargetBrainArea{i_BrArea}),': ', num2str(length(Idx_Units_RestTask))])
-%         for c=1:numel(cfg.condition)
-%             L=cfg.condition(c).name;
+%         for i_tsk = 1: numel(TaskTyp)
 %             if i_tsk == 1;  Idx = Idx_NoSpikes_R ; else Idx = Idx_NoSpikes_T ; end
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD(Idx, :)           = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD_SEM(Idx, :)       = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDP(Idx, :)          = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_period(Idx, :)   = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR(Idx)              = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).quantSNR(Idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).Single_rating(Idx)   = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).stability_rating(Idx)= [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_n_bins(Idx)      = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_time(Idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_sign(Idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_FR_diff(Idx)     = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).unit_ID(Idx)         = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).target(Idx)          = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDsubstractedSDP(Idx, :)            = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDsubstractedSDP_normalized(Idx, :) = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR_ModIndex_SubtrSDP(Idx)           = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR_ModIndex_PcS(Idx)                = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(Idx, :)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(Idx, :)       = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(Idx, :)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(Idx, :)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(Idx)              = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(Idx)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(Idx)= [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(Idx)      = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(Idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(Idx)     = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(Idx)         = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(Idx)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(Idx, :)            = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(Idx, :) = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(Idx)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(Idx)                = [] ;
 %         end
 %         
 %         Idx_Spikes_R = find(~any(isnan([Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{1}).SD]),2));
@@ -157,21 +156,20 @@ end
 %         [Out.(Ana_TargetBrainArea{i_BrArea}).Rest.NrEvents] > ecg_bna_cfg.unit_exclusion.nCardiacCycles & ... % find INVALID units with below # of heart cycles
 %         [Out.(Ana_TargetBrainArea{i_BrArea}).Task.NrEvents] > ecg_bna_cfg.unit_exclusion.nCardiacCycles;
 %     
-%     for c=1:numel(cfg.condition)
-%         L=cfg.condition(c).name;
+%     for i_tsk = 1: numel(TaskTyp)
 %         
 %         for fieldNum = 1:length(fieldList)
 %             
 %             if strcmp(fieldList{fieldNum}, 'unit_ID') || strcmp(fieldList{fieldNum}, 'target')
-%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(~ids_included);
-%                 Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(ids_included);
+%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~ids_included);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(ids_included);
 %             else
-%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(~ids_included,:);
-%                 Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(ids_included,:);
+%                 Out_excluded.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~ids_included,:);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(ids_included,:);
 %             end
 %         end
 %         
@@ -188,17 +186,16 @@ end
 %     
 %     NanUnits_BeforeExclusion_idx = all(NanUnits_BeforeExclusion_idx,2);
 %     
-%     for c=1:numel(cfg.condition)
-%         L=cfg.condition(c).name;
+%     for i_tsk = 1: numel(TaskTyp)
 %         
-%         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(L));
+%         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
 %         for fieldNum = 1:length(fieldList)
 %             if strcmp(fieldList{fieldNum}, 'unit_ID') || strcmp(fieldList{fieldNum}, 'target')
-%                 Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx);
 %             else
-%                 Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%                     Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
+%                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%                     Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
 %             end
 %         end
 %     end
@@ -217,46 +214,46 @@ end
 % % Tab_ExcludedUnits = [];
 % for i_BrArea = 1: length(fieldnames(Out))
 %     InVal_unit_ID_Rest = [];
-%     for c=1:numel(cfg.condition)
-%         L=cfg.condition(c).name;
-%         NanUnits_BeforeExclusion_idx = isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD(:,1) );
+%     for i_tsk = 1: numel(TaskTyp)
+%         
+%         NanUnits_BeforeExclusion_idx = isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) );
 %         NanUnits_BeforeExclusion =  sum(NanUnits_BeforeExclusion_idx);
 %         
-%         %         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(L));
+%         %         fieldList = fieldnames(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}));
 %         %         for fieldNum = 1:length(fieldList)
-%         %             Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum}) = ...
-%         %                 Out.(Ana_TargetBrainArea{i_BrArea}).(L).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
+%         %             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum}) = ...
+%         %                 Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).(fieldList{fieldNum})(~NanUnits_BeforeExclusion_idx,:);
 %         %         end
 %         
 %         ValidUnits_BeforeExclusion =  sum(~NanUnits_BeforeExclusion_idx);
 %         
-%         InVal_idx1 = [Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR] > ecg_bna_cfg.unit_exclusion.FR_thresholds(2) | ...
-%             [Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR] < ecg_bna_cfg.unit_exclusion.FR_thresholds(1); % find INVALID units with FR below FR threshold
+%         InVal_idx1 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] > ecg_bna_cfg.unit_exclusion.FR_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR] < ecg_bna_cfg.unit_exclusion.FR_thresholds(1); % find INVALID units with FR below FR threshold
 %         
-%         InVal_idx2 = [Out.(Ana_TargetBrainArea{i_BrArea}).(L).NrEvents] < ecg_bna_cfg.unit_exclusion.nCardiacCycles; % find INVALID units with below # of heart cycles
+%         InVal_idx2 = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents] < ecg_bna_cfg.unit_exclusion.nCardiacCycles; % find INVALID units with below # of heart cycles
 %         
 %         InVal_idx3 = ...
-%             [Out.(Ana_TargetBrainArea{i_BrArea}).(L).quantSNR] > ecg_bna_cfg.unit_exclusion.SNR_thresholds(2) | ...
-%             [Out.(Ana_TargetBrainArea{i_BrArea}).(L).quantSNR] < ecg_bna_cfg.unit_exclusion.SNR_thresholds(1); % find INVALID units with SNR below threshold
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] > ecg_bna_cfg.unit_exclusion.SNR_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR] < ecg_bna_cfg.unit_exclusion.SNR_thresholds(1); % find INVALID units with SNR below threshold
 %         
 %         InVal_idx4 = ...
-%             [Out.(Ana_TargetBrainArea{i_BrArea}).(L).stability_rating] > ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(2) | ...
-%             [Out.(Ana_TargetBrainArea{i_BrArea}).(L).stability_rating] < ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(1); % find INVALID units with FR stability below threshold
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] > ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(2) | ...
+%             [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating] < ecg_bna_cfg.unit_exclusion.FR_stability_thresholds(1); % find INVALID units with FR stability below threshold
 %         
 % %         InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3 | InVal_idx4;
 %         InVal_idx = InVal_idx1 | InVal_idx2 | InVal_idx3;
 %         
 %         if sum(InVal_idx)
-%             InVal_unit_ID = Out.(Ana_TargetBrainArea{i_BrArea}).(L).unit_ID(InVal_idx);
+%             InVal_unit_ID = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx);
 %             if i_tsk == 1  % task
 %                 InVal_unit_ID_Rest = InVal_unit_ID;
 %                 idx_IdentRest_Task = 0;
 %                 InVal_Nr = repmat(length(InVal_unit_ID), length(InVal_idx), 1);
-%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR(InVal_idx);
+%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
 %             else % rest
 %                 idx_IdentRest_Task =  ismember(InVal_unit_ID, InVal_unit_ID_Rest);
 %                 InVal_Nr = repmat(length(InVal_unit_ID(~idx_IdentRest_Task)), length(InVal_idx), 1);
-%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR(InVal_idx);
+%                 FR = Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx);
 %                 
 %             end
 %             
@@ -273,33 +270,33 @@ end
 %             NanUnits_BeforeExclusion = repmat(NanUnits_BeforeExclusion, length(InVal_idx), 1);
 %             ValidUnits_BeforeExclusion = repmat(ValidUnits_BeforeExclusion, length(InVal_idx), 1);
 %             
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).quantSNR(InVal_idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).Single_rating(InVal_idx)   = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).stability_rating(InVal_idx)= [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).unit_ID(InVal_idx)         = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).target(InVal_idx)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).quantSNR(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).Single_rating(InVal_idx)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).stability_rating(InVal_idx)= [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).unit_ID(InVal_idx)         = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).target(InVal_idx)          = [] ;
 %             
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD(InVal_idx, :)           = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD_SEM(InVal_idx, :)       = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDP(InVal_idx, :)          = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_period(InVal_idx, :)   = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(InVal_idx, :)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD_SEM(InVal_idx, :)       = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDP(InVal_idx, :)          = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_period(InVal_idx, :)   = [] ;
 %             
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR(InVal_idx)              = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_n_bins(InVal_idx)      = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_time(InVal_idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_sign(InVal_idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).sig_FR_diff(InVal_idx)     = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR(InVal_idx)              = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_n_bins(InVal_idx)      = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_time(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_sign(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).sig_FR_diff(InVal_idx)     = [] ;
 %             
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).NrEvents(InVal_idx)        = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).NrTrials(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrEvents(InVal_idx)        = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).NrTrials(InVal_idx)        = [] ;
 %             
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDsubstractedSDP(InVal_idx, :)            = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDsubstractedSDP_normalized(InVal_idx, :) = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR_ModIndex_SubtrSDP(InVal_idx)           = [] ;
-%             Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR_ModIndex_PcS(InVal_idx)                = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP(InVal_idx, :)            = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDsubstractedSDP_normalized(InVal_idx, :) = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_SubtrSDP(InVal_idx)           = [] ;
+%             Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_ModIndex_PcS(InVal_idx)                = [] ;
 %             
-%             NanUnits_AfterExclusion    =  sum(isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD(:,1) ));
-%             ValidUnits_AfterExclusion  =  sum(~isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(L).SD(:,1) ));
+%             NanUnits_AfterExclusion    =  sum(isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
+%             ValidUnits_AfterExclusion  =  sum(~isnan(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SD(:,1) ));
 %             NanUnits_AfterExclusion    = repmat(NanUnits_AfterExclusion, length(InVal_idx), 1);
 %             ValidUnits_AfterExclusion  = repmat(ValidUnits_AfterExclusion, length(InVal_idx), 1);
 %             
@@ -328,15 +325,14 @@ end
 
 %%  Calculations
 for i_BrArea = 1: length(fieldnames(Out))
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
-        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+    for i_tsk = 1: numel(TaskTyp)
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
         
-        Out.(Ana_TargetBrainArea{i_BrArea}).(L).FR_perECGTriggeredAverage = nanmean(out.SD,2);
+        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).FR_perECGTriggeredAverage = nanmean(out.SD,2);
         % mean(SD - SDP)
-        Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDmean                    =   nanmean(out.SDsubstractedSDP);
+        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDmean                    =   nanmean(out.SDsubstractedSDP);
         % standard error of the SDmean
-        Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDmean_SEM                =  nanstd(out.SDsubstractedSDP)/ sqrt(length(Out.(Ana_TargetBrainArea{i_BrArea}).(L).SDmean )) ;
+        Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDmean_SEM                =  nanstd(out.SDsubstractedSDP)/ sqrt(length(Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk}).SDmean )) ;
         
     end
 end
@@ -347,10 +343,9 @@ hf = figure('Name',sprintf('BarPlot'),'Position',[1000 150 600 400],'PaperPositi
 
 for i_BrArea = 1: length(fieldnames(Out))
     
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
+    for i_tsk = 1: numel(TaskTyp)
         
-        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+        out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
         Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
         Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
         idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
@@ -404,9 +399,8 @@ end
 if savePlot == 1
     hf = figure('Name',sprintf('Surrogate_MeanFr'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+        for i_tsk = 1: numel(TaskTyp)
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             
             ha1 = subplot(2,length(fieldnames(Out)),i_BrArea);
             hold on;
@@ -419,7 +413,7 @@ if savePlot == 1
                 xlabel('average Firing rate','fontsize',14 );
                 ylabel('mean FR of jittered data','fontsize',14 );
                 axis square; box on;
-                title([ (L), Ana_TargetBrainArea{i_BrArea}]);
+                title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
             end
             
             ha1 = subplot(2,length(fieldnames(Out)), (i_BrArea + length(fieldnames(Out))));
@@ -450,11 +444,10 @@ if savePlot == 1
     %% Example for
     if true
         for i_BrArea = 1:length(fieldnames(Out)); %%% 3
-            for c=1:numel(cfg.condition)
-                L=cfg.condition(c).name;
+            for i_tsk = 1: numel(TaskTyp)
                 hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
                 
-                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
                 idx_sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
                 
                 ha1 = subplot(2,4,[1]);
@@ -472,7 +465,7 @@ if savePlot == 1
                     [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_PcS)),S);
                     [coef, pval] = corr(out.quantSNR,out.FR_ModIndex_PcS, 'rows','complete') ;
                     plot(out.quantSNR(~isnan(out.FR_ModIndex_PcS)), y_fit,'LineWidth', 2, 'Color', condition_colors{i_tsk});
-                    title({[Ana_TargetBrainArea{i_BrArea} , ' ' ,(L) ], ...
+                    title({[Ana_TargetBrainArea{i_BrArea} , ' ' ,(TaskTyp{i_tsk}) ], ...
                         ['coef, p ', num2str([roundto(coef,2), roundto(pval,4)])]})
                     legend({'Significant Units', 'Non-Significant Units', 'Linear Fit (Overall)'}, 'Location', 'Best')
                 end
@@ -527,7 +520,7 @@ if savePlot == 1
                 ylabel('% signal change')
                 title('Non-Sign units with Modulation strength > 30%'); hold off;
                 if savePlot;
-                    export_fig([basepath_to_save,filesep ,['Check_ModulationIndex_',Ana_TargetBrainArea{i_BrArea},'_',(L) ]], '-pdf'); %,'-transparent'
+                    export_fig([basepath_to_save,filesep ,['Check_ModulationIndex_',Ana_TargetBrainArea{i_BrArea},'_',(TaskTyp{i_tsk}) ]], '-pdf'); %,'-transparent'
                     close all;
                 end
             end
@@ -538,10 +531,9 @@ if savePlot == 1
         %%  normalizing the Firing rate calcuations
         for i_BrArea = 1: length(fieldnames(Out))
             hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
-            for c=1:numel(cfg.condition)
-                L=cfg.condition(c).name;
+            for i_tsk = 1: numel(TaskTyp)
                 
-                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
                 
                 idx_sig =  ~isnan(out.sig_FR_diff);
                 
@@ -575,11 +567,10 @@ if savePlot == 1
         
         %% Plot the dataset - check up
         for i_BrArea = 1: length(fieldnames(Out))
-            for c=1:numel(cfg.condition)
-                L=cfg.condition(c).name;
-                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            for i_tsk = 1: numel(TaskTyp)
+                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
                 
-                hf = figure('Name',sprintf([(Ana_TargetBrainArea{i_BrArea}) '  ' L]),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+                hf = figure('Name',sprintf([(Ana_TargetBrainArea{i_BrArea}) '  ' TaskTyp{i_tsk}]),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
                 rows_plot = 2;
                 colums_plot = 7;
                 
@@ -678,7 +669,7 @@ if savePlot == 1
                 
                 
                 if savePlot
-                    filename= ['ModulationInRelationToBins_ECG_triggered_spike_' (L) , '_' ,(Ana_TargetBrainArea{i_BrArea})];
+                    filename= ['ModulationInRelationToBins_ECG_triggered_spike_' (TaskTyp{i_tsk}) , '_' ,(Ana_TargetBrainArea{i_BrArea})];
                     export_fig([basepath_to_save filesep filename ], '-pdf'); %
                     close all;
                 end
@@ -689,10 +680,9 @@ if savePlot == 1
     %% Plot the averages
     for i_BrArea = 1: length(fieldnames(Out))
         hf = figure('Name',sprintf(Ana_TargetBrainArea{i_BrArea}),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -710,7 +700,7 @@ if savePlot == 1
             end
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_sig, :), [], 1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1))) ;
             shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_sig, :), 1) ,SDmean_SEM,lineProps{i_tsk},1);
-            title({[L ': units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ], ...
+            title({[TaskTyp{i_tsk} ': units = ' ,num2str(sum(idx_sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ], ...
                 ['Population:  (all significant)' (Ana_TargetBrainArea{i_BrArea}) ' units']},'interpreter','none');
             ylabel('normalized Firing rate (%)','fontsize',14 );
             xlabel('Time relative to R-peak (ms)','fontsize',14 );
@@ -736,7 +726,7 @@ if savePlot == 1
             ha1 = subplot(2,4,[5]); %
             idx_SigDec = (out.sig_sign == -1);
             idx_SigInc = (out.sig_sign == 1);
-            text(-400,1, [L ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',condition_colors{i_tsk})
+            text(-400,1, [TaskTyp{i_tsk} ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',condition_colors{i_tsk})
             
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:), 1))) ;
             shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1), SDmean_SEM ,lineProps{i_tsk},1);
@@ -746,7 +736,7 @@ if savePlot == 1
             xlabel('Time relative to R-peak (ms)','fontsize',14 );
             % display only significant units showing a decrease in FR
             ha1 = subplot(2,4,[6]);
-            text(-400,1, [L ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',condition_colors{i_tsk})
+            text(-400,1, [TaskTyp{i_tsk} ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',condition_colors{i_tsk})
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:), 1))) ;
             shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1), SDmean_SEM ,lineProps{i_tsk},1);
             set(gca,'ylim',[-10, 10]);
@@ -851,10 +841,9 @@ if savePlot == 1
     %% MODULATION STRENGTH - for the percentage signal change
     hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -930,10 +919,9 @@ if savePlot == 1
     %% MODULATION STRENGTH - for SDP subtraction
     hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1007,10 +995,9 @@ if savePlot == 1
     %% MODULATION STRENGTH - compare both Normalizations ... SDP subtraction
     hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1084,10 +1071,9 @@ if savePlot == 1
     %% MODULATION STRENGTH - FR as explanation - compare both Normalizations ... SDP subtraction
     hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1109,7 +1095,7 @@ if savePlot == 1
                     colormap jet
                     ylabel('Modulation index (spike/s)','fontsize',14 );
                     xlabel('Modulation index(%pSc)','fontsize',14 );        axis square; box on;
-                    title([ (L), Ana_TargetBrainArea{i_BrArea}]);
+                    title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
                     if strcmp(Ana_TargetBrainArea{i_BrArea}, 'VPL_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'dPul_R') || strcmp(Ana_TargetBrainArea{i_BrArea}, 'MD')
                         set(gca,'xlim',[0, 60]);
                     end
@@ -1128,7 +1114,7 @@ if savePlot == 1
                     colormap jet
                     ylabel('Modulation index (spike/s)','fontsize',14 );
                     xlabel('Modulation index(%pSc)','fontsize',14 );        axis square; box on;
-                    title([ (L),Ana_TargetBrainArea{i_BrArea}]);
+                    title([ (TaskTyp{i_tsk}),Ana_TargetBrainArea{i_BrArea}]);
                     % set(gca,'xlim',[0, 25]);
                     set(gca,'ylim',[0, 15]);
                     colorbar();
@@ -1150,10 +1136,9 @@ if savePlot == 1
     %% MODULATION STRENGTH - FR as explanation - compare both Normalizations ... SDP subtraction
     hf = figure('Name',sprintf('ModulationIndex'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1174,7 +1159,7 @@ if savePlot == 1
                     colormap jet
                     ylabel('Modulation index (%sc)','fontsize',14 );
                     xlabel('signal-to-noise ratio','fontsize',14 );        axis square; box on;
-                    title([ (L), Ana_TargetBrainArea{i_BrArea}]);
+                    title([ (TaskTyp{i_tsk}), Ana_TargetBrainArea{i_BrArea}]);
                     set(gca,'ylim',[0, 80]);
                     set(gca,'xlim',[0, 25]);
                 end
@@ -1191,7 +1176,7 @@ if savePlot == 1
                     colormap jet
                     ylabel('Modulation index (%sc)','fontsize',14 );
                     xlabel('signal-to-noise ratio','fontsize',14 );        axis square; box on;
-                    title([ (L),Ana_TargetBrainArea{i_BrArea}]);
+                    title([ (TaskTyp{i_tsk}),Ana_TargetBrainArea{i_BrArea}]);
                     colorbar();
                     colormap jet
                     set(gca,'ylim',[0, 80]);
@@ -1209,10 +1194,9 @@ if savePlot == 1
     %% MODULATION STRENGTH pSC- FR
     hf = figure('Name',sprintf('ModulationIndex_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1283,10 +1267,9 @@ if savePlot == 1
     %% Correlation between SNR - FR
     hf = figure('Name',sprintf('Correlation_SNR_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1356,10 +1339,9 @@ if savePlot == 1
     % modulation index
     hf = figure('Name',sprintf('ModulationIndex_FiringRate'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1430,10 +1412,9 @@ if savePlot == 1
     %% MODULATION STRENGTH -  Bin size
     hf = figure('Name',sprintf('ModulationIndex_BinSize'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     for i_BrArea = 1: length(fieldnames(Out))
-        for c=1:numel(cfg.condition)
-            L=cfg.condition(c).name;
+        for i_tsk = 1: numel(TaskTyp)
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1506,12 +1487,11 @@ if savePlot == 1
     %
     %         hf = figure('Name',sprintf('BarPlot'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
     %         for i_BrArea = 1: length(fieldnames(Out))
-    %                 for c=1:numel(cfg.condition)
-    %                     L=cfg.condition(c).name;
+    %                 for i_tsk = 1: numel(TaskTyp)
     %                     for i_Time = 1: length(ThreeTiming)
     %
     %
-    %                         out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+    %                         out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
     %                         % from all nicht NAN units - how many were significant?
     %                         Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
     %                         Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1584,11 +1564,10 @@ if savePlot == 1
     0.0500    0.6500    0.7000;
     0.5500    0.2000    0.7500];
     
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
+    for i_tsk = 1: numel(TaskTyp)
         for i_BrArea = 1: length(fieldnames(Out))
             
-            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+            out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
             % from all nicht NAN units - how many were significant?
             Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
             Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1614,7 +1593,7 @@ if savePlot == 1
             
             ha1 = subplot(2,4,1 +subId); %
             lineProps={'color',Color_BrainArea(i_BrArea,:),'linewidth',3};
-            text(-400,-1* i_BrArea, [(Ana_TargetBrainArea{i_BrArea}), ' ' L ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',Color_BrainArea(i_BrArea,:))
+            text(-400,-1* i_BrArea, [(Ana_TargetBrainArea{i_BrArea}), ' ' TaskTyp{i_tsk} ': units = ' ,num2str(sum(idx_SigInc & idx_sig)) ],'Color',Color_BrainArea(i_BrArea,:))
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1))) ;
             shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_sig,:),1), SDmean_SEM ,lineProps,1);
             set(gca,'ylim',[-10, 10]);
@@ -1637,7 +1616,7 @@ if savePlot == 1
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1))) ;
             shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized(idx_SigDec & idx_sig,:),1), SDmean_SEM ,lineProps,1);
             set(gca,'ylim',[-10, 10]);
-            title([(L), 'units showing a sig. DECREASE in FR'],'interpreter','none');
+            title([(TaskTyp{i_tsk}), 'units showing a sig. DECREASE in FR'],'interpreter','none');
             ylabel('normalized Firing rate (spike/s)','fontsize',14 );
             xlabel('Time relative to R-peak (ms)','fontsize',14 );axis square; box on;
             set(gca, 'XTick', (ecg_bna_cfg.analyse_states{1,3}*1000):100:(ecg_bna_cfg.analyse_states{1,4}*1000))
@@ -1650,28 +1629,28 @@ if savePlot == 1
                 ylabel('Modulation strength (% pSc)','fontsize',10);
                 xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 axis square; box on;
-                title([(L),'Decrease' ])
+                title([(TaskTyp{i_tsk}),'Decrease' ])
                 
                 ha4 = subplot(2,4,3); %
                 scatter(out.sig_time(idx_SigInc & idx_sig) , out.FR_ModIndex_SubtrSDP(idx_SigInc & idx_sig), 'filled', 'MarkerFaceColor',Color_BrainArea(i_BrArea,:)); hold on;
                 ylabel('Modulation strength (% pSc)','fontsize',10);
                 xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 axis square; box on;
-                title([(L),'Increase' ])
+                title([(TaskTyp{i_tsk}),'Increase' ])
             else
                 ha4 = subplot(2,4,8); %
                 scatter(out.sig_time(idx_SigDec & idx_sig) , out.FR_ModIndex_SubtrSDP(idx_SigDec & idx_sig), 'filled', 'MarkerFaceColor',Color_BrainArea(i_BrArea,:)); hold on;
                 ylabel('Modulation strength (% pSc)','fontsize',10);
                 xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 axis square; box on;
-                title([(L),'Decrease' ])
+                title([(TaskTyp{i_tsk}),'Decrease' ])
                 
                 ha4 = subplot(2,4,4); %
                 scatter(out.sig_time(idx_SigInc & idx_sig) , out.FR_ModIndex_SubtrSDP(idx_SigInc & idx_sig), 'filled', 'MarkerFaceColor',Color_BrainArea(i_BrArea,:)); hold on;
                 ylabel('Modulation strength (% pSc)','fontsize',10);
                 xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 axis square; box on;
-                title([(L),'Increase' ])
+                title([(TaskTyp{i_tsk}),'Increase' ])
             end
             
         end
@@ -1693,13 +1672,12 @@ if savePlot == 1
     ThreeTiming = {'T<0',  'T>0'} ; %{'T<-50', '-50>T<50', 'T>50'} ;
     c_UPpanel = 1;
     c_Lowpanel = 7;
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
+    for i_tsk = 1: numel(TaskTyp)
         for i_Time = 1: length(ThreeTiming)
             
             for i_BrArea = 1: length(fieldnames(Out))
                 
-                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
                 % from all nicht NAN units - how many were significant?
                 Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP_normalized(:,end));
                 Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP_normalized(:,end)));
@@ -1756,7 +1734,7 @@ if savePlot == 1
                     
                 end
                 set(gca,'ylim',[-15, 15]);
-                title([(L), ' sig.INCREASE ', ThreeTiming(i_Time)],'interpreter','none');
+                title([(TaskTyp{i_tsk}), ' sig.INCREASE ', ThreeTiming(i_Time)],'interpreter','none');
                 ylabel('normalized Firing rate (% pSc)','fontsize',14 );
                 xlabel('Time relative to R-peak (ms)','fontsize',14 );axis square; box on;
                 % vline(50); vline(-50); vline(250); vline(-250);
@@ -1802,7 +1780,7 @@ if savePlot == 1
                 %                 Table_NrUnits = [Table_NrUnits; Table_Units];
                 
                 set(gca,'ylim',[-15, 15]);
-                title([(L), ' sig.DECREASE ', ThreeTiming(i_Time)],'interpreter','none');
+                title([(TaskTyp{i_tsk}), ' sig.DECREASE ', ThreeTiming(i_Time)],'interpreter','none');
                 ylabel('normalized Firing rate (% pSc)','fontsize',14 );
                 xlabel('Time relative to R-peak (ms)','fontsize',14 );axis square; box on;
                 %vline(50); vline(-50); vline(250); vline(-250);
@@ -1818,7 +1796,7 @@ if savePlot == 1
                 %             ylabel('Modulation strength (% pSc)','fontsize',10);
                 %             xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 %             axis square; box on;
-                %             title([(L),'Decrease' ])
+                %             title([(TaskTyp{i_tsk}),'Decrease' ])
                 %
                 %             lineProps={'color',Color_BrainArea(i_BrArea,:),'linewidth',3};
                 %             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(idx_SigInc & idx_SigTime_BeforeMinus50 & idx_sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(idx_SigInc & idx_SigTime_BeforeMinus50 & idx_sig,:)))) ;
@@ -1847,21 +1825,21 @@ if savePlot == 1
                 %             ylabel('Modulation strength (% pSc)','fontsize',10);
                 %             xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 %             axis square; box on;
-                %             title([(L),'Increase' ])
+                %             title([(TaskTyp{i_tsk}),'Increase' ])
                 %         else
                 %             ha4 = subplot(2,4,4); %
                 %             scatter(out.sig_time(idx_SigDec & idx_sig) , out.FR_ModIndex_SubtrSDP(idx_SigDec & idx_sig), 'filled', 'MarkerFaceColor',Color_BrainArea(i_BrArea,:)); hold on;
                 %             ylabel('Modulation strength (% pSc)','fontsize',10);
                 %             xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 %             axis square; box on;
-                %             title([(L),'Decrease' ])
+                %             title([(TaskTyp{i_tsk}),'Decrease' ])
                 %
                 %             ha4 = subplot(2,4,8); %
                 %             scatter(out.sig_time(idx_SigInc & idx_sig) , out.FR_ModIndex_SubtrSDP(idx_SigInc & idx_sig), 'filled', 'MarkerFaceColor',Color_BrainArea(i_BrArea,:)); hold on;
                 %             ylabel('Modulation strength (% pSc)','fontsize',10);
                 %             xlabel('TinePoint of sig. highest diff in FR','fontsize',10 );
                 %             axis square; box on;
-                %             title([(L),'Increase' ])
+                %             title([(TaskTyp{i_tsk}),'Increase' ])
                 %         end
                 
             end
@@ -1889,13 +1867,12 @@ if savePlot == 1
     ThreeTiming = {'T<-50', '-50>T<50', 'T>50'} ;
     c_UPpanel = 1;
     c_Lowpanel = 4;
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
+    for i_tsk = 1: numel(TaskTyp)
         for i_Time = 1: length(ThreeTiming)
             
             for i_BrArea = 1: length(fieldnames(Out))
                 
-                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(L)];
+                out = [Out.(Ana_TargetBrainArea{i_BrArea}).(TaskTyp{i_tsk})];
                 % from all nicht NAN units - how many were significant?
                 Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
                 Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
@@ -1941,7 +1918,7 @@ if savePlot == 1
                     shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized( idx_sig & idx_Time,:)), SDmean_SEM ,lineProps,1);
                 end
                 set(gca,'ylim',[-15, 15]);
-                title([(L), ThreeTiming(i_Time)],'interpreter','none');
+                title([(TaskTyp{i_tsk}), ThreeTiming(i_Time)],'interpreter','none');
                 ylabel('normalized Firing rate (% pSc)','fontsize',14 );
                 xlabel('Time relative to R-peak (ms)','fontsize',14 );axis square; box on;
                 vline(50); vline(-50); vline(250); vline(-250);
@@ -1969,7 +1946,7 @@ if savePlot == 1
                 %                     shadedErrorBar((ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000,nanmean(out.SDsubstractedSDP_normalized( idx_sig & idx_Time,:)), SDmean_SEM ,lineProps,1);
                 %                 end
                 %                 set(gca,'ylim',[-15, 15]);
-                %                 title([(L), ThreeTiming(i_Time)],'interpreter','none');
+                %                 title([(TaskTyp{i_tsk}), ThreeTiming(i_Time)],'interpreter','none');
                 %                 ylabel('normalized Firing rate (% pSc)','fontsize',14 );
                 %                 xlabel('Time relative to R-peak (ms)','fontsize',14 );axis square; box on;
                 %                 vline(50); vline(-50); vline(250); vline(-250);

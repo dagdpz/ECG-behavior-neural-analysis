@@ -14,20 +14,6 @@ function triggered = ecg_bna_get_triggered_parameters(site,triggers, width_in_sa
 %       are to be obtaied
 %       state               - a cell array specifying time window during
 %       which LFP tfs should be obtained
-%       ecg_bna_cfg         - struct containing settings
-%       Required fields:
-%           tfr.timestep            - width of a timebin in LFP TFS in
-%           number of LFP samples
-%           baseline_method         - method used for baseline
-%           normalization of LFP TFS
-%           baseline_perturbation   - whether to use
-%           control(0)/inactivation(1) trials for baseline
-%           baseline_use_choice_trial - whether to use
-%           choice(1)/instructed(0) trials for baseline
-%           baseline_use_type       - type number mof trials to be used for
-%           baseline
-%           baseline_use_effector   - effector value of trials to be used
-%           for baseline
 % OUTPUTS:
 %		triggered   - struct containing LFP tfs for all given
 %		trials

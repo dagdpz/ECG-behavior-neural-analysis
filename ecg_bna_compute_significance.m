@@ -15,7 +15,7 @@ function [significance] = ecg_bna_compute_significance(real,shuffled,ecg_bna_cfg
 %       results of pow, itpc, lfp, or itpcbp data
 % ======================================================================= %
 
-method = ecg_bna_cfg.significance_method;
+method = ecg_bna_cfg.lfp.significance_method;
 parameters={'pow','itpc','lfp','itpcbp','powbp'};
 for p=1:numel(parameters)
     parameter=parameters{p};
@@ -23,10 +23,12 @@ for p=1:numel(parameters)
 %     shuffledmean=shuffled.(parameter).mean;
 %     shuffledstd=shuffled.(parameter).std;
     if strcmp(method , '95Conf_intrvl')
+        if isfield(shuffled.(parameter),'conf95')
         suffledConf = shuffled.(parameter).conf95;
-%         significance.(parameter).upper = find(realmean > suffledConf(1,:,:));
-%         significance.(parameter).lower = find(realmean < suffledConf(2,:,:));
         significance.(parameter) = (suffledConf(1,:,:) < realmean) | (realmean < suffledConf(2,:,:));
+        else
+        significance.(parameter) = false(size(realmean));  
+        end
     end
     
 end  

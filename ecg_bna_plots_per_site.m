@@ -52,18 +52,18 @@ if nargin > 3
 end
 
 % colorbar title
-if strcmp(cfg.shuffle_normalization_method, 'zscore') % can change to baseline_method
+if strcmp(cfg.lfp.normalization, 'zscore') % can change to baseline_method
     % 'zscore' - P_norm(t,f) = ( mean(real) - mean(shuffled) ) / std(shuffled)
     %     cbtitle = 'Z-score'; % for baseline normalization
     cbtitle = '(P - \mu) / std'; % for shuffle predictor normalization
     %     imscale = [-1, 1];
-elseif strcmp(cfg.shuffle_normalization_method, 'division')
+elseif strcmp(cfg.lfp.normalization, 'division')
     cbtitle = 'P / \mu';
-elseif strcmp(cfg.shuffle_normalization_method, 'subtraction')
+elseif strcmp(cfg.lfp.normalization, 'subtraction')
     cbtitle = 'P - \mu';
-elseif strcmp(cfg.shuffle_normalization_method, 'relchange')
+elseif strcmp(cfg.lfp.normalization, 'relchange')
     cbtitle = '(P - \mu) / \mu';
-elseif strcmp(cfg.shuffle_normalization_method, 'none')
+elseif strcmp(cfg.lfp.normalization, 'none')
     cbtitle = 'not-Normalized';
 end
 
@@ -77,7 +77,7 @@ results_folder=[cfg.sites_lfp_fldr filesep];
 
 
 %% Smoothing Kernel here:
-win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
+win = 1:cfg.lfp.smoothWin; win=win-(numel(win)+1)/2;
 half_win = ceil(size(win,2)/2)-1;
 gaussian_kernel=normpdf(win,0,numel(win)/6);
 gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
@@ -95,7 +95,7 @@ for cn= 1:numel(data.condition)
     shuffledtriggers=num2str((vertcat(con_data(:).shuffled.ntriggers)));
     
     state_nRpeaks = [ realtriggers ' real, ' shuffledtriggers ' shuffled'];
-    plottitle = [data.site_ID ' - ' data.target ', ' data.condition(cn).label ', ' num2str(cfg.n_permutations) ' shuffles, ' state_nRpeaks ' triggers'];
+    plottitle = [data.site_ID ' - ' data.target ', ' data.condition(cn).label ', ' num2str(cfg.lfp.n_permutations) ' shuffles, ' state_nRpeaks ' triggers'];
     % create figure
     h = figure('units','normalized','position',[0 0 1 1]);
     
@@ -121,7 +121,7 @@ for cn= 1:numel(data.condition)
     concat.lfp_sgnf = [];
     concat.tfr_time = [];
     concat.lfp_time = [];
-    concat.freq  = cfg.tfr.foi; %% this is actually in the settings...
+    concat.freq  = cfg.lfp.foi; %% this is actually in the settings...
     
     event_info = struct();
     for e = 1:size(con_data, 1)
@@ -219,7 +219,7 @@ for cn= 1:numel(data.condition)
         collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
         
         % horizontal lines to separate frequency bands
-        fbandstart = unique(cfg.tfr.frequency_bands(:))';
+        fbandstart = unique(cfg.lfp.frequency_bands(:))';
         fbandstart_idx = zeros(size(fbandstart));
         for f = fbandstart
             f_idx = find(abs(concat.freq - f) == min(abs(concat.freq - f)), 1, 'first');
@@ -280,7 +280,7 @@ for cn= 1:numel(data.condition)
     sig_x=repmat(concat.lfp_time,size(concat.powbp,2),1);
     X=~all(isnan(diff(significance,1,2)),2);
     line(sig_x(X,:)', significance(X,:)','linewidth',3);
-    legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
+    legend({strcat(num2str(round(cfg.lfp.frequency_bands(:,1))), '-',num2str(round(cfg.lfp.frequency_bands(:,2))), ' Hz')},'fontsize',3);
     title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
     
@@ -307,7 +307,7 @@ for cn= 1:numel(data.condition)
     sig_x=repmat(concat.lfp_time,size(concat.itpcbp,2),1);
     X=~all(isnan(diff(significance,1,2)),2);
     line(sig_x(X,:)', significance(X,:)','linewidth',3);
-    legend({strcat(num2str(round(cfg.tfr.frequency_bands(:,1))), '-',num2str(round(cfg.tfr.frequency_bands(:,2))), ' Hz')},'fontsize',3);
+    legend({strcat(num2str(round(cfg.lfp.frequency_bands(:,1))), '-',num2str(round(cfg.lfp.frequency_bands(:,2))), ' Hz')},'fontsize',3);
     title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
     xlim([min(concat.lfp_time) max(concat.lfp_time)]);
     
@@ -362,7 +362,7 @@ for cn= 1:numel(data.condition)
     
     results_file = fullfile(results_folder, [data.site_ID '_' data.condition(cn).label ' ' PlotMethod]);
     if strcmp(PlotMethod,'normalized')
-        mtit([plottitle ' ' PlotMethod ' (' cfg.shuffle_normalization_method ')'],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+        mtit([plottitle ' ' PlotMethod ' (' cfg.lfp.normalization ')'],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
     else
         mtit([plottitle ' ' PlotMethod],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
     end

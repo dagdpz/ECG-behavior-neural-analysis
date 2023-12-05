@@ -1,7 +1,7 @@
 function grand_avg = ecg_bna_compute_grand_avg(cfg,withunits)
 
-reprocess=0;
-targets = cfg.targets;%unique({out.target});
+reprocess=1;
+targets = cfg.targets;%unique({out.target}); %%cfg.monkey
 fileName = fullfile([cfg.analyse_lfp_folder filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Grand_grand_avg_sessions_sites',withunits,'.mat']);
 
 if reprocess
@@ -92,13 +92,13 @@ if reprocess
     
     %%
     % Computing the Target-wise averaging of total available sites
-    avg = struct;
     grand_avg = struct;
     for tr = 1: length(targets)
         sites_for_this_target=arrayfun(@(x) any(strfind(x.target,targets{tr})),out);
         target_sites = out(sites_for_this_target);
         condition=vertcat(target_sites.condition);
         
+        avg = struct;
         for cn = 1:size(condition,2)
             avg(cn).cond_name = cfg.conditionname{cn};
             avg(cn).itpc = cat(3,condition(:,cn).itpc);

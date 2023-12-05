@@ -1,24 +1,25 @@
-function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,ecg_bna_cfg)
+function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,cfg)
+%% load seed/reset RGN seed
 load(session_info.Input_ECG);
 
 % get the number of permutations from settings
-N=ecg_bna_cfg.n_permutations;
+N=cfg.n_permutations;
 
-% condition for using CAP data instead of ECG 
-if (ecg_bna_cfg.outNameCap)  
-    oldnames = fieldnames(out_cap);
-    newnames = strrep(oldnames,'B2B','R2R');
-    idx = find(~strcmpi(newnames,oldnames));
-    for n = 1: numel(newnames)
-        [out_cap.(newnames{n})] = deal(out_cap.(oldnames{n}));
-    end
-    for n = 1:numel(idx)
-        out_cap = rmfield(out_cap,oldnames{idx(n)});
-    end
-    out = out_cap;
-    nrblockscell=num2cell(ses.nrblock_combinedFiles);
-    [out.nrblock_combinedFiles] = deal(nrblockscell{:});
-end
+% % condition for using CAP data instead of ECG 
+% if (ecg_bna_cfg.outNameCap)  
+%     oldnames = fieldnames(out_cap);
+%     newnames = strrep(oldnames,'B2B','R2R');
+%     idx = find(~strcmpi(newnames,oldnames));
+%     for n = 1: numel(newnames)
+%         [out_cap.(newnames{n})] = deal(out_cap.(oldnames{n}));
+%     end
+%     for n = 1:numel(idx)
+%         out_cap = rmfield(out_cap,oldnames{idx(n)});
+%     end
+%     out = out_cap;
+%     nrblockscell=num2cell(ses.nrblock_combinedFiles);
+%     [out.nrblock_combinedFiles] = deal(nrblockscell{:});
+% end
 
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
@@ -79,6 +80,8 @@ for b=1:numel(out)
     Rpeaks(b).RPEAK_ts=RPEAK_ts+offset_blocks_Rpeak(b);         % this offset is just a trick to be able to append Rpeaks across blocks easily
     Rpeaks(b).RPEAK_dur=RPEAK_dur; % durations of RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).RPEAK_ts)
     Rpeaks(b).shuffled_ts=RPEAK_ts_p+offset_blocks_Rpeak(b);
+    Rpeaks(b).shuffled_ts(Rpeaks(b).shuffled_ts==offset_blocks_Rpeak(b))=0;
+    
     Rpeaks(b).shuffled_dur = RPEAK_ts_dur; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+allowed_jitter_range*2;
     

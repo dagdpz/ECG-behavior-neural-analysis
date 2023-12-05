@@ -1,29 +1,21 @@
-function Output=ecg_bna_compute_session_spike_histogram(session_info,Rpeaks,ecg_bna_cfg)
+function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg)
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
-basepath_to_save=[session_info.SPK_fldr filesep 'per_unit'];
+basepath_to_save=[cfg.SPK_root_results_fldr filesep 'per_unit'];
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
 
-BINS=(ecg_bna_cfg.analyse_states{1,3}:ecg_bna_cfg.PSTH_binwidth:ecg_bna_cfg.analyse_states{1,4})*1000;
-condition_labels={'Rest','Task'};
-
-load(session_info.Input_spikes);
-load(session_info.Input_trials);
-
+BINS=(cfg.analyse_states{1,3}:cfg.spk.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
+
+histbins=0.2:0.02:0.8; % bins for RR duration histogram
 
 for u=1:numel(population)
     tic
     pop=population(u);
-    
     T=ph_get_unit_trials(pop,trials);
-    
-    T_acc=[T.accepted] & [T.completed];
-    T=T(T_acc);
-    pop.trial=pop.trial(T_acc);
     
     %% Make sure we only take overlapping blocks
     blocks_unit=unique([pop.block]);
@@ -31,42 +23,44 @@ for u=1:numel(population)
     b=ismember(Rblocks,blocks);
     
     % preallocate 'Output' structure
-    for tasktype=1:2
-        Output.unit_ID                                        = pop.unit_ID;
-        Output.target                                         = pop.target;
-        Output.quantSNR                                       = pop.avg_SNR;
-        Output.Single_rating                                  = pop.avg_single_rating;
-        Output.stability_rating                               = pop.avg_stability;
-        Output.(condition_labels{tasktype}).SD                = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SD_STD            = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SD_SEM            = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SDP               = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SDPCL             = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SDPCu             = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).sig_all           = single(zeros(1, length(BINS)));
-        Output.(condition_labels{tasktype}).sig               = single(zeros(1, length(BINS)));
-        Output.(condition_labels{tasktype}).sig_FR_diff       = single(nan(1));
-        Output.(condition_labels{tasktype}).sig_time          = single(nan(1));
-        Output.(condition_labels{tasktype}).sig_n_bins        = single(zeros(1));
-        Output.(condition_labels{tasktype}).sig_sign          = single(zeros(1));
-        Output.(condition_labels{tasktype}).NrTrials          = single(nan(1));
-        Output.(condition_labels{tasktype}).NrEvents          = single(nan(1));
-        Output.(condition_labels{tasktype}).FR                = single(nan(1));
-        Output.(condition_labels{tasktype}).raster            = single(nan(1));
-        Output.(condition_labels{tasktype}).Rts               = single(nan(1)); % RR ends
-        Output.(condition_labels{tasktype}).Rds               = single(nan(1)); % RR durations
-        Output.(condition_labels{tasktype}).Rds_perm          = single(nan(1));
-        Output.(condition_labels{tasktype}).SDsubstractedSDP            = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
-        Output.(condition_labels{tasktype}).FR_ModIndex_SubtrSDP        = single(nan(1));
-        Output.(condition_labels{tasktype}).FR_ModIndex_PcS             = single(nan(1));
+    for c=1:numel(cfg.condition)
+        L=cfg.condition(c).name;
+        
+        Output.unit_ID               = pop.unit_ID;
+        Output.target                = pop.target;
+        Output.quantSNR              = pop.avg_SNR;
+        Output.Single_rating         = pop.avg_single_rating;
+        Output.stability_rating      = pop.avg_stability;
+        Output.(L).SD                = single(nan(1, length(BINS)));
+        Output.(L).SD_STD            = single(nan(1, length(BINS)));
+        Output.(L).SD_SEM            = single(nan(1, length(BINS)));
+        Output.(L).SDP               = single(nan(1, length(BINS)));
+        Output.(L).SDPCL             = single(nan(1, length(BINS)));
+        Output.(L).SDPCu             = single(nan(1, length(BINS)));
+        Output.(L).sig_all           = single(zeros(1, length(BINS)));
+        Output.(L).sig               = single(zeros(1, length(BINS)));
+        Output.(L).sig_FR_diff       = single(nan(1));
+        Output.(L).sig_time          = single(nan(1));
+        Output.(L).sig_n_bins        = single(zeros(1));
+        Output.(L).sig_sign          = single(zeros(1));
+        Output.(L).NrTrials          = single(nan(1));
+        Output.(L).NrEvents          = single(nan(1));
+        Output.(L).FR                = single(nan(1));
+        Output.(L).raster            = single(nan(1));
+        Output.(L).Rts               = single(nan(1)); % RR ends
+        Output.(L).Rds               = single(nan(1)); % RR durations
+        Output.(L).Rds_perm          = single(nan(1));
+        Output.(L).SDsubstractedSDP            = single(nan(1, length(BINS)));
+        Output.(L).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
+        Output.(L).FR_ModIndex_SubtrSDP        = single(nan(1));
+        Output.(L).FR_ModIndex_PcS             = single(nan(1));
     end
     
-    for tasktype=1:2
-        L=condition_labels{tasktype};
-        
-        %% here we could potentially further reduce trials
-        tr=ismember([T.block],blocks) & [T.type]==tasktype;
+    for c=1:numel(cfg.condition)
+        L=cfg.condition(c).name;
+        %% get condition AND valid block trials only
+        CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
+        tr=ismember([T.block],blocks) & CT;
         popcell=num2cell(pop.trial(tr));
         trcell=num2cell(T(tr));
         
@@ -87,12 +81,12 @@ for u=1:numel(population)
         AT(AT>trial_ends(end))=[];
         RPEAK_ts=[Rpeaks(b).RPEAK_ts];
         RPEAK_ts_perm=[Rpeaks(b).shuffled_ts];
-        [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,ecg_bna_cfg);
+        [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.spk);
         RPEAK_dur = [Rpeaks(b).RPEAK_dur];
         RPEAK_dur_perm = [Rpeaks(b).shuffled_dur];
         %% define which parts of the continous PSTH are during a trial
-        trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
-        trial_ends_samples=floor((trial_ends-PSTH_time(1))/ecg_bna_cfg.PSTH_binwidth);
+        trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+        trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
         trial_onset_samples(trial_onset_samples==0)=1;
         during_trial_index=false(size(PSTH_time));
         drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
@@ -102,9 +96,9 @@ for u=1:numel(population)
             during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
         end
         
-        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
-        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,ecg_bna_cfg);
-        SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,ecg_bna_cfg);
+        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
+        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
+        SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.spk);
         
         Output.(L).SD                           = SD.SD_mean ;
         Output.(L).SD_STD                       = SD.SD_STD;
@@ -122,9 +116,9 @@ for u=1:numel(population)
         Output.(L).NrEvents                     = realPSTHs.n_events;
         Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
         Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-        Output.(L).Rts                          = single(realPSTHs.RTs{1});
-        Output.(L).Rds                          = single(realPSTHs.RDs{1}); % put RR durations to plot those in the histograms later
-        Output.(L).Rds_perm                     = single([shuffledPSTH.RDs{:}]);
+        %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
+        Output.(L).Rds                          = hist(realPSTHs.RDs{1},histbins); % put RR durations to plot those in the histograms later
+        Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],histbins);
         Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
         Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
         Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
@@ -170,9 +164,9 @@ end
 end
 
 function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)
-RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.PSTH_binwidth);
-bins_before=round(cfg.analyse_states{3}/cfg.PSTH_binwidth);
-bins_after=round(cfg.analyse_states{4}/cfg.PSTH_binwidth);
+RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+bins_before=round(cfg.analyse_states{3}/cfg.spk.PSTH_binwidth);
+bins_after=round(cfg.analyse_states{4}/cfg.spk.PSTH_binwidth);
 bins=bins_before:bins_after;
 
 %% remove samples that would land outside

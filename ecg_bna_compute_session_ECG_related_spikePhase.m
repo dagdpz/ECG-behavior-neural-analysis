@@ -1,34 +1,30 @@
-function ecg_bna_compute_session_ECG_related_spikePhase(session_info,Rpeaks,ecg_bna_cfg)
+function ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
 
-basepath_to_save=[session_info.SPK_fldr filesep 'cardioballistic'];
+basepath_to_save=[cfg.SPK_root_results_fldr filesep 'cardioballistic'];
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
 
-%% load list of selected units
-unit_list = load([session_info.SPK_fldr '\unitInfo_after_exclusion_stableTaskAndRest.mat']);
-unitList = unique(unit_list.unit_ids_after_exclusion);
+%% load list of selected units - rather go through all units really
+% unit_list = load([session_info.SPK_fldr '\unitInfo_after_exclusion_stableTaskAndRest.mat']);
+% unitList = unique(unit_list.unit_ids_after_exclusion);
 
-%% settings for this analysis - subject to be moved to the ecg_bna_cfg
-ecg_bna_cfg.N_bins = 64;
+%% settings for this analysis - subject to be moved to the cfg
 Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
 wf_times_ms = 1000 * (1/Fs:1/Fs:32/Fs); % in ms
 wf_times_interp_ms = 1000 * (1/4/Fs:1/4/Fs:32/Fs); % in ms
 peak_id = 10; % sample number of the trough in the spike waveform
-phase_bins          = linspace(0, 2*pi, ecg_bna_cfg.N_bins+1);
-phase_bin_centers   = 2*pi/ecg_bna_cfg.N_bins:2*pi/ecg_bna_cfg.N_bins:2*pi;
+phase_bins          = linspace(0, 2*pi, cfg.spk.N_phase_bins+1);
+phase_bin_centers   = 2*pi/cfg.spk.N_phase_bins:2*pi/cfg.spk.N_phase_bins:2*pi;
 lag_list = [-11 -7 -3 0 3 7 11];
 
-condition_labels={'Rest','Task'};
-
-load(session_info.Input_spikes, 'population'); % 'population' structure comes from here
-load(session_info.Input_trials, 'trials'); % 'trials' structure comes from here
 
 Rblocks=[Rpeaks.block];
 
+%% really would rather not exclude here as discussed
 % figure out which units take from this session
-selected_this_session = ismember({population.unit_ID}, unitList);
-population = population(selected_this_session);
+% selected_this_session = ismember({population.unit_ID}, unitList);
+% population = population(selected_this_session);
 
 for unitNum = 1:length(population)
     
@@ -38,10 +34,6 @@ for unitNum = 1:length(population)
     pop=population(unitNum);
     
     T=ph_get_unit_trials(pop,trials);
-    
-    T_acc=[T.accepted] & [T.completed];
-    T=T(T_acc);
-    pop.trial=pop.trial(T_acc);
     
     %% Make sure we only take overlapping blocks
     blocks_unit=unique([pop.block]);
@@ -59,59 +51,60 @@ for unitNum = 1:length(population)
     data.thresholds_microV                                 = single([0; 0; 0; 0]);
     data.FR                                                = single(mean(pop.FR_average));
     data.cc_lag_list                                       = lag_list;
-    for tasktype=1:2
-        data.(condition_labels{tasktype}).spike_phases_radians           = single(NaN);
-        data.(condition_labels{tasktype}).waveforms_microvolts           = single(nan(1,32));
-        data.(condition_labels{tasktype}).waveforms_upsampled_microvolts = single(nan(1,128));
-        data.(condition_labels{tasktype}).waveforms_byBin_microvolts     = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).AMP_microV                     = single(NaN);
-        data.(condition_labels{tasktype}).HW_ms                          = single(NaN);
-        data.(condition_labels{tasktype}).TPW_ms                         = single(NaN);
-        data.(condition_labels{tasktype}).REP_ms                         = single(NaN);
-        data.(condition_labels{tasktype}).AMP_microV_byBin               = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).HW_ms_byBin                    = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).TPW_ms_byBin                   = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).REP_ms_byBin                   = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).AMP_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).AMP_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).AMP_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).HW_reshuffled_avg              = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).HW_lowerPrctile_2_5            = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).HW_upperPrctile_97_5           = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).TPW_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).TPW_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).TPW_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).REP_reshuffled_avg             = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).REP_lowerPrctile_2_5           = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).REP_upperPrctile_97_5          = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).AMP_MI                         = single(nan(1,5));
-        data.(condition_labels{tasktype}).HW_MI                          = single(nan(1,5));
-        data.(condition_labels{tasktype}).TPW_MI                         = single(nan(1,5));
-        data.(condition_labels{tasktype}).REP_MI                         = single(nan(1,5));
-        data.(condition_labels{tasktype}).AMP_microV_byBin_smoothed      = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).HW_ms_byBin_smoothed           = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).TPW_ms_byBin_smoothed          = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).REP_ms_byBin_smoothed          = single(nan(1,ecg_bna_cfg.N_bins));
-        data.(condition_labels{tasktype}).allCorr                        = single(nan(1,6));
-        data.(condition_labels{tasktype}).allLinMod                      = single(nan(6,2));
-        data.(condition_labels{tasktype}).AMP_max_consec_bins            = single(nan(1,1));
-        data.(condition_labels{tasktype}).AMP_modulation_index           = single(nan(1,1));
-        data.(condition_labels{tasktype}).HW_max_consec_bins             = single(nan(1,1));
-        data.(condition_labels{tasktype}).HW_modulation_index            = single(nan(1,1));
-        data.(condition_labels{tasktype}).TPW_max_consec_bins            = single(nan(1,1));
-        data.(condition_labels{tasktype}).TPW_modulation_index           = single(nan(1,1));
-        data.(condition_labels{tasktype}).REP_max_consec_bins            = single(nan(1,1));
-        data.(condition_labels{tasktype}).REP_modulation_index           = single(nan(1,1));
-        data.(condition_labels{tasktype}).FRbyRR_Hz                      = single(nan(1,1));
-        data.(condition_labels{tasktype}).cycleDurations_s               = single(nan(1,1));
-        data.(condition_labels{tasktype}).pearson_r                      = single(nan(length(lag_list), 1));
-        data.(condition_labels{tasktype}).pearson_p                      = single(nan(length(lag_list), 1));
+    for c=1:numel(cfg.condition)
+        L=cfg.condition(c).name;
+        data.(L).spike_phases_radians           = single(NaN);
+        data.(L).waveforms_microvolts           = single(nan(1,32));
+        data.(L).waveforms_upsampled_microvolts = single(nan(1,128));
+        data.(L).waveforms_byBin_microvolts     = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_microV                     = single(NaN);
+        data.(L).HW_ms                          = single(NaN);
+        data.(L).TPW_ms                         = single(NaN);
+        data.(L).REP_ms                         = single(NaN);
+        data.(L).AMP_microV_byBin               = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).HW_ms_byBin                    = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).TPW_ms_byBin                   = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).REP_ms_byBin                   = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).HW_reshuffled_avg              = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).HW_lowerPrctile_2_5            = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).HW_upperPrctile_97_5           = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).TPW_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).TPW_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).TPW_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).REP_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).REP_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).REP_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_MI                         = single(nan(1,5));
+        data.(L).HW_MI                          = single(nan(1,5));
+        data.(L).TPW_MI                         = single(nan(1,5));
+        data.(L).REP_MI                         = single(nan(1,5));
+        data.(L).AMP_microV_byBin_smoothed      = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).HW_ms_byBin_smoothed           = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).TPW_ms_byBin_smoothed          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).REP_ms_byBin_smoothed          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).allCorr                        = single(nan(1,6));
+        data.(L).allLinMod                      = single(nan(6,2));
+        data.(L).AMP_max_consec_bins            = single(nan(1,1));
+        data.(L).AMP_modulation_index           = single(nan(1,1));
+        data.(L).HW_max_consec_bins             = single(nan(1,1));
+        data.(L).HW_modulation_index            = single(nan(1,1));
+        data.(L).TPW_max_consec_bins            = single(nan(1,1));
+        data.(L).TPW_modulation_index           = single(nan(1,1));
+        data.(L).REP_max_consec_bins            = single(nan(1,1));
+        data.(L).REP_modulation_index           = single(nan(1,1));
+        data.(L).FRbyRR_Hz                      = single(nan(1,1));
+        data.(L).cycleDurations_s               = single(nan(1,1));
+        data.(L).pearson_r                      = single(nan(length(lag_list), 1));
+        data.(L).pearson_p                      = single(nan(length(lag_list), 1));
     end
     
     % find the corresponding WC file and load it
     chNum = data.channel;
     blkNum = unique([pop.block]);
-    WCfile = ph_figure_out_waveclus_file_by_channel_and_blocks(chNum, blkNum, session_info);
+    WCfile = ph_figure_out_waveclus_file_by_channel_and_blocks(chNum, blkNum, cfg.Input_WC);
     WC = load(WCfile);
     if length(WC.thr) == 4
         data.thresholds_microV = 10^6 * WC.thr;
@@ -119,11 +112,12 @@ for unitNum = 1:length(population)
     end
     clear WC
     
-    for tasktype = 1:2
-        tType = condition_labels{tasktype};
+    for c=1:numel(cfg.condition)
+        L=cfg.condition(c).name;
         
-        %% take trials from the necessary blocks and current tasktype
-        tr=ismember([T.block],blocks) & [T.type]==tasktype;
+        %% get condition AND valid block trials only
+        CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
+        tr=ismember([T.block],blocks) & CT;
         if sum(tr)>1 % do calculations only if number of trials > 1
             popcell=pop.trial(tr);
             trcell=T(tr);
@@ -164,25 +158,25 @@ for unitNum = 1:length(population)
             % 5. calculate heart cycle phase where individual spikes ended up
             [eventPhases, eventsTaken] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
             % 6. Put results for real data together
-            data.(tType).spike_phases_radians                 = eventPhases;
+            data.(L).spike_phases_radians                 = eventPhases;
             
-            [~,~,bin] = histcounts(data.(tType).spike_phases_radians, phase_bins);
+            [~,~,bin] = histcounts(data.(L).spike_phases_radians, phase_bins);
             
-            data.(tType).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
-            waveforms_upsampled                       = interpft(data.(tType).waveforms_microvolts, 32*4, 2);
-            data.(tType).waveforms_upsampled_microvolts       = shift2peak(wf_times_interp_ms, waveforms_upsampled);
-            data.(tType).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(tType).waveforms_upsampled_microvolts(bin == x,:),1), 1:ecg_bna_cfg.N_bins, 'UniformOutput', false);
-            data.(tType).waveforms_byBin_microvolts           = cat(1,data.(tType).waveforms_byBin_microvolts{:});
+            data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
+            waveforms_upsampled                       = interpft(data.(L).waveforms_microvolts, 32*4, 2);
+            data.(L).waveforms_upsampled_microvolts       = shift2peak(wf_times_interp_ms, waveforms_upsampled);
+            data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.spk.N_phase_bins, 'UniformOutput', false);
+            data.(L).waveforms_byBin_microvolts           = cat(1,data.(L).waveforms_byBin_microvolts{:});
             % 7. Calculate spike features with Mosher's procedure
             tic
             sMetric = ...
-                struct('extremAmp', cell(length(data.(tType).spike_phases_radians),1), ...
-                'widthHW', cell(length(data.(tType).spike_phases_radians),1), ...
-                'widthTP', cell(length(data.(tType).spike_phases_radians),1), ...
-                'repolTime', cell(length(data.(tType).spike_phases_radians),1));
-            parfor wfNum = 1:length(data.(tType).spike_phases_radians)
-                try
-                    sMetric(wfNum)=spikeWaveMetrics(data.(tType).waveforms_upsampled_microvolts(wfNum,:), 37, Fs*4, 0); % 37 - index of th peak for updsampled data
+                struct('extremAmp', cell(length(data.(L).spike_phases_radians),1), ...
+                'widthHW', cell(length(data.(L).spike_phases_radians),1), ...
+                'widthTP', cell(length(data.(L).spike_phases_radians),1), ...
+                'repolTime', cell(length(data.(L).spike_phases_radians),1));
+            parfor wfNum = 1:length(data.(L).spike_phases_radians)
+                try %% spikeWaveMetrics missing! --> try catch is also VERY inefficient
+                    sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, Fs*4, 0); % 37 - index of th peak for updsampled data
                     sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
                     sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
                     sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
@@ -195,28 +189,28 @@ for unitNum = 1:length(population)
                 end
             end
             toc
-            data.(tType).AMP_microV               = [sMetric.extremAmp];
-            data.(tType).HW_ms                    = 10^3 * [sMetric.widthHW];
-            data.(tType).TPW_ms                   = 10^3 * [sMetric.widthTP];
-            data.(tType).REP_ms                   = 10^3 * [sMetric.repolTime];
+            data.(L).AMP_microV               = [sMetric.extremAmp];
+            data.(L).HW_ms                    = 10^3 * [sMetric.widthHW];
+            data.(L).TPW_ms                   = 10^3 * [sMetric.widthTP];
+            data.(L).REP_ms                   = 10^3 * [sMetric.repolTime];
             
-            data.(tType).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(tType).AMP_microV(bin == x)), 1:ecg_bna_cfg.N_bins); % mean by phase
-            data.(tType).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(tType).HW_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
-            data.(tType).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).TPW_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
-            data.(tType).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(tType).REP_ms(bin == x)), 1:ecg_bna_cfg.N_bins);
+            data.(L).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(L).AMP_microV(bin == x)), 1:cfg.spk.N_phase_bins); % mean by phase
+            data.(L).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(L).HW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+            data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+            data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.spk.N_phase_bins);
             
-            [data.(tType).AMP_lowerPrctile_2_5, data.(tType).AMP_upperPrctile_97_5, data.(tType).AMP_reshuffled_avg] = ...
-                compute_reshuffles(data.(tType).AMP_microV, bin, ecg_bna_cfg);
-            [data.(tType).HW_lowerPrctile_2_5, data.(tType).HW_upperPrctile_97_5, data.(tType).HW_reshuffled_avg] = ...
-                compute_reshuffles(data.(tType).HW_ms, bin, ecg_bna_cfg);
-            [data.(tType).TPW_lowerPrctile_2_5, data.(tType).TPW_upperPrctile_97_5, data.(tType).TPW_reshuffled_avg] = ...
-                compute_reshuffles(data.(tType).TPW_ms, bin, ecg_bna_cfg);
-            [data.(tType).REP_lowerPrctile_2_5, data.(tType).REP_upperPrctile_97_5, data.(tType).REP_reshuffled_avg] = ...
-                compute_reshuffles(data.(tType).REP_ms, bin, ecg_bna_cfg);
+            [data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg] = ...
+                compute_reshuffles(data.(L).AMP_microV, bin, cfg);
+            [data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg] = ...
+                compute_reshuffles(data.(L).HW_ms, bin, cfg);
+            [data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg] = ...
+                compute_reshuffles(data.(L).TPW_ms, bin, cfg);
+            [data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg] = ...
+                compute_reshuffles(data.(L).REP_ms, bin, cfg);
             
             featureMatrix = ...
-                [data.(tType).AMP_microV_byBin; data.(tType).HW_ms_byBin; ...
-                data.(tType).TPW_ms_byBin; data.(tType).REP_ms_byBin];
+                [data.(L).AMP_microV_byBin; data.(L).HW_ms_byBin; ...
+                data.(L).TPW_ms_byBin; data.(L).REP_ms_byBin];
             if size(featureMatrix,1) > 4
                 featureMatrix = featureMatrix';
                 if size(featureMatrix,1) ~= 4
@@ -227,44 +221,45 @@ for unitNum = 1:length(population)
             [modIndex,removeNoise,allCorr,allLinMod] = ...
                 fitCardiacModulation(phase_bins(1:end-1), ...
                 featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
-            
+            % why does this one not exist yet ??
+            modIndex(:,5)=nanmean(featureMatrix,2);
             % 4 coefficient related to cosine fitting
             % - the modulation index, the slope of the cosine function
             % - p-value of the modulation index
             % - phase of modulation
             % - p-value of the modulation index ?? (mdl.Rsquared.ordinary)
-            data.(tType).AMP_MI                   = modIndex(1, :);
-            data.(tType).HW_MI                    = modIndex(2, :);
-            data.(tType).TPW_MI                   = modIndex(3, :);
-            data.(tType).REP_MI                   = modIndex(4, :);
+            data.(L).AMP_MI                   = modIndex(1, :);
+            data.(L).HW_MI                    = modIndex(2, :);
+            data.(L).TPW_MI                   = modIndex(3, :);
+            data.(L).REP_MI                   = modIndex(4, :);
             
             % store smoothed data for each measure
-            data.(tType).AMP_microV_byBin_smoothed    = removeNoise(1,:);
-            data.(tType).HW_ms_byBin_smoothed         = removeNoise(2,:);
-            data.(tType).TPW_ms_byBin_smoothed        = removeNoise(3,:);
-            data.(tType).REP_ms_byBin_smoothed        = removeNoise(4,:);
+            data.(L).AMP_microV_byBin_smoothed    = removeNoise(1,:);
+            data.(L).HW_ms_byBin_smoothed         = removeNoise(2,:);
+            data.(L).TPW_ms_byBin_smoothed        = removeNoise(3,:);
+            data.(L).REP_ms_byBin_smoothed        = removeNoise(4,:);
             
-            data.(tType).allCorr                      = allCorr;
-            data.(tType).allLinMod                    = allLinMod;
+            data.(L).allCorr                      = allCorr;
+            data.(L).allLinMod                    = allLinMod;
             
-            [data.(tType).AMP_max_consec_bins, data.(tType).AMP_modulation_index] = ...
-                significant_bins(data.(tType).AMP_microV_byBin_smoothed, data.(tType).AMP_lowerPrctile_2_5, data.(tType).AMP_upperPrctile_97_5, data.(tType).AMP_reshuffled_avg);
-            [data.(tType).HW_max_consec_bins, data.(tType).HW_modulation_index] = ...
-                significant_bins(data.(tType).HW_ms_byBin_smoothed, data.(tType).HW_lowerPrctile_2_5, data.(tType).HW_upperPrctile_97_5, data.(tType).HW_reshuffled_avg);
-            [data.(tType).TPW_max_consec_bins, data.(tType).TPW_modulation_index] = ...
-                significant_bins(data.(tType).TPW_ms_byBin_smoothed, data.(tType).TPW_lowerPrctile_2_5, data.(tType).TPW_upperPrctile_97_5, data.(tType).TPW_reshuffled_avg);
-            [data.(tType).REP_max_consec_bins, data.(tType).REP_modulation_index] = ...
-                significant_bins(data.(tType).REP_ms_byBin_smoothed, data.(tType).REP_lowerPrctile_2_5, data.(tType).REP_upperPrctile_97_5, data.(tType).REP_reshuffled_avg);
+            [data.(L).AMP_max_consec_bins, data.(L).AMP_modulation_index] = ...
+                significant_bins(data.(L).AMP_microV_byBin_smoothed, data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg);
+            [data.(L).HW_max_consec_bins, data.(L).HW_modulation_index] = ...
+                significant_bins(data.(L).HW_ms_byBin_smoothed, data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg);
+            [data.(L).TPW_max_consec_bins, data.(L).TPW_modulation_index] = ...
+                significant_bins(data.(L).TPW_ms_byBin_smoothed, data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg);
+            [data.(L).REP_max_consec_bins, data.(L).REP_modulation_index] = ...
+                significant_bins(data.(L).REP_ms_byBin_smoothed, data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg);
             
             % II. Compute unit firing rate per RR-interval
-            [data.(tType).FRbyRR_Hz, ...
-                data.(tType).cycleDurations_s] = ...
+            [data.(L).FRbyRR_Hz, ...
+                data.(L).cycleDurations_s] = ...
                 computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
             % compute correlation with different lag
             for lagNum = 1:length(lag_list)
-                [temp_r, temp_p] = corrcoef(data.(tType).FRbyRR_Hz, circshift(data.(tType).cycleDurations_s, lag_list(lagNum)));
-                data.(tType).pearson_r(lagNum) = temp_r(2,1);
-                data.(tType).pearson_p(lagNum) = temp_p(2,1);
+                [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, lag_list(lagNum)));
+                data.(L).pearson_r(lagNum) = temp_r(2,1);
+                data.(L).pearson_p(lagNum) = temp_p(2,1);
             end
         end
     end
@@ -335,12 +330,12 @@ FRbyRR_Hz = spikeCounts ./ cycleDurations;
 % scatter(cycleDurations, FRbyRR_Hz)
 end
 
-function [lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled] = compute_reshuffles(data, bin, ecg_bna_cfg)
+function [lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled] = compute_reshuffles(data, bin, cfg)
 %% compute reshuffles
 rng(0)
-[~, reshuffled_spike_order] = sort(rand(ecg_bna_cfg.n_permutations, length(data)), 2); % get random order of elements
+[~, reshuffled_spike_order] = sort(rand(cfg.spk.n_permutations, length(data)), 2); % get random order of elements
 data_reshuffled      = data(reshuffled_spike_order);
-data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:ecg_bna_cfg.N_bins, 'UniformOutput', false); % mean by phase
+data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:cfg.spk.N_phase_bins, 'UniformOutput', false); % mean by phase
 data_reshuffled      = cat(2, data_reshuffled{:});
 average_reshuffled = mean(data_reshuffled, 1, 'omitnan');
 lowerPercentile_2_5    = prctile(data_reshuffled, 2.5, 1);

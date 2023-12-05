@@ -1,11 +1,11 @@
-function site_lfp= ecg_bna_process_LFP( sites, cfg,ts_original )
+function site_lfp = ecg_bna_process_LFP(sites,cfg,ts_original)
 
 % lfp_tfa_process_LFP - function to read in the trial-wise LFP data for all
 % sites recorded in a session, compute the LFP time frequency spectrogram,
 % detect the noisy trials, and compute site-wise baseline pow
 %
 % USAGE:
-%	session_info = lfp_tfa_process_LFP( session_info, lfp_tfa_cfg )
+%	session_info = ecg_bna_process_LFP(sites,cfg,ts_original)
 %
 % INPUTS:
 %       session_info        - structure containing information about the
@@ -16,31 +16,6 @@ function site_lfp= ecg_bna_process_LFP( sites, cfg,ts_original )
 %                               in a session
 %           proc_results_folder - folder where the results has to be
 %           stored, see lfp_tfa_define_settings
-%       lfp_tfa_cfg         - structure containing configurations for
-%       reading LFP data and calculating spectrograms, see
-%       settings/lfp_tfa_settings_example
-%       Required fields:
-%           ref_hemisphere          - reference hemisphere ('R'/'L') for ipsi-
-%                                   and contra- hand and space labeling
-%           trialinfo.start_state   - the ID of the state(event) which
-%                                   marks the beginning of a trial, see
-%                                   lfp_tfa_global_states
-%           trialinfo.ref_tstart    - the offset from the onset of
-%                                   trialinfo.start_state to be considered
-%                                   as start time of a trial
-%           trialinfo.end_state     - the ID of the state(event) which
-%                                   marks the end of a trial, see
-%                                   lfp_tfa_global_states
-%           trialinfo.ref_tend      - the offset from the onset of
-%                                   trialinfo.start_state to be considered
-%                                   as end time of a trial
-%           noise                   - settings for noisy trial detection,
-%                                   see lfp_tfa_reject_noisy_lfp_trials for
-%                                   more details
-%           analyses                - which kind of analyses should be
-%                                   performed on LFP, (Should be a
-%                                   combination of 'tfs', 'evoked', 'pow',
-%                                   'sync' and 'syncsp')
 %
 % OUTPUTS:
 %		session_info            - same as input structure session_info
@@ -60,13 +35,13 @@ site_lfp.session = sites.site_ID(1:12);
 site_lfp.recorded_hemisphere = upper(sites.target(end));
 
 
-N_cycles=cfg.tfr.n_cycles;
-frequencies = cfg.tfr.foi;
-frequency_bands=cfg.tfr.frequency_bands;
+N_cycles=cfg.lfp.n_cycles;
+frequencies = cfg.lfp.foi;
+frequency_bands=cfg.lfp.frequency_bands;
 morlet_borders=1/min(frequencies)*N_cycles/2;
 s = N_cycles./(2*pi*frequencies);
 
-ts=round(cfg.tfr.timestep/ts_original);
+ts=round(cfg.lfp.timestep/ts_original);
 
 % fT parameters (use next-pow-of-2)
 time = -morlet_borders:1*ts_original:morlet_borders;
