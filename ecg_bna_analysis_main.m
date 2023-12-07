@@ -65,6 +65,10 @@ for v = 1:length(versions)
                 compute_spike_phase       = 1;
                 plot_spike_phase          = 1;
                 
+                if compute_unit_subsets
+                    ecg_bna_get_unit_list(cfg);
+                end
+                
                 if move_files
                     %% Temporary - copy selected units separately
                     ecg_bna_copy_selected_units(cfg)
@@ -78,8 +82,6 @@ for v = 1:length(versions)
                         ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg);
                     end
                     
-                    %% really would rather only run this at the very end when we do averages
-                    %                     ecg_bna_get_unit_list(cfg,1);
                     if compute_spike_phase
                         ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
                     end
