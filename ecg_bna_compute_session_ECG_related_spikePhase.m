@@ -5,26 +5,15 @@ if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
 
-%% load list of selected units - rather go through all units really
-% unit_list = load([session_info.SPK_fldr '\unitInfo_after_exclusion_stableTaskAndRest.mat']);
-% unitList = unique(unit_list.unit_ids_after_exclusion);
-
-%% settings for this analysis - subject to be moved to the cfg
-Fs = 2.441406250000000e+04; % sampling frequency of BB signal, Hz
-wf_times_ms = 1000 * (1/Fs:1/Fs:32/Fs); % in ms
-wf_times_interp_ms = 1000 * (1/4/Fs:1/4/Fs:32/Fs); % in ms
-peak_id = 10; % sample number of the trough in the spike waveform
-phase_bins          = linspace(0, 2*pi, cfg.spk.N_phase_bins+1);
-phase_bin_centers   = 2*pi/cfg.spk.N_phase_bins:2*pi/cfg.spk.N_phase_bins:2*pi;
-lag_list = [-11 -7 -3 0 3 7 11];
-
+%% load list of selected units - won't process all the crap
+unit_list = load([cfg.SPK_root_results_fldr filesep 'unitInfo_after_exclusion_stableTaskAndRest.mat']);
+unitList = unique(unit_list.unit_ids_after_exclusion);
 
 Rblocks=[Rpeaks.block];
 
-%% really would rather not exclude here as discussed
 % figure out which units take from this session
-% selected_this_session = ismember({population.unit_ID}, unitList);
-% population = population(selected_this_session);
+selected_this_session = ismember({population.unit_ID}, unitList);
+population = population(selected_this_session);
 
 for unitNum = 1:length(population)
     
@@ -50,7 +39,7 @@ for unitNum = 1:length(population)
     data.stability_rating                                  = pop.avg_stability;
     data.thresholds_microV                                 = single([0; 0; 0; 0]);
     data.FR                                                = single(mean(pop.FR_average));
-    data.cc_lag_list                                       = lag_list;
+    data.cc_lag_list                                       = cfg.spk.lag_list;
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
         data.(L).spike_phases_radians           = single(NaN);
@@ -97,15 +86,15 @@ for unitNum = 1:length(population)
         data.(L).REP_modulation_index           = single(nan(1,1));
         data.(L).FRbyRR_Hz                      = single(nan(1,1));
         data.(L).cycleDurations_s               = single(nan(1,1));
-        data.(L).pearson_r                      = single(nan(length(lag_list), 1));
-        data.(L).pearson_p                      = single(nan(length(lag_list), 1));
+        data.(L).pearson_r                      = single(nan(length(cfg.spk.lag_list), 1));
+        data.(L).pearson_p                      = single(nan(length(cfg.spk.lag_list), 1));
     end
     
     % find the corresponding WC file and load it
     chNum = data.channel;
     blkNum = unique([pop.block]);
     WCfile = ph_figure_out_waveclus_file_by_channel_and_blocks(chNum, blkNum, cfg.Input_WC);
-    WC = load(WCfile);
+    WC = load(WCfile, 'thr');
     if length(WC.thr) == 4
         data.thresholds_microV = 10^6 * WC.thr;
         data.thresholds_microV(3:4) = -1*data.thresholds_microV(3:4);
@@ -175,8 +164,8 @@ for unitNum = 1:length(population)
                 'widthTP', cell(length(data.(L).spike_phases_radians),1), ...
                 'repolTime', cell(length(data.(L).spike_phases_radians),1));
             parfor wfNum = 1:length(data.(L).spike_phases_radians)
-                try %% spikeWaveMetrics missing! --> try catch is also VERY inefficient
-                    sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, Fs*4, 0); % 37 - index of th peak for updsampled data
+                try %% spikeWaveMetrics missing! --> try catch is also VERY inefficient - more efficient is to skip excluded units
+                    sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, cfg.spk.Fs*4, 0); % 37 - index of th peak for updsampled data
                     sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
                     sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
                     sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
@@ -219,9 +208,8 @@ for unitNum = 1:length(population)
             end
             
             [modIndex,removeNoise,allCorr,allLinMod] = ...
-                fitCardiacModulation(phase_bins(1:end-1), ...
+                fitCardiacModulation(cfg.spk.phase_bins(1:end-1), ...
                 featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
-            % why does this one not exist yet ??
             modIndex(:,5)=nanmean(featureMatrix,2);
             % 4 coefficient related to cosine fitting
             % - the modulation index, the slope of the cosine function
@@ -256,8 +244,8 @@ for unitNum = 1:length(population)
                 data.(L).cycleDurations_s] = ...
                 computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
             % compute correlation with different lag
-            for lagNum = 1:length(lag_list)
-                [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, lag_list(lagNum)));
+            for lagNum = 1:length(cfg.spk.lag_list)
+                [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum)));
                 data.(L).pearson_r(lagNum) = temp_r(2,1);
                 data.(L).pearson_p(lagNum) = temp_p(2,1);
             end
