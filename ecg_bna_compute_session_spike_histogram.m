@@ -77,11 +77,13 @@ for u=1:numel(population)
         %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
         AT=vertcat(arrival_times{:});
         AT(AT>trial_ends(end))=[];
-        RPEAK_ts=[Rpeaks(b).RPEAK_ts];
-        RPEAK_ts_perm=[Rpeaks(b).shuffled_ts];
         [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.spk);
-        RPEAK_dur = [Rpeaks(b).RPEAK_dur];
-        RPEAK_dur_perm = [Rpeaks(b).shuffled_dur];
+        
+        %% retrieve R-peaks and their reshuffles
+        RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
+        RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
+        RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
+        RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
         %% define which parts of the continous PSTH are during a trial
         trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
         trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
