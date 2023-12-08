@@ -177,6 +177,15 @@ RPEAK_ts(rpeaks2exclude)       = NaN;
 RPEAK_samples(rpeaks2exclude)  = NaN;
 RPEAK_dur(rpeaks2exclude)      = NaN;
 
+%% preallocate "out" structure
+out.raster    = NaN;
+out.mean      = nan(1,51);
+out.std       = nan(1,51);
+out.SEM       = nan(1,51);
+out.n_events  = NaN;
+out.RTs       = {};
+out.RDs       = {};
+
 %% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of reshuffled data
 for p=1:size(RPEAK_samples,1)
     RT=RPEAK_ts(p,~isnan(RPEAK_samples(p,:)));      % take time-stamps
