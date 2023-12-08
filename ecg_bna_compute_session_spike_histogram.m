@@ -10,8 +10,6 @@ BINS=(cfg.analyse_states{1,3}:cfg.spk.PSTH_binwidth:cfg.analyse_states{1,4})*100
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
 
-histbins=0.2:0.02:0.8; % bins for RR duration histogram
-
 for u=1:numel(population)
     tic
     pop=population(u);
@@ -117,8 +115,8 @@ for u=1:numel(population)
         Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
         Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
         %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
-        Output.(L).Rds                          = hist(realPSTHs.RDs{1},histbins); % put RR durations to plot those in the histograms later
-        Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],histbins);
+        Output.(L).Rds                          = hist(realPSTHs.RDs{1},cfg.spk.histbins); % put RR durations to plot those in the histograms later
+        Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],cfg.spk.histbins);
         Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
         Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
         Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
