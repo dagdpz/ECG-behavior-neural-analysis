@@ -33,7 +33,7 @@ for flNum = 1:length(fileList)
         ['SNR: ' num2str(Output.quantSNR) '; Fano Factor: ' num2str(Output.stability_rating) '; % of ISIs < 3 ms: '  num2str(100 * Output.Single_rating) '%']};
     
     figure; % raster
-    set(gcf, 'Position', [641    40   892   956])
+    set(gcf, 'Position', [50    40   450*N_conditions   956])
    
     
     for c=1:N_conditions
@@ -95,7 +95,7 @@ for flNum = 1:length(fileList)
         plot(BINS,to_plot*ypos,'color',col,'linewidth',5);
         
         y_lims=get(gca,'ylim');
-        text(BINS(10),y_lims(2)-diff(y_lims)*c*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials), ' events = ' ,num2str(Output.(L).NrEvents) ],'Color',condition_colors{c});
+        text(BINS(10),y_lims(2)-diff(y_lims)*c*1/20, [L ': trials = ' ,num2str(Output.(L).NrTrials), ' events = ' ,num2str(Output.(L).NrEvents) ],'Color',condition_colors{c}, 'Interpreter', 'none');
     end
     
     ylabel('Firing rate');
@@ -113,14 +113,16 @@ for flNum = 1:length(fileList)
         hstP=Output.(L).Rds_perm;
         hstR=hstR/sum(hstR);
         hstP=hstP/sum(hstP);
-        Rbigger=(hstR-hstP)>0;
-        bar(histbins(Rbigger),hstR(Rbigger), 'FaceColor', col);
-        bar(histbins(~Rbigger),hstP(~Rbigger), 'FaceColor', [0.5,0.5,0.5]);
-        hstC=hstR;hstC(Rbigger)=hstP(Rbigger);
-        bar(histbins,hstC, 'FaceColor', 'k');
+        if ~isnan(hstR)
+            stairs(cfg.spk.histbins, hstR, 'Color', col, 'LineWidth', 2)
+        end
+        if ~isnan(hstP)
+            stairs(cfg.spk.histbins, hstP, 'Color', [0.5,0.5,0.5], 'LineWidth', 2)
+        end
         ylabel('fraction of intervals');
         xlabel('RR Duration, s');
-        title('grey - jittered RRs');
+        title('RR durations');
+        legend({L, 'jittered'})
     end
     filename= ['Raster_PSTH_Rintervals_' unit_ID, '__' target];
      if v < 2016
