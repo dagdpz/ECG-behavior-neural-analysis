@@ -56,41 +56,34 @@ for v = 1:length(versions)
             if cfg.process_spikes
                 
                 
-                %% setting section - hopefully temporary
-                compute_unit_subsets      = 0;
-                move_files                = 0;
-                
-                compute_spike_histograms  = 1;
-                plot_spike_histograms     = 1;
-                compute_spike_phase       = 1;
-                plot_spike_phase          = 1;
-                
-                if compute_unit_subsets
-                    ecg_bna_get_unit_list(cfg);
+                %% apply exclusion criteria and save lists of units - we do it once
+                if cfg.spk.compute_unit_subsets
+                    ecg_bna_get_unit_list(cfg,1);
                 end
                 
-                if move_files
-                    %% Temporary - copy selected units separately
+                %% copy selected units separately - we do it once
+                if cfg.spk.move_files
                     ecg_bna_copy_selected_units(cfg)
                 end
                 
-                if compute_spike_histograms || compute_spike_phase
+                %% do ECG spike analysis and computations related to cardioballistic effect
+                if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase
                     Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
                     load(sessions_info(i).Input_spikes);
-                    if compute_spike_histograms
+                    if cfg.spk.compute_spike_histograms
                         ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg);
                     end
                     
-                    if compute_spike_phase
+                    if cfg.spk.compute_spike_phase
                         ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
                     end
                 end
                 
-                if plot_spike_histograms
+                if cfg.spk.plot_spike_histograms
                     ecg_bna_plot_session_spike_histogram(sessions_info(i),cfg);
                 end
-                if plot_spike_phase
+                if cfg.spk.plot_spike_phase
                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
                 end
                 aa=1;
