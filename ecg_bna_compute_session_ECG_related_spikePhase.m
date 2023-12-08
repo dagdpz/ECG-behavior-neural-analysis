@@ -43,10 +43,12 @@ for unitNum = 1:length(population)
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
         data.(L).spike_phases_radians           = single(NaN);
+        data.(L).spike_phases_histogram         = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).waveforms_microvolts           = single(nan(1,32));
         data.(L).waveforms_upsampled_microvolts = single(nan(1,128));
         data.(L).waveforms_byBin_microvolts     = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).AMP_microV                     = single(NaN);
+        data.(L).AMP_voltageBinned              = single(nan(1,500));
         data.(L).HW_ms                          = single(NaN);
         data.(L).TPW_ms                         = single(NaN);
         data.(L).REP_ms                         = single(NaN);
@@ -84,6 +86,9 @@ for unitNum = 1:length(population)
         data.(L).TPW_modulation_index           = single(nan(1,1));
         data.(L).REP_max_consec_bins            = single(nan(1,1));
         data.(L).REP_modulation_index           = single(nan(1,1));
+        data.(L).distance2thr                   = single(nan(1,1));
+        data.(L).cc_PSTH_feature                = single(nan(1,4));
+        data.(L).pp_PSTH_feature                = single(nan(1,4));
         data.(L).FRbyRR_Hz                      = single(nan(1,1));
         data.(L).cycleDurations_s               = single(nan(1,1));
         data.(L).pearson_r                      = single(nan(length(cfg.spk.lag_list), 1));
@@ -148,12 +153,14 @@ for unitNum = 1:length(population)
             [eventPhases, eventsTaken] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
             % 6. Put results for real data together
             data.(L).spike_phases_radians                 = eventPhases;
+            data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
+            data.(L).spike_phases_histogram_smoothed      = smooth(data.(L).spike_phases_histogram, 'rlowess', 1);
             
-            [~,~,bin] = histcounts(data.(L).spike_phases_radians, phase_bins);
+            [~,~,bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
             
             data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
-            waveforms_upsampled                       = interpft(data.(L).waveforms_microvolts, 32*4, 2);
-            data.(L).waveforms_upsampled_microvolts       = shift2peak(wf_times_interp_ms, waveforms_upsampled);
+            waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
+            data.(L).waveforms_upsampled_microvolts       = shift2peak(cfg.spk.wf_times_interp_ms, waveforms_upsampled);
             data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.spk.N_phase_bins, 'UniformOutput', false);
             data.(L).waveforms_byBin_microvolts           = cat(1,data.(L).waveforms_byBin_microvolts{:});
             % 7. Calculate spike features with Mosher's procedure
@@ -178,6 +185,7 @@ for unitNum = 1:length(population)
                 end
             end
             toc
+            % 8. put the resulting data together
             data.(L).AMP_microV               = [sMetric.extremAmp];
             data.(L).HW_ms                    = 10^3 * [sMetric.widthHW];
             data.(L).TPW_ms                   = 10^3 * [sMetric.widthTP];
@@ -188,6 +196,7 @@ for unitNum = 1:length(population)
             data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
             data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.spk.N_phase_bins);
             
+            % 9. estimate significance with bootstrapping
             [data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg] = ...
                 compute_reshuffles(data.(L).AMP_microV, bin, cfg);
             [data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg] = ...
@@ -197,6 +206,8 @@ for unitNum = 1:length(population)
             [data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg] = ...
                 compute_reshuffles(data.(L).REP_ms, bin, cfg);
             
+            % 10. compute cosine fits and put those into the resulting
+            % structure
             featureMatrix = ...
                 [data.(L).AMP_microV_byBin; data.(L).HW_ms_byBin; ...
                 data.(L).TPW_ms_byBin; data.(L).REP_ms_byBin];
@@ -238,6 +249,34 @@ for unitNum = 1:length(population)
                 significant_bins(data.(L).TPW_ms_byBin_smoothed, data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg);
             [data.(L).REP_max_consec_bins, data.(L).REP_modulation_index] = ...
                 significant_bins(data.(L).REP_ms_byBin_smoothed, data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg);
+            
+            % 11. estimate how much spike amplitude is far from the
+            % thresholds
+            data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, [0:500]); % bin amplitudes
+            first_nonzero_bin          = find(data.(L).AMP_voltageBinned,1,'first');
+            thr6std                    = ceil(data.thresholds_microV(1));
+            thr4std                    = ceil(data.thresholds_microV(2));
+            
+            distance2thr = [first_nonzero_bin-thr6std first_nonzero_bin-thr4std]; % number of bins to thresholds
+            distance2thr(distance2thr < 0) = []; % drop negative (those weren't detected by the corresponding threshold)
+            distance2thr = min(distance2thr); % just in case we still have both, take the shortest distance to a threshold
+            
+            data.(L).distance2thr = distance2thr; % basically, number of empty bins from the spike with the lowest amplitude and the closest threshold
+            
+            % 12. compute correlation between features phase dynamics and
+            % spike dynamics
+            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
+            data.(L).cc_PSTH_feature(1) = cc(2,1); % for spike AMP
+            data.(L).pp_PSTH_feature(1) = pp(2,1);
+            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
+            data.(L).cc_PSTH_feature(2) = cc(2,1); % for HW
+            data.(L).pp_PSTH_feature(2) = pp(2,1);
+            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
+            data.(L).cc_PSTH_feature(3) = cc(2,1); % for spike TPW
+            data.(L).pp_PSTH_feature(3) = pp(2,1);
+            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
+            data.(L).cc_PSTH_feature(4) = cc(2,1); % for spike REP
+            data.(L).pp_PSTH_feature(4) = pp(2,1);
             
             % II. Compute unit firing rate per RR-interval
             [data.(L).FRbyRR_Hz, ...
