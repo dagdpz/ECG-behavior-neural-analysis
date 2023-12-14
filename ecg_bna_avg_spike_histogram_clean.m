@@ -56,13 +56,27 @@ for a = 1: N_Areas
             N=dat_fieldnames{fn};
             Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
         end
-        Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
+%         Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
         
         Out.(T).(L).FR_perECGTriggeredAverage = nanmean(vertcat(dat.SD),2);
-        % mean(SD - SDP)- this is not used and does not make much sense im afraid
-        %Out.(T).(L).SDmean                    = nanmean(vertcat(dat.SDsubstractedSDP),2);
-        % standard error of the SDmean - this is not used and does not make much sense im afraid
-        %Out.(T).(L).SDmean_SEM                = nanstd(vertcat(dat.SDsubstractedSDP),[],2)/ numel(dat);
+        
+        %% compute histograms - unit fractions and counts
+        out = [Out.(T).(L)];
+        
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
+        Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
+        sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
+        
+        % increase, decrease, non-sign
+        Out.(T).(L).Pc_SignFR = ([sum(out.sig_sign(sig) == 1) ,sum(out.sig_sign(sig) == -1),(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+        Out.(T).(L).Nb_SignFR = ([sum(out.sig_sign(sig) == 1) ,sum(out.sig_sign(sig) == -1),(sum(~sig) -Idx_Units_NaN),] ) ;
+        
+        %% compute modulation indices with sign
+        curr_sign = Out.(T).(L).sig_sign;
+        curr_sign(curr_sign == 0) = 1; % to define real sign but not to lose non-significant ones
+        Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
+        Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
+        
     end
 end
 
@@ -71,22 +85,18 @@ end
 figure('Name',sprintf('BarPlot'),'Position',[1000 150 600 400],'PaperPositionMode', 'auto');
 for c=1:N_conditions
     L=cfg.condition(c).name;
+    % prepare data matrix for plotting
+    data_mat = [];
     for a = 1: N_Areas
         T=Ana_TargetBrainArea{a};
-        
-        out = [Out.(T).(L)];
-        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
-        Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
-        sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > 4) ;
-        
-        % increase, decrease, non-sign
-        Pc_SignFR.(L)(a,:) = ([sum(out.sig_sign(sig) == 1) ,sum(out.sig_sign(sig) == -1),(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
-        Nb_SignFR.(L)(a,:) = ([sum(out.sig_sign(sig) == 1) ,sum(out.sig_sign(sig) == -1),(sum(~sig) -Idx_Units_NaN),] ) ;
+        data_mat = vertcat(data_mat, Out.(T).(L).Pc_SignFR);
     end
     
     subplot(1,N_conditions,c);
-    colormap([0.8500 0.3250 0.0980; 0 0.4470 0.7410; 1 1 1])
-    bar(Pc_SignFR.(L),'stacked', 'Facecolor','flat');
+    b = bar(data_mat,'stacked');
+    for ii = 1:3
+        b(ii).FaceColor = bar_colors(ii,:);
+    end
     title(L,'interpreter','none');
     set(gca,'XTickLabel',Ana_TargetBrainArea,'fontsize',10);
     ylim([0 100])
@@ -94,6 +104,14 @@ for c=1:N_conditions
     % legend(b, {'increase FR', 'decrease FR', 'non-significant'}, 'Location', 'Best')
 end
 save_figure_as('Pc_CardiacRelatedUnits',basepath_to_save,savePlot)
+
+%% Fisher's exact test to compare unit fractions between task and rest
+for a = 1: N_Areas
+    T=Ana_TargetBrainArea{a};
+    
+    p(a,:) = ecg_bna_fisher_test(Out.(T).Task.Nb_SignFR, Out.(T).Rest.Nb_SignFR);
+    
+end
 
 %% How much does the surrogate and mean firing diverge
 figure('Name',sprintf('Surrogate_MeanFr'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
@@ -361,7 +379,7 @@ for a = 1: N_Areas
         
         %Bar graph how many
         subplot(2,4,3);
-        toplot=arrayfun(@(x) Pc_SignFR.(x.name)(a,:),cfg.condition,'uniformoutput',false);
+        toplot=arrayfun(@(x) Out.(T).(x.name).Pc_SignFR, cfg.condition, 'uniformoutput', false);
         barpairs =  vertcat(toplot{:});
         b = bar(barpairs,'stacked', 'Facecolor','flat' );
         b(3).FaceColor = [1 1 1];
@@ -770,8 +788,8 @@ for c=1:N_conditions
 %                 
 %             else
                 SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(inc & tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:)))) ;
-                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc & tim,:)), SDmean_SEM ,lineProps,1);
-                MI_groups =  max(nanmean(out.SDsubstractedSDP_normalized(inc & tim,WindowIdx))) - min(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:))) ;
+                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1), SDmean_SEM ,lineProps,1);
+                MI_groups =  max(nanmean(out.SDsubstractedSDP_normalized(inc & tim,WindowIdx),1)) - min(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1)) ;
 %             end
             % set(gca,'ylim',[-15, 15]);
             % vline(50); vline(-50); vline(250); vline(-250);
@@ -878,8 +896,8 @@ for c=1:N_conditions
             subplot(N_conditions,3,i_Time +(c-1)*3);
             hold on; axis square; box on;
             text(-400,-4*a, [T, ' R: n = ' ,num2str(sum(tim)) ],'Color',acol)
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(tim,:)))) ;
-            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(tim,:)), SDmean_SEM ,lineProps,1);
+            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(tim,:),1))) ;
+            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(tim,:),1), SDmean_SEM ,lineProps,1);
             
             %set(gca,'ylim',[-15, 15]);
             title([L ' ' ThreeTiming(i_Time)],'interpreter','none');
@@ -892,7 +910,356 @@ for c=1:N_conditions
 end
 save_figure_as('Suppression_Enhancement_SeparatedForTime_GroupedAccordingTo',basepath_to_save,savePlot)
 
-%% Graph for units having rest & task
+%% below are plots for units having BOTH task and rest - they actually will work out anyway
+if OnlyUnits_withRestANDTask
+    %% modulation index - percent change
+    figure;
+    set(gcf, 'Position', [2 381 1914 553])
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        subplot(1,3,a)
+        unit_count = ~isnan([Out.(T).Rest.FR_ModIndex_PcS_signed, Out.(T).Task.FR_ModIndex_PcS_signed]');
+        unit_count = sum(any(unit_count));
+        sig_task_rest = Out.(T).Rest.sig_n_bins > 4 & Out.(T).Task.sig_n_bins > 4;
+        sig_task      = Out.(T).Rest.sig_n_bins <= 4 & Out.(T).Task.sig_n_bins > 4;
+        sig_rest      = Out.(T).Rest.sig_n_bins > 4 & Out.(T).Task.sig_n_bins <= 4;
+        %     [cc, pp] = corrcoef(Out.(T).Rest.FR_ModIndex_PcS, Out.(T).Task.FR_ModIndex_PcS,'Rows','complete');
+        hold on
+        scatter(Out.(T).Rest.FR_ModIndex_PcS_signed, Out.(T).Task.FR_ModIndex_PcS_signed, [], [0.7 0.7 0.7], 'filled')
+        scatter(Out.(T).Rest.FR_ModIndex_PcS_signed(sig_task_rest), Out.(T).Task.FR_ModIndex_PcS_signed(sig_task_rest), [], 'm', 'filled')
+        scatter(Out.(T).Rest.FR_ModIndex_PcS_signed(sig_task), Out.(T).Task.FR_ModIndex_PcS_signed(sig_task), [], 'r', 'filled')
+        scatter(Out.(T).Rest.FR_ModIndex_PcS_signed(sig_rest), Out.(T).Task.FR_ModIndex_PcS_signed(sig_rest), [], 'b', 'filled')
+        %     ls_line = lsline(gca);
+        %     ls_line.Color = 'b';
+        box on
+        grid on
+        axis square
+        xlim([-60 60])
+        ylim([-60 60])
+        %     title({[T ': N = ' num2str(unit_count)], ...
+        %         ['cc = ' num2str(cc(2)) '; p = ' num2str(pp(2))]})
+        title([T ': N = ' num2str(unit_count)])
+        if a == 1
+            xlabel('% signal change in Rest')
+            ylabel('% signal change in Task')
+            legend({'non-significant', 'sig. task & sig. rest', 'sig. only task', 'sig. only rest'})
+        end
+        
+    end
+    save_figure_as('Rest_vs_Task_Scatter_Pc_signal_change_signed',basepath_to_save,savePlot)
+    
+    %% modulation index - absolute percent change
+    figure
+    set(gcf, 'Position', [2 381 1914 553])
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        subplot(1,3,a)
+        unit_count = ~isnan([Out.(T).Rest.FR_ModIndex_PcS; Out.(T).Task.FR_ModIndex_PcS]');
+        unit_count = sum(any(unit_count));
+        sig_task_rest = Out.(T).Rest.sig_n_bins > 4 & Out.(T).Task.sig_n_bins > 4;
+        sig_task      = Out.(T).Rest.sig_n_bins <= 4 & Out.(T).Task.sig_n_bins > 4;
+        sig_rest      = Out.(T).Rest.sig_n_bins > 4 & Out.(T).Task.sig_n_bins <= 4;
+        %     [cc, pp] = corrcoef(Out.(T).Rest.MI_Pc, Out.(T).Task.MI_Pc,'Rows','complete');
+        hold on
+        scatter(Out.(T).Rest.FR_ModIndex_PcS, Out.(T).Task.FR_ModIndex_PcS, [], [0.7 0.7 0.7], 'filled')
+        ls_line = lsline(gca);
+        ls_line.Color = [0.3 0.3 0.3];
+        scatter(Out.(T).Rest.FR_ModIndex_PcS(sig_task_rest), Out.(T).Task.FR_ModIndex_PcS(sig_task_rest), [], 'm', 'filled')
+        scatter(Out.(T).Rest.FR_ModIndex_PcS(sig_task), Out.(T).Task.FR_ModIndex_PcS(sig_task), [], 'r', 'filled')
+        scatter(Out.(T).Rest.FR_ModIndex_PcS(sig_rest), Out.(T).Task.FR_ModIndex_PcS(sig_rest), [], 'b', 'filled')
+        box on
+        axis square
+        xlim([0 60])
+        ylim([0 60])
+        %     title({[T ': N = ' num2str(unit_count)], ...
+        %         ['cc = ' num2str(cc(2)) '; p = ' num2str(pp(2))]})
+        title([T ': N = ' num2str(unit_count)])
+        if a == 1
+            xlabel('% signal change in Rest')
+            ylabel('% signal change in Task')
+            legend({'non-significant', 'linear fit (all data)', 'sig. task & sig. rest', 'sig. only task', 'sig. only rest'})
+        end
+        
+    end
+    save_figure_as('Rest_vs_Task_Scatter_Pc_signal_change',basepath_to_save,savePlot)
+    
+    %% modulation index - FR
+    figure
+    set(gcf, 'Position', [2 381 1914 553])
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        subplot(1,3,a)
+        unit_count = ~isnan([Out.(T).Rest.FR_ModIndex_SubtrSDP_signed; Out.(T).Task.FR_ModIndex_SubtrSDP_signed]');
+        unit_count = sum(any(unit_count));
+        %     [cc, pp] = corrcoef(Out.(T).Rest.FR_ModIndex_SubtrSDP_signed, Out.(T).Task.FR_ModIndex_SubtrSDP_signed,'Rows','complete');
+        scatter(Out.(T).Rest.FR_ModIndex_SubtrSDP_signed, Out.(T).Task.FR_ModIndex_SubtrSDP_signed)
+        %     ls_line = lsline(gca);
+        %     ls_line.Color = 'b';
+        box on
+        axis square
+        xlim([-7 7])
+        ylim([-7 7])
+        %     title({[T ': N = ' num2str(unit_count)], ...
+        %         ['cc = ' num2str(cc(2)) '; p = ' num2str(pp(2))]})
+        title([T ': N = ' num2str(unit_count)])
+        if a == 1
+            xlabel('\Delta Firing Rate in Rest, Hz')
+            ylabel('\Delta Firing Rate in Task, Hz')
+            legend({'', '', '', ''})
+        end
+        
+    end
+    save_figure_as('Rest_vs_Task_Scatter_Modulation_Magnitude_signed',basepath_to_save,savePlot)
+    
+    %% time of max 
+    colors = [0 0 0; 0 0 1; 1 0 0; 1 0 1]; % black, blue, red, magenta
+    
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        unit_count = ~isnan([Out.(T).Rest.FR_ModIndex_SubtrSDP_signed, Out.(T).Task.FR_ModIndex_SubtrSDP_signed, ...
+            Out.(T).Rest.sig_time, Out.(T).Task.sig_time]');
+        valid_unit_ids = all(unit_count,1);
+        unit_count = sum(valid_unit_ids);
+        
+        valid_rest_times      = Out.(T).Rest.sig_time(valid_unit_ids);
+        valid_task_times      = Out.(T).Task.sig_time(valid_unit_ids);
+        
+        valid_rest_bins       = Out.(T).Rest.sig_n_bins(valid_unit_ids);
+        valid_task_bins       = Out.(T).Task.sig_n_bins(valid_unit_ids);
+        
+        non_sig       = valid_rest_bins <= 4 & valid_task_bins <= 4 & ...
+            ~isnan(valid_rest_times) & ~isnan(valid_task_times); % I have to search for non-significant explicitly as there are some nan units
+        sig_task_rest = valid_rest_bins > 4 & valid_task_bins > 4;
+        sig_task      = valid_rest_bins <= 4 & valid_task_bins > 4;
+        sig_rest      = valid_rest_bins > 4 & valid_task_bins <= 4;
+        groups        = zeros(unit_count,1);
+        
+        groups(sig_rest)      = 1;
+        groups(sig_task)      = 2;
+        groups(sig_task_rest) = 3;
+        
+        % units counts
+        non_sig_count       = sum(non_sig);
+        sig_task_rest_count = sum(sig_task_rest);
+        sig_task_count      = sum(sig_task);
+        sig_rest_count      = sum(sig_rest);
+        
+        % compute histograms - rest
+        [Rest.task_rest_bins, centers] = hist(valid_rest_times(sig_task_rest), -250:50:250);%/sum(sig_task_rest);
+        Rest.rest_bins      = hist(valid_rest_times(sig_rest), -250:50:250);%/sum(sig_rest);
+        Rest.task_bins      = hist(valid_rest_times(sig_task), -250:50:250);%/sum(sig_task);
+        Rest.nonsig_bins    = hist(valid_rest_times(non_sig), -250:50:250);%/sum(sig_task);
+        
+        % compute histograms - task
+        [Task.task_rest_bins, centers] = hist(valid_task_times(sig_task_rest), -250:50:250);%/sum(sig_task_rest);
+        Task.rest_bins      = hist(valid_task_times(sig_rest), -250:50:250);%/sum(sig_rest);
+        Task.task_bins      = hist(valid_task_times(sig_task), -250:50:250);%/sum(sig_task);
+        Task.nonsig_bins    = hist(valid_task_times(non_sig), -250:50:250);%/sum(sig_task);
+        
+        figure,
+        set(gcf, 'Position', [723 152 799 832])
+        
+        % plot the main scatter
+        s = scatterhist(valid_rest_times, valid_task_times, ...
+            'Group', groups, ...
+            ...%'Style', 'bar', ...
+            'Marker', '.o+x', ...
+            'MarkerSize', 6, ...
+            'Location', 'SouthWest', ...
+            'Direction', 'out', ...
+            'Color', colors);
+        legend('Non Significant', 'Rest Sig.', 'Task Sig', 'Task & Rest Sig.')
+        
+        title({[T ': N = ' num2str(unit_count)], ...
+            'Non-sig / {\color{blue}rest sig} / {\color{red}task sig} / {\color{magenta}task&rest sig}', ...
+            [num2str(non_sig_count) ' / {\color{blue}' num2str(sig_rest_count) '} / {\color{red}' num2str(sig_task_count) '} / {\color{magenta}' num2str(sig_task_rest_count) '}']})
+        xlabel('Rest: Time of Max \DeltaFR, ms from R-peak')
+        ylabel('Task: Time of Max \DeltaFR, ms from R-peak')
+        
+        xlim([-250 250])
+        ylim([-250 250])
+        axis square
+        box on
+        
+        % plot the bottom marginal histogram
+        bar_data = [Rest.nonsig_bins; Rest.rest_bins; Rest.task_bins; Rest.task_rest_bins]';
+        st_bar = bar(s(2), centers, bar_data);
+        ylabel(s(2), 'Unit Count')
+        xlim(s(2), [-250 250])
+        for ii = 1:4
+            st_bar(ii).FaceColor = colors(ii,:);
+        end
+        clear st_bar
+        
+        % plot the side marginal histogram
+        bar_data = [Task.nonsig_bins; Task.rest_bins; Task.task_bins; Task.task_rest_bins]';
+        st_bar = barh(s(3), centers, bar_data);
+        xlabel(s(3), 'Unit Count')
+        %     xlim(s(3), [0 max(bar_data, [], 'all')])
+        ylim(s(3), [-250 250])
+        for ii = 1:4
+            st_bar(ii).FaceColor = colors(ii,:);
+        end
+        clear st_bar
+        save_figure_as(['Rest_vs_Task_' T '_Scatter_Time_Max_Change'],basepath_to_save,savePlot)
+    end
+    
+    %% time of max - only for consistent sign of responses
+    figure,
+	set(gcf, 'Position', [723 152 799 832])
+    
+    colors = [1 0.53 0;
+        0.05 0.65 0.7;
+        1 0 0.6];
+    
+    groups               = [];
+    all_valid_rest_times = [];
+    all_valid_task_times = [];
+    all_unit_counts      = [];
+    Rest                 = struct('task_rest_bins', [], 'rest_bins', [], 'task_bins', [], 'nonsig_bins', []);
+    Task                 = struct('task_rest_bins', [], 'rest_bins', [], 'task_bins', [], 'nonsig_bins', []);
+    
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        sign_consistent = ...
+            eq(Out.(T).Rest.sig_sign, Out.(T).Task.sig_sign);
+        
+        unit_count = ~isnan([Out.(T).Rest.FR_ModIndex_SubtrSDP_signed, Out.(T).Task.FR_ModIndex_SubtrSDP_signed, ...
+            Out.(T).Rest.sig_time, Out.(T).Task.sig_time]') & sign_consistent';
+        valid_unit_ids = all(unit_count,1);
+        unit_count = sum(valid_unit_ids);
+        
+        % choose only valid units with consistent sign of response
+        valid_rest_times      = Out.(T).Rest.sig_time(valid_unit_ids & sign_consistent');
+        valid_task_times      = Out.(T).Task.sig_time(valid_unit_ids & sign_consistent');
+        
+        valid_rest_bins       = Out.(T).Rest.sig_n_bins(valid_unit_ids & sign_consistent');
+        valid_task_bins       = Out.(T).Task.sig_n_bins(valid_unit_ids & sign_consistent');
+        
+        % count units
+        non_sig       = valid_rest_bins <= 4 & valid_task_bins <= 4 & ...
+            ~isnan(valid_rest_times) & ~isnan(valid_task_times); % I have to search for non-significant explicitly as there are some nan units
+        sig_task_rest = valid_rest_bins > 4 & valid_task_bins > 4;
+        sig_task      = valid_rest_bins <= 4 & valid_task_bins > 4;
+        sig_rest      = valid_rest_bins > 4 & valid_task_bins <= 4;
+        
+        % split data into groups by area and response (temporary)
+        groups_tmp                = zeros(unit_count,1); % 0 - nonsig
+        groups_tmp(sig_rest)      = 1;                   % 1 - sig rest
+        groups_tmp(sig_task)      = 2;                   % 2 - sig task
+        groups_tmp(sig_task_rest) = 3;                   % 3 - sig task rest
+        
+        % units counts
+        non_sig_count       = sum(non_sig);
+        sig_task_rest_count = sum(sig_task_rest);
+        sig_task_count      = sum(sig_task);
+        sig_rest_count      = sum(sig_rest);
+        
+        % compute histograms - rest
+        out.(T).bin_counts_rest = hist(valid_rest_times, -250:50:250);
+        out.(T).bin_counts_task = hist(valid_task_times, -250:50:250);
+        
+        % gather the necessary data together
+        groups               = [groups; groups_tmp+4*(a-1)];
+        all_valid_rest_times = [all_valid_rest_times; valid_rest_times];
+        all_valid_task_times = [all_valid_task_times; valid_task_times];
+        all_unit_counts      = [all_unit_counts; unit_count];
+    end
+    
+    s = scatterhist(all_valid_rest_times, all_valid_task_times, ...
+        'Group', groups, ...
+        ...%'Style', 'bar', ...
+        'Marker', '.o+x', ...
+        'MarkerSize', 6, ...
+        'Location', 'SouthWest', ...
+        'Direction', 'out', ...
+        'Color', [repmat(colors(1,:), 4, 1); repmat(colors(2,:), 4, 1); repmat(colors(3,:), 4, 1)]);
+    
+    legend('VPL: Non Significant', 'VPL: Rest Sig.', 'VPL: Task Sig', 'VPL: Task & Rest Sig.', ...
+        'dPul: Non Significant', 'dPul: Rest Sig.', 'dPul: Task Sig', 'dPul: Task & Rest Sig.', ...
+        'MD: Non Significant', 'MD: Rest Sig.', 'MD: Task Sig', 'MD: Task & Rest Sig.')
+    xlabel('Rest: Time of Max \DeltaFR, ms from R-peak')
+    ylabel('Task: Time of Max \DeltaFR, ms from R-peak')
+    title({'Only Units with Consistent Modulation Sign', ...
+        ['\color[rgb]{1.0000 0.5300 0}VPL: N = ' num2str(all_unit_counts(1)) ...
+        '; \color[rgb]{0.0500 0.6500 0.7000}dPul: N = ' num2str(all_unit_counts(2)) ...
+        '; \color[rgb]{1.0000 0 0.6000}MD: N = ' num2str(all_unit_counts(3))]})
+    
+    xlim([-250 250])
+    ylim([-250 250])
+    axis square
+    box on
+    
+    % plot the bottom marginal histogram
+    bar_data = [out.VPL.bin_counts_rest; out.dPul.bin_counts_rest; out.MD.bin_counts_rest]';
+    st_bar = bar(s(2), centers, bar_data);
+    ylabel(s(2), 'Unit Count')
+    % xlim(s(2), [-250 250])
+    for ii = 1:3
+        st_bar(ii).FaceColor = colors(ii,:);
+    end
+    clear st_bar
+    
+    % plot the side marginal histogram
+    bar_data = [out.VPL.bin_counts_task; out.dPul.bin_counts_task; out.MD.bin_counts_task]';
+    st_bar = barh(s(3), centers, bar_data);
+    xlabel(s(3), 'Unit Count')
+    % xlim(s(3), [0 max(bar_data, [], 'all')])
+    % ylim(s(3), [-250 250])
+    for ii = 1:3
+        st_bar(ii).FaceColor = colors(ii,:);
+    end
+    clear st_bar
+    save_figure_as(['Rest_vs_Task_All_Areas_Scatter_Time_Max_Change'],basepath_to_save,savePlot)
+    
+    %% histogram of modulation indices - % signal change
+
+    figure
+    set(gcf, 'Position', [2 381 1914 553])
+    
+    for a = 1: N_Areas
+        T = Ana_TargetBrainArea{a};
+        
+        for c=1:N_conditions
+            L=cfg.condition(c).name;
+            
+            subplot(2,3,a + 3*(c-1))
+            colororder([1 1 1; 0.8500 0.3250 0.0980; 0 0.4470 0.7410])
+            MIs_Pc_all  = Out.(T).(L).FR_ModIndex_PcS_signed;
+            pos_idx     = Out.(T).(L).sig_sign > 0;
+            neg_idx     = Out.(T).(L).sig_sign < 0;
+            sign_all    = Out.(T).(L).sig_n_bins > 4;
+            
+            non_sig = histcounts(MIs_Pc_all(~sign_all), -60:10:60);
+            sig_pos = histcounts(MIs_Pc_all(pos_idx & sign_all), -60:10:60);
+            sig_neg = histcounts(MIs_Pc_all(neg_idx & sign_all), -60:10:60);
+            
+            bar(-55:10:60, [non_sig; sig_pos; sig_neg], 'stacked')
+            
+            if c == 1
+                title(T)
+            end
+            
+            title([L ': ' T])
+            
+            if a == 1 && c == 1
+                legend({'Non-Significant', 'Sig. Pos.', 'Sig. Neg.'})
+                xlabel('% signal change')
+                ylabel('Unit Counts')
+            end
+            
+        end
+        
+    end
+    sgtitle('Modulation Magnitude in Rest and Task')
+    save_figure_as('Histograms_Magnitude_Signal_Change_Significant',basepath_to_save,savePlot)
+    
+end
 end
 
 function rounded=roundto(unrounded,n)
