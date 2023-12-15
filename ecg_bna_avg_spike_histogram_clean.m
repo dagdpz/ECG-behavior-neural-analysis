@@ -54,9 +54,12 @@ for a = 1: N_Areas
         dat_fieldnames={'unit_ID','quantSNR','Single_rating','stability_rating'};
         for fn=1:numel(dat_fieldnames)
             N=dat_fieldnames{fn};
-            Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
+            if strcmp(N, 'unit_ID')
+                Out.(T).(L).(N)=vertcat({SPK_PSTH(ismember(TargetBrainArea,T)).(N)}');
+            else
+                Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
+            end
         end
-%         Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
         
         Out.(T).(L).FR_perECGTriggeredAverage = nanmean(vertcat(dat.SD),2);
         
