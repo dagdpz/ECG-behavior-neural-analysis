@@ -16,7 +16,7 @@ keys.tuning_table = ph_load_tuning_table(keys); %% load tuning table
 % create unit list before exclusion criteria and save it
 unit_ids = keys.tuning_table(2:end,1);
 targets  = keys.tuning_table(2:end,3);
-filename = [cfg.SPK_root_results_fldr filesep 'unitInfo_before_exclusion'];
+filename = [cfg.unit_lists filesep 'unitInfo_before_exclusion'];
 save(filename, 'unit_ids', 'targets')
 
 % keep unit list before exclusion for later
@@ -40,7 +40,7 @@ if compute_unit_subsets
     keys=ph_tuning_table_correction(keys);
     unit_ids = keys.tuning_table(2:end,1);
     targets  = keys.tuning_table(2:end,3);
-    filename = [cfg.SPK_root_results_fldr filesep 'unitInfo_after_exclusion_stableTaskAndRest'];
+    filename = [cfg.unit_lists filesep 'unitInfo_after_exclusion_stableTaskAndRest'];
     save(filename, 'unit_ids', 'targets')
     % 2. create table of unit numbers by area
     [unique_areas, ~, ic] = unique(targets);
@@ -52,7 +52,7 @@ if compute_unit_subsets
     ids_excluded = ~ismember(unit_ids_before_exclusion, unit_ids);
     unit_ids_excluded = unit_ids_before_exclusion(ids_excluded);
     targets_excluded  = targets_before_exclusion(ids_excluded);
-    filename = [cfg.SPK_root_results_fldr filesep 'unitInfo_excluded_stableTaskAndRest'];
+    filename = [cfg.unit_lists filesep 'unitInfo_excluded_stableTaskAndRest'];
     unit_ids = unit_ids_excluded;
     targets  = targets_excluded;
     save(filename, 'unit_ids', 'targets')
@@ -90,7 +90,7 @@ if compute_unit_subsets
     targets_after_exclusion(ids_rest) = targets_after_exclusion_rest;
     targets_after_exclusion(ids_task) = targets_after_exclusion_task;
     
-    filename = [cfg.SPK_root_results_fldr filesep 'unitInfo_after_exclusion'];
+    filename = [cfg.unit_lists filesep 'unitInfo_after_exclusion'];
     unit_ids = unit_ids_after_exclusion;
     targets  = targets_after_exclusion;
     save(filename, 'unit_ids', 'targets')
@@ -107,7 +107,7 @@ if compute_unit_subsets
     targets_excluded  = targets(ids_excluded);
     unit_ids = unit_ids_excluded;
     targets  = targets_excluded;
-    filename = [cfg.SPK_root_results_fldr filesep 'unitInfo_excluded'];
+    filename = [cfg.unit_lists filesep 'unitInfo_excluded'];
     save(filename, 'unit_ids', 'targets')
     [unique_areas, ~, ic] = unique(targets_excluded);
     unit_counts = accumarray(ic,1);
