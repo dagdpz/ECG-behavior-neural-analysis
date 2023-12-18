@@ -30,9 +30,16 @@ function cfg = ecg_bna_define_folders(cfg)
 
 % load the specified settings file
 
-cfg.ECG_root_results_fldr = fullfile(cfg.results_folder, 'ECG', num2str(cfg.version));
-cfg.LFP_root_results_fldr = fullfile(cfg.results_folder, 'LFP', num2str(cfg.version));
-cfg.SPK_root_results_fldr = fullfile(cfg.results_folder, 'ECG_triggered_spikes', num2str(cfg.version));
+cfg.ECG_root_results_fldr   = fullfile(cfg.results_folder, 'ECG', num2str(cfg.version));
+cfg.LFP_root_results_fldr   = fullfile(cfg.results_folder, 'LFP', num2str(cfg.version));
+cfg.SPK_root_results_fldr   = fullfile(cfg.results_folder, 'ECG_triggered_spikes', num2str(cfg.version));
+cfg.unit_lists              = fullfile(cfg.SPK_root_results_fldr, 'unit_lists'); % store unit lists before and after exclusion criteria
+cfg.per_session_folder      = fullfile(cfg.SPK_root_results_fldr, 'per_unit'); % r-peak triggered psths per unit (data and plots)
+cfg.per_session_selected    = fullfile(cfg.SPK_root_results_fldr, 'per_unit_selected_600'); % all units with 1 block of either task or rest, included by recording quality and # of R-peaks
+cfg.per_session_stable      = fullfile(cfg.SPK_root_results_fldr, 'per_unit_stable_600'); % units that have both task and rest, included by recording quality and # of R-peaks
+cfg.cardioballistic_folder  = fullfile(cfg.SPK_root_results_fldr, 'cardioballistic'); % cardioballistic analysis (data and plots)
+cfg.population_all          = fullfile(cfg.SPK_root_results_fldr, 'Population_AllUnits'); % population folder for all units with 1 block of either task or rest
+cfg.population_bothTaskRest = fullfile(cfg.SPK_root_results_fldr, 'Population_bothTaskRest'); % population folder for units that have both task and rest
 if ~exist(cfg.ECG_root_results_fldr, 'dir')
     mkdir(cfg.ECG_root_results_fldr);
 end
@@ -41,6 +48,21 @@ if ~exist(cfg.LFP_root_results_fldr, 'dir')
 end
 if ~exist(cfg.SPK_root_results_fldr, 'dir')
     mkdir(cfg.SPK_root_results_fldr);
+end
+if ~exist(cfg.unit_lists, 'dir')
+    mkdir(cfg.unit_lists);
+end
+if ~exist(cfg.per_session_folder, 'dir')
+    mkdir(cfg.per_session_folder);
+end
+if ~exist(cfg.cardioballistic_folder, 'dir')
+    mkdir(cfg.cardioballistic_folder);
+end
+if ~exist(cfg.population_all, 'dir')
+    mkdir(cfg.population_all);
+end
+if ~exist(cfg.population_bothTaskRest, 'dir')
+    mkdir(cfg.population_bothTaskRest);
 end
 
 % get conditions to be included in the analysis
@@ -57,17 +79,7 @@ cfg.analyse_lfp_folder  = [cfg.LFP_root_results_fldr];                          
 %     if ecg_bna_cfg.process_LFP || ~exist(ecg_bna_cfg.proc_lfp_folder, 'dir')
 %         ecg_bna_cfg.process_LFP = true;
 %     end
-% end
-
-% folder to store session-wise analysis results - let's try to please NOT do this
-% for i = 1:length(cfg.session_info)
-%     cfg.session_info(i).session             = [cfg.session_info(i).Monkey, '_', cfg.session_info(i).Date];
-%     cfg.session_info(i).proc_ecg_fldr       = cfg.proc_ecg_folder;
-%     cfg.session_info(i).analyse_ecg_fldr    = cfg.analyse_ecg_folder;
-%     cfg.session_info(i).analyse_lfp_fldr    = cfg.analyse_lfp_folder;
-%     cfg.session_info(i).proc_lfp_fldr       = cfg.proc_lfp_folder;
-%     cfg.session_info(i).SPK_fldr            = cfg.SPK_root_results_fldr;
-% end
+% % end
 
 % save settings struct
 save(fullfile(cfg.ECG_root_results_fldr, ['settings_' num2str(cfg.version) '.mat']), 'cfg');
