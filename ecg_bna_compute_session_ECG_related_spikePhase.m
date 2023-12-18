@@ -6,14 +6,18 @@ if ~exist(basepath_to_save,'dir')
 end
 
 %% load list of selected units - won't process all the crap
-unit_list = load([cfg.SPK_root_results_fldr filesep 'unitInfo_after_exclusion_stableTaskAndRest.mat']);
-unitList = unique(unit_list.unit_ids_after_exclusion);
+if cfg.spk.apply_exclusion_criteria
+    
+    unit_list = load([cfg.SPK_root_results_fldr filesep cfg.spk.unit_list]);
+    unitList = unique(unit_list.unit_ids);
+    
+    % figure out which units take from this session
+    selected_this_session = ismember({population.unit_ID}, unitList);
+    population = population(selected_this_session);
+    
+end
 
 Rblocks=[Rpeaks.block];
-
-% figure out which units take from this session
-selected_this_session = ismember({population.unit_ID}, unitList);
-population = population(selected_this_session);
 
 for unitNum = 1:length(population)
     
@@ -112,185 +116,186 @@ for unitNum = 1:length(population)
         %% get condition AND valid block trials only
         CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
         tr=ismember([T.block],blocks) & CT;
-        if sum(tr)>1 % do calculations only if number of trials > 1
-            popcell=pop.trial(tr);
-            trcell=T(tr);
-            
-            % 0. Prepare data variables
-            states_onset               = {trcell.states_onset};
-            states                     = {trcell.states};
-            TDT_ECG1_t0_from_rec_start = {trcell.TDT_ECG1_t0_from_rec_start};
-            block_nums                 = {trcell.block};
-            state1_times               = cellfun(@(x,y) x(y == 1), states_onset, states, 'Uniformoutput', false); % trial starts
-            state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
-            % compute RR-intervals
-            valid_RRinterval_ends      = single([Rpeaks(b).RPEAK_ts]);
-            valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).RPEAK_dur]);
-            % 0. figure out RR-intervals lying within trials
-            trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
-            trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
-            
-            RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
-            for RRnum = 1:length(RR_within_trial_idx)
-                RR_within_trial_idx(RRnum) = ...
-                    any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
-                    valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
-            end
-            valid_RRinterval_ends      = valid_RRinterval_ends(RR_within_trial_idx); % get rid of RRs beyond the current set of trials
-            valid_RRinterval_starts    = valid_RRinterval_starts(RR_within_trial_idx);
-            % 1. take arrival times and the corresponding waveforms
-            AT = {popcell.arrival_times};
-            WF = {popcell.waveforms};
-            % 2. choose only those that happen after MP-state 1
-            idx_after_state1 = cellfun(@(x,y) x>y, AT, state1_times, 'Uniformoutput', false);
-            % 3. add TDT_ECG1_t0_from_rec_start and Rpeak block offset to spike times
-            AT_one_stream_cell = cellfun(@(x,y,z,a) x(y)+z+Rpeaks([Rpeaks.block] == a).offset, AT, idx_after_state1, TDT_ECG1_t0_from_rec_start, block_nums, 'Uniformoutput', false);
-            WF_one_stream_cell = cellfun(@(x,y) x(y,:), WF, idx_after_state1, 'Uniformoutput', false);
-            % 4. merge all spike times and waveforms together
-            AT_one_stream = cat(1, AT_one_stream_cell{:});
-            WF_one_stream = cat(1, WF_one_stream_cell{:});
-            % 5. calculate heart cycle phase where individual spikes ended up
-            [eventPhases, eventsTaken] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-            % 6. Put results for real data together
-            data.(L).spike_phases_radians                 = eventPhases;
-            data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
-            data.(L).spike_phases_histogram_smoothed      = smooth(data.(L).spike_phases_histogram, 'rlowess', 1);
-            
-            [~,~,bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
-            
-            data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
-            waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
-            data.(L).waveforms_upsampled_microvolts       = shift2peak(cfg.spk.wf_times_interp_ms, waveforms_upsampled);
-            data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.spk.N_phase_bins, 'UniformOutput', false);
-            data.(L).waveforms_byBin_microvolts           = cat(1,data.(L).waveforms_byBin_microvolts{:});
-            % 7. Calculate spike features with Mosher's procedure
-            tic
-            sMetric = ...
-                struct('extremAmp', cell(length(data.(L).spike_phases_radians),1), ...
-                'widthHW', cell(length(data.(L).spike_phases_radians),1), ...
-                'widthTP', cell(length(data.(L).spike_phases_radians),1), ...
-                'repolTime', cell(length(data.(L).spike_phases_radians),1));
-            parfor wfNum = 1:length(data.(L).spike_phases_radians)
-                try %% spikeWaveMetrics missing! --> try catch is also VERY inefficient - more efficient is to skip excluded units
-                    sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, cfg.spk.Fs*4, 0); % 37 - index of th peak for updsampled data
-                    sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
-                    sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
-                    sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
-                    sMetric(wfNum).repolTime   = sMetric(wfNum).repolTime(1);
-                catch ME
-                    sMetric(wfNum).extremAmp  = nan;
-                    sMetric(wfNum).widthHW    = nan;
-                    sMetric(wfNum).widthTP    = nan;
-                    sMetric(wfNum).repolTime  = nan;
-                end
-            end
-            toc
-            % 8. put the resulting data together
-            data.(L).AMP_microV               = [sMetric.extremAmp];
-            data.(L).HW_ms                    = 10^3 * [sMetric.widthHW];
-            data.(L).TPW_ms                   = 10^3 * [sMetric.widthTP];
-            data.(L).REP_ms                   = 10^3 * [sMetric.repolTime];
-            
-            data.(L).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(L).AMP_microV(bin == x)), 1:cfg.spk.N_phase_bins); % mean by phase
-            data.(L).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(L).HW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
-            data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
-            data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.spk.N_phase_bins);
-            
-            % 9. estimate significance with bootstrapping
-            [data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg] = ...
-                compute_reshuffles(data.(L).AMP_microV, bin, cfg);
-            [data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg] = ...
-                compute_reshuffles(data.(L).HW_ms, bin, cfg);
-            [data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg] = ...
-                compute_reshuffles(data.(L).TPW_ms, bin, cfg);
-            [data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg] = ...
-                compute_reshuffles(data.(L).REP_ms, bin, cfg);
-            
-            % 10. compute cosine fits and put those into the resulting
-            % structure
-            featureMatrix = ...
-                [data.(L).AMP_microV_byBin; data.(L).HW_ms_byBin; ...
-                data.(L).TPW_ms_byBin; data.(L).REP_ms_byBin];
-            if size(featureMatrix,1) > 4
-                featureMatrix = featureMatrix';
-                if size(featureMatrix,1) ~= 4
-                    error('Dimensions of feature matrix aren''t suitable for the analysis')
-                end
-            end
-            
-            [modIndex,removeNoise,allCorr,allLinMod] = ...
-                fitCardiacModulation(cfg.spk.phase_bins(1:end-1), ...
-                featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
-            modIndex(:,5)=nanmean(featureMatrix,2);
-            % 4 coefficient related to cosine fitting
-            % - the modulation index, the slope of the cosine function
-            % - p-value of the modulation index
-            % - phase of modulation
-            % - p-value of the modulation index ?? (mdl.Rsquared.ordinary)
-            data.(L).AMP_MI                   = modIndex(1, :);
-            data.(L).HW_MI                    = modIndex(2, :);
-            data.(L).TPW_MI                   = modIndex(3, :);
-            data.(L).REP_MI                   = modIndex(4, :);
-            
-            % store smoothed data for each measure
-            data.(L).AMP_microV_byBin_smoothed    = removeNoise(1,:);
-            data.(L).HW_ms_byBin_smoothed         = removeNoise(2,:);
-            data.(L).TPW_ms_byBin_smoothed        = removeNoise(3,:);
-            data.(L).REP_ms_byBin_smoothed        = removeNoise(4,:);
-            
-            data.(L).allCorr                      = allCorr;
-            data.(L).allLinMod                    = allLinMod;
-            
-            [data.(L).AMP_max_consec_bins, data.(L).AMP_modulation_index] = ...
-                significant_bins(data.(L).AMP_microV_byBin_smoothed, data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg);
-            [data.(L).HW_max_consec_bins, data.(L).HW_modulation_index] = ...
-                significant_bins(data.(L).HW_ms_byBin_smoothed, data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg);
-            [data.(L).TPW_max_consec_bins, data.(L).TPW_modulation_index] = ...
-                significant_bins(data.(L).TPW_ms_byBin_smoothed, data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg);
-            [data.(L).REP_max_consec_bins, data.(L).REP_modulation_index] = ...
-                significant_bins(data.(L).REP_ms_byBin_smoothed, data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg);
-            
-            % 11. estimate how much spike amplitude is far from the
-            % thresholds
-            data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, [0:500]); % bin amplitudes
-            first_nonzero_bin          = find(data.(L).AMP_voltageBinned,1,'first');
-            thr6std                    = ceil(data.thresholds_microV(1));
-            thr4std                    = ceil(data.thresholds_microV(2));
-            
-            distance2thr = [first_nonzero_bin-thr6std first_nonzero_bin-thr4std]; % number of bins to thresholds
-            distance2thr(distance2thr < 0) = []; % drop negative (those weren't detected by the corresponding threshold)
-            distance2thr = min(distance2thr); % just in case we still have both, take the shortest distance to a threshold
-            
-            data.(L).distance2thr = distance2thr; % basically, number of empty bins from the spike with the lowest amplitude and the closest threshold
-            
-            % 12. compute correlation between features phase dynamics and
-            % spike dynamics
-            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
-            data.(L).cc_PSTH_feature(1) = cc(2,1); % for spike AMP
-            data.(L).pp_PSTH_feature(1) = pp(2,1);
-            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
-            data.(L).cc_PSTH_feature(2) = cc(2,1); % for HW
-            data.(L).pp_PSTH_feature(2) = pp(2,1);
-            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
-            data.(L).cc_PSTH_feature(3) = cc(2,1); % for spike TPW
-            data.(L).pp_PSTH_feature(3) = pp(2,1);
-            [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
-            data.(L).cc_PSTH_feature(4) = cc(2,1); % for spike REP
-            data.(L).pp_PSTH_feature(4) = pp(2,1);
-            
-            % II. Compute unit firing rate per RR-interval
-            [data.(L).FRbyRR_Hz, ...
-                data.(L).cycleDurations_s] = ...
-                computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-            % compute correlation with different lag
-            for lagNum = 1:length(cfg.spk.lag_list)
-                [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum)));
-                data.(L).pearson_r(lagNum) = temp_r(2,1);
-                data.(L).pearson_p(lagNum) = temp_p(2,1);
+        if sum(tr)<=1 % do calculations only if number of trials > 1
+            continue
+        end
+        popcell=pop.trial(tr);
+        trcell=T(tr);
+        
+        % 0. Prepare data variables
+        states_onset               = {trcell.states_onset};
+        states                     = {trcell.states};
+        TDT_ECG1_t0_from_rec_start = {trcell.TDT_ECG1_t0_from_rec_start};
+        block_nums                 = {trcell.block};
+        state1_times               = cellfun(@(x,y) x(y == 1), states_onset, states, 'Uniformoutput', false); % trial starts
+        state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
+        % compute RR-intervals
+        valid_RRinterval_ends      = single([Rpeaks(b).RPEAK_ts]);
+        valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).RPEAK_dur]);
+        % 0. figure out RR-intervals lying within trials
+        trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        
+        RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
+        for RRnum = 1:length(RR_within_trial_idx)
+            RR_within_trial_idx(RRnum) = ...
+                any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
+                valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
+        end
+        valid_RRinterval_ends      = valid_RRinterval_ends(RR_within_trial_idx); % get rid of RRs beyond the current set of trials
+        valid_RRinterval_starts    = valid_RRinterval_starts(RR_within_trial_idx);
+        % 1. take arrival times and the corresponding waveforms
+        AT = {popcell.arrival_times};
+        WF = {popcell.waveforms};
+        % 2. choose only those that happen after MP-state 1
+        idx_after_state1 = cellfun(@(x,y) x>y, AT, state1_times, 'Uniformoutput', false);
+        % 3. add TDT_ECG1_t0_from_rec_start and Rpeak block offset to spike times
+        AT_one_stream_cell = cellfun(@(x,y,z,a) x(y)+z+Rpeaks([Rpeaks.block] == a).offset, AT, idx_after_state1, TDT_ECG1_t0_from_rec_start, block_nums, 'Uniformoutput', false);
+        WF_one_stream_cell = cellfun(@(x,y) x(y,:), WF, idx_after_state1, 'Uniformoutput', false);
+        % 4. merge all spike times and waveforms together
+        AT_one_stream = cat(1, AT_one_stream_cell{:});
+        WF_one_stream = cat(1, WF_one_stream_cell{:});
+        % 5. calculate heart cycle phase where individual spikes ended up
+        [eventPhases, eventsTaken] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
+        % 6. Put results for real data together
+        data.(L).spike_phases_radians                 = eventPhases;
+        data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
+        data.(L).spike_phases_histogram_smoothed      = smooth(data.(L).spike_phases_histogram, 'rlowess', 1);
+        
+        [~,~,bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
+        
+        data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
+        waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
+        data.(L).waveforms_upsampled_microvolts       = shift2peak(cfg.spk.wf_times_interp_ms, waveforms_upsampled);
+        data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.spk.N_phase_bins, 'UniformOutput', false);
+        data.(L).waveforms_byBin_microvolts           = cat(1,data.(L).waveforms_byBin_microvolts{:});
+        % 7. Calculate spike features with Mosher's procedure
+        tic
+        sMetric = ...
+            struct('extremAmp', cell(length(data.(L).spike_phases_radians),1), ...
+            'widthHW', cell(length(data.(L).spike_phases_radians),1), ...
+            'widthTP', cell(length(data.(L).spike_phases_radians),1), ...
+            'repolTime', cell(length(data.(L).spike_phases_radians),1));
+        parfor wfNum = 1:length(data.(L).spike_phases_radians)
+            try %% spikeWaveMetrics missing! --> try catch is also VERY inefficient - more efficient is to skip excluded units
+                sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, cfg.spk.Fs*4, 0); % 37 - index of th peak for updsampled data
+                sMetric(wfNum).extremAmp   = sMetric(wfNum).extremAmp(1);
+                sMetric(wfNum).widthHW     = sMetric(wfNum).widthHW(1);
+                sMetric(wfNum).widthTP     = sMetric(wfNum).widthTP(1);
+                sMetric(wfNum).repolTime   = sMetric(wfNum).repolTime(1);
+            catch ME
+                sMetric(wfNum).extremAmp  = nan;
+                sMetric(wfNum).widthHW    = nan;
+                sMetric(wfNum).widthTP    = nan;
+                sMetric(wfNum).repolTime  = nan;
             end
         end
+        toc
+        % 8. put the resulting data together
+        data.(L).AMP_microV               = [sMetric.extremAmp];
+        data.(L).HW_ms                    = 10^3 * [sMetric.widthHW];
+        data.(L).TPW_ms                   = 10^3 * [sMetric.widthTP];
+        data.(L).REP_ms                   = 10^3 * [sMetric.repolTime];
+        
+        data.(L).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(L).AMP_microV(bin == x)), 1:cfg.spk.N_phase_bins); % mean by phase
+        data.(L).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(L).HW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+        data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+        data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+        
+        % 9. estimate significance with bootstrapping
+        [data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg] = ...
+            compute_reshuffles(data.(L).AMP_microV, bin, cfg);
+        [data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg] = ...
+            compute_reshuffles(data.(L).HW_ms, bin, cfg);
+        [data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg] = ...
+            compute_reshuffles(data.(L).TPW_ms, bin, cfg);
+        [data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg] = ...
+            compute_reshuffles(data.(L).REP_ms, bin, cfg);
+        
+        % 10. compute cosine fits and put those into the resulting
+        % structure
+        featureMatrix = ...
+            [data.(L).AMP_microV_byBin; data.(L).HW_ms_byBin; ...
+            data.(L).TPW_ms_byBin; data.(L).REP_ms_byBin];
+        if size(featureMatrix,1) > 4
+            featureMatrix = featureMatrix';
+            if size(featureMatrix,1) ~= 4
+                error('Dimensions of feature matrix aren''t suitable for the analysis')
+            end
+        end
+        
+        [modIndex,removeNoise,allCorr,allLinMod] = ...
+            fitCardiacModulation(cfg.spk.phase_bins(1:end-1), ...
+            featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
+        modIndex(:,5)=nanmean(featureMatrix,2);
+        % 4 coefficient related to cosine fitting
+        % - the modulation index, the slope of the cosine function
+        % - p-value of the modulation index
+        % - phase of modulation
+        % - p-value of the modulation index ?? (mdl.Rsquared.ordinary)
+        data.(L).AMP_MI                   = modIndex(1, :);
+        data.(L).HW_MI                    = modIndex(2, :);
+        data.(L).TPW_MI                   = modIndex(3, :);
+        data.(L).REP_MI                   = modIndex(4, :);
+        
+        % store smoothed data for each measure
+        data.(L).AMP_microV_byBin_smoothed    = removeNoise(1,:);
+        data.(L).HW_ms_byBin_smoothed         = removeNoise(2,:);
+        data.(L).TPW_ms_byBin_smoothed        = removeNoise(3,:);
+        data.(L).REP_ms_byBin_smoothed        = removeNoise(4,:);
+        
+        data.(L).allCorr                      = allCorr;
+        data.(L).allLinMod                    = allLinMod;
+        
+        [data.(L).AMP_max_consec_bins, data.(L).AMP_modulation_index] = ...
+            significant_bins(data.(L).AMP_microV_byBin_smoothed, data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg);
+        [data.(L).HW_max_consec_bins, data.(L).HW_modulation_index] = ...
+            significant_bins(data.(L).HW_ms_byBin_smoothed, data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg);
+        [data.(L).TPW_max_consec_bins, data.(L).TPW_modulation_index] = ...
+            significant_bins(data.(L).TPW_ms_byBin_smoothed, data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg);
+        [data.(L).REP_max_consec_bins, data.(L).REP_modulation_index] = ...
+            significant_bins(data.(L).REP_ms_byBin_smoothed, data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg);
+        
+        % 11. estimate how much spike amplitude is far from the
+        % thresholds
+        data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, [0:500]); % bin amplitudes
+        first_nonzero_bin          = find(data.(L).AMP_voltageBinned,1,'first');
+        thr6std                    = ceil(data.thresholds_microV(1));
+        thr4std                    = ceil(data.thresholds_microV(2));
+        
+        distance2thr = [first_nonzero_bin-thr6std first_nonzero_bin-thr4std]; % number of bins to thresholds
+        distance2thr(distance2thr < 0) = []; % drop negative (those weren't detected by the corresponding threshold)
+        distance2thr = min(distance2thr); % just in case we still have both, take the shortest distance to a threshold
+        
+        data.(L).distance2thr = distance2thr; % basically, number of empty bins from the spike with the lowest amplitude and the closest threshold
+        
+        % 12. compute correlation between features phase dynamics and
+        % spike dynamics
+        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
+        data.(L).cc_PSTH_feature(1) = cc(2,1); % for spike AMP
+        data.(L).pp_PSTH_feature(1) = pp(2,1);
+        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
+        data.(L).cc_PSTH_feature(2) = cc(2,1); % for HW
+        data.(L).pp_PSTH_feature(2) = pp(2,1);
+        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
+        data.(L).cc_PSTH_feature(3) = cc(2,1); % for spike TPW
+        data.(L).pp_PSTH_feature(3) = pp(2,1);
+        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
+        data.(L).cc_PSTH_feature(4) = cc(2,1); % for spike REP
+        data.(L).pp_PSTH_feature(4) = pp(2,1);
+        
+        % II. Compute unit firing rate per RR-interval
+        [data.(L).FRbyRR_Hz, ...
+            data.(L).cycleDurations_s] = ...
+            computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
+        % compute correlation with different lag
+        for lagNum = 1:length(cfg.spk.lag_list)
+            [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum)));
+            data.(L).pearson_r(lagNum) = temp_r(2,1);
+            data.(L).pearson_p(lagNum) = temp_p(2,1);
+        end
     end
-    save([basepath_to_save filesep data.unitId '_' data.target '__spikes_ECGphase.mat'], 'data', '-v7.3')
+    save([cfg.cardioballistic_folder filesep data.unitId '_' data.target '__spikes_ECGphase.mat'], 'data', '-v7.3')
     clear data
 end
 end
