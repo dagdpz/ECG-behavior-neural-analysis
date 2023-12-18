@@ -1,18 +1,23 @@
 function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg)
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
-basepath_to_save=[cfg.SPK_root_results_fldr filesep 'per_unit'];
-if ~exist(basepath_to_save,'dir')
-    mkdir(basepath_to_save);
-end
-
 BINS=(cfg.analyse_states{1,3}:cfg.spk.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
 offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
 
+if cfg.spk.apply_exclusion_criteria
+    load([cfg.SPK_root_results_fldr filesep cfg.spk.unit_list], 'unit_ids')
+    
+    pop_units  = {population.unit_ID};
+    inc_ids    = ismember(pop_units, unit_ids);
+    population = population(inc_ids);
+    
+end
+
 for u=1:numel(population)
     tic
     pop=population(u);
+    disp(['Processing ' pop.unit_ID])
     T=ph_get_unit_trials(pop,trials);
     
     %% Make sure we only take overlapping blocks
@@ -23,12 +28,13 @@ for u=1:numel(population)
     % preallocate 'Output' structure
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
-        
+        % unit id and recording quality parameters
         Output.unit_ID               = pop.unit_ID;
         Output.target                = pop.target;
         Output.quantSNR              = pop.avg_SNR;
         Output.Single_rating         = pop.avg_single_rating;
         Output.stability_rating      = pop.avg_stability;
+        % ecg-related variables
         Output.(L).SD                = single(nan(1, length(BINS)));
         Output.(L).SD_STD            = single(nan(1, length(BINS)));
         Output.(L).SD_SEM            = single(nan(1, length(BINS)));
@@ -70,8 +76,8 @@ for u=1:numel(population)
         trial_ends=cellfun(@(x) x.states_onset(x.states==98)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
         trial_ends=[trial_ends{:}];
         
-        if ~numel(trial_onsets)>0
-            continue; % out(1).nrblock_combinedFiles might be empty!
+        if numel(trial_onsets)<=1
+            continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
         end
         
         %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
@@ -146,18 +152,18 @@ for u=1:numel(population)
             filename=[unit_ID '_block_' num2str(block) '_ECG_average'];
             lineProps={'color','b','linewidth',1};
             shadedErrorBar(1:size(ECG_to_plot,2),mean(ECG_to_plot,1),sterr(ECG_to_plot,1),lineProps,1);
-            export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
+            export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
             close(gcf);
             
             figure
             filename=[unit_ID '_block_' num2str(block) '_ECG_per5trials'];
             plot(ECG_to_plot(1:5:end,:)');
-            export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
+            export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
             close(gcf);
         end
     end
     %% save output
-	save([basepath_to_save, filesep, pop.unit_ID, '_', pop.target],'Output')
+	save([cfg.per_session_folder, filesep, pop.unit_ID, '_', pop.target],'Output')
     clear Output
     toc
 end
