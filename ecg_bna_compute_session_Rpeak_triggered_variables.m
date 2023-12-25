@@ -98,7 +98,7 @@ trig.target  = site_proc.target;
 
 for cn = 1:length(cfg.condition)
     % store details of analysed condition
-    trig.condition(cn).label    = cfg.conditionname{cn};    
+    trig.condition(cn).label    = cfg.condition(cn).name;    
     
     % get trial indices for the given condition
     cond_trials = ecg_bna_get_condition_trials(sitetrials, cfg.condition(cn));
