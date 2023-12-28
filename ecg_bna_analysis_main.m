@@ -68,7 +68,8 @@ for v = 1:length(versions)
                 
                 %% do ECG spike analysis and computations related to cardioballistic effect
                 if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase
-                    Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
+                    %Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
+                    Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
                     load(sessions_info(i).Input_spikes);
                     if cfg.spk.compute_spike_histograms
@@ -90,8 +91,8 @@ for v = 1:length(versions)
             end
             if cfg.process_LFP
                 
-                Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
-                %Rpeaks=ecg_bna_jitter(sessions_info(i),ecg_bna_cfg);
+                %Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
+                Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.lfp);
                 
                 fprintf('Analysing for session %s\n', session_name);
                 
