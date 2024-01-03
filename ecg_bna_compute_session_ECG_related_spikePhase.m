@@ -162,7 +162,7 @@ for unitNum = 1:length(population)
         data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
         data.(L).spike_phases_histogram_smoothed      = smooth(data.(L).spike_phases_histogram, 'rlowess', 1);
         
-        [~,~,bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
+        bin = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
         
         data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
         waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
@@ -225,7 +225,7 @@ for unitNum = 1:length(population)
         end
         
         [modIndex,removeNoise,allCorr,allLinMod] = ...
-            fitCardiacModulation(cfg.spk.phase_bins(1:end-1), ...
+            fitCardiacModulation(cfg.spk.phase_bin_centers, ...
             featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, [221 222 223 224]);
         modIndex(:,5)=nanmean(featureMatrix,2);
         % 4 coefficient related to cosine fitting
