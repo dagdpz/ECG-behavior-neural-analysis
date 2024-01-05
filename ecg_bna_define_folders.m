@@ -30,16 +30,19 @@ function cfg = ecg_bna_define_folders(cfg)
 
 % load the specified settings file
 
-cfg.ECG_root_results_fldr   = fullfile(cfg.results_folder, 'ECG', num2str(cfg.version));
-cfg.LFP_root_results_fldr   = fullfile(cfg.results_folder, 'LFP', num2str(cfg.version));
-cfg.SPK_root_results_fldr   = fullfile(cfg.results_folder, 'ECG_triggered_spikes', num2str(cfg.version));
-cfg.unit_lists              = fullfile(cfg.SPK_root_results_fldr, 'unit_lists'); % store unit lists before and after exclusion criteria
-cfg.per_session_folder      = fullfile(cfg.SPK_root_results_fldr, 'per_unit'); % r-peak triggered psths per unit (data and plots)
-cfg.per_session_selected    = fullfile(cfg.SPK_root_results_fldr, 'per_unit_selected_600'); % all units with 1 block of either task or rest, included by recording quality and # of R-peaks
-cfg.per_session_stable      = fullfile(cfg.SPK_root_results_fldr, 'per_unit_stable_600'); % units that have both task and rest, included by recording quality and # of R-peaks
-cfg.cardioballistic_folder  = fullfile(cfg.SPK_root_results_fldr, 'cardioballistic'); % cardioballistic analysis (data and plots)
-cfg.population_all          = fullfile(cfg.SPK_root_results_fldr, 'Population_AllUnits'); % population folder for all units with 1 block of either task or rest
-cfg.population_bothTaskRest = fullfile(cfg.SPK_root_results_fldr, 'Population_bothTaskRest'); % population folder for units that have both task and rest
+cfg.ECG_root_results_fldr      = fullfile(cfg.results_folder, 'ECG', num2str(cfg.version));
+cfg.LFP_root_results_fldr      = fullfile(cfg.results_folder, 'LFP', num2str(cfg.version));
+cfg.SPK_root_results_fldr      = fullfile(cfg.results_folder, 'ECG_triggered_spikes', num2str(cfg.version));
+cfg.unit_lists                 = fullfile(cfg.SPK_root_results_fldr, 'unit_lists'); % store unit lists before and after exclusion criteria
+cfg.per_session_folder         = fullfile(cfg.SPK_root_results_fldr, 'per_unit'); % r-peak triggered psths per unit (data and plots)
+cfg.per_session_selected       = fullfile(cfg.SPK_root_results_fldr, 'per_unit_selected_600'); % all units with 1 block of either task or rest, included by recording quality and # of R-peaks
+cfg.per_session_stable         = fullfile(cfg.SPK_root_results_fldr, 'per_unit_stable_600'); % units that have both task and rest, included by recording quality and # of R-peaks
+cfg.cardioballistic_folder     = fullfile(cfg.SPK_root_results_fldr, 'cardioballistic'); % cardioballistic analysis (data and plots)
+cfg.cardioballistic_selected   = fullfile(cfg.SPK_root_results_fldr, 'cardioballistic_selected_600'); % cardioballistic: all units with 1 block of either task or rest, included by recording quality and # of R-peaks
+cfg.cardioballistic_stable     = fullfile(cfg.SPK_root_results_fldr, 'cardioballistic_stable_600'); % cardioballistic: units that have both task and rest, included by recording quality and # of R-peaks
+cfg.population_all             = fullfile(cfg.SPK_root_results_fldr, 'Population_AllUnits'); % population folder for all units with 1 block of either task or rest
+cfg.population_bothTaskRest    = fullfile(cfg.SPK_root_results_fldr, 'Population_bothTaskRest'); % population folder for units that have both task and rest
+cfg.population_cardioballistic = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic');
 if ~exist(cfg.ECG_root_results_fldr, 'dir')
     mkdir(cfg.ECG_root_results_fldr);
 end
