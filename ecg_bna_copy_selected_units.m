@@ -1,4 +1,4 @@
-function ecg_bna_copy_selected_units(unit_list, destination_folder, cfg)
+function ecg_bna_copy_selected_units(unit_list, source_folder, destination_folder, cfg)
 
 load([cfg.unit_lists filesep unit_list], 'unit_ids');
 
@@ -8,7 +8,7 @@ end
 
 for unitNum = 1:length(unit_ids)
     
-    fileList = dir([cfg.per_session_folder filesep '*' unit_ids{unitNum} '*']);
+    fileList = dir([source_folder filesep '*' unit_ids{unitNum} '*']);
     
     if isempty(fileList)
         disp(['No files found for ' unit_ids{unitNum}])
