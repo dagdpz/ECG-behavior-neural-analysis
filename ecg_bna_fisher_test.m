@@ -1,9 +1,8 @@
 function p = ecg_bna_fisher_test(unit_counts_task, unit_counts_rest)
 % ecg_bna_fisher_test
-% This function computes the exact Fisher's test for counts of
-% heart-modulated (pos./neg.) and non-modulated units. Fisher's p is
-% computed separately for positively-, negatively-, and non-modulated
-% units.
+% This function computes the exact Fisher's test for counts of 
+% heart-modulated (pos./neg.)units. Fisher's p is computed separately for 
+% positively and negatively modulated units.
 %
 % USAGE:
 %	p = ecg_bna_fisher_test(unit_counts_task, unit_counts_rest)
@@ -19,9 +18,9 @@ function p = ecg_bna_fisher_test(unit_counts_task, unit_counts_rest)
 %       paths (path to waveclus files is required here)
 %       
 % OUTPUTS:
-%		p - a 3-element vector with Fisher's p-values for positively-,
-%		negatively-, and non-modulated units (without any correction for
-%		multiple comparisons)
+%		p - a 2-element vector with Fisher's p-values for positively and 
+%       negatively modulated units (without any correction for multiple 
+%       comparisons)
 %
 % Author(s):	L.N. Vasileva, DAG, DPZ
 % URL:		http://www.dpz.eu/dag
@@ -64,15 +63,7 @@ contingency_neg = [count_task_neg, count_rest_neg; ...
 [~, pval_fisher_neg] = fishertest(contingency_neg);
 disp(['Fisher''s exact test p-value for negatively modulated: ', num2str(pval_fisher_neg)]);
 
-% Fisher's exact test for non-modulated neurons
-contingency_non = [count_task_non, count_rest_non; ...
-                   sum([count_task_neg, count_task_pos, count_task_non]), ...
-                   sum([count_rest_neg, count_rest_pos, count_rest_non])];
-
-[~, pval_fisher_non] = fishertest(contingency_non);
-disp(['Fisher''s exact test p-value for non-modulated: ', num2str(pval_fisher_non)]);
-
-p = [pval_fisher_pos pval_fisher_neg pval_fisher_non];
+p = [pval_fisher_pos pval_fisher_neg];
 end
 
 
