@@ -36,7 +36,8 @@ for b=1:numel(out)
     RPEAK_ts=out(b).Rpeak_t; 
         
 	%% here we jitter all Rpeak intervals
-	allowed_jitter_range=min(max(out(b).R2R_valid)-min(out(b).R2R_valid),min(out(b).R2R_valid));                    % one-sided std of normally distributed jitter values
+	%allowed_jitter_range=min(max(out(b).R2R_valid)-min(out(b).R2R_valid),min(out(b).R2R_valid));                    % one-sided std of normally distributed jitter values
+    allowed_jitter_range=max(max(out(b).R2R_valid)-min(out(b).R2R_valid),min(out(b).R2R_valid));                    % one-sided std of normally distributed jitter values
 
     Nrandoms=numel(RPEAK_ts);
     jitterthing=repmat(rand(N,1)-0.5,1,Nrandoms)*allowed_jitter_range;
