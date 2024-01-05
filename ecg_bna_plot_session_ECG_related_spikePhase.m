@@ -182,7 +182,7 @@ for untNum = 1:length(fileList)
             L=cfg.condition(c).name;
             subplot(3,5,subplot_numbers{featureNum}(c))
             yyaxis left
-            histogram(data.(L).spike_phases_radians, cfg.spk.phase_bins, 'FaceColor', condition_colors{c}(1:3))
+            histogram(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers, 'FaceColor', condition_colors{c}(1:3))
             ylabel('Spike Counts')
             currYLims = get(gca, 'YLim');
             currYLims(2) = 2 * currYLims(2);
