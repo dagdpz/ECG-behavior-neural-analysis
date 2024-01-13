@@ -97,7 +97,6 @@ for v = 1:length(versions)
                 fprintf('Analysing for session %s\n', session_name);
                 
                 % Read LFP data
-                sessions_info(i).proc_results_fldr=sessions_info(i).proc_lfp_fldr;
                 cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
                 cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
                 
