@@ -166,7 +166,8 @@ for v = 1:length(versions)
         cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
         
         if cfg.process_LFP
-            cfg.monkey = cfg.session_info.Monkey;
+            monkeys = unique({cfg.session_info.Monkey});
+            cfg.monkey = [monkeys{:}];
             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             

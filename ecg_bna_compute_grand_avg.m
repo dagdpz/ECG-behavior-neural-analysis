@@ -1,8 +1,12 @@
 function grand_avg = ecg_bna_compute_grand_avg(cfg,withunits)
 
 reprocess=1;
-targets = cfg.targets;%unique({out.target}); %%cfg.monkey
 fileName = fullfile([cfg.analyse_lfp_folder filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Grand_grand_avg_sessions_sites',withunits,'.mat']);
+
+if cfg.combine_hemispheres
+    cfg.targets=unique(cellfun(@(x) x(1:strfind(x,'_')-1),cfg.targets,'uniformoutput',false));
+end
+targets = cfg.targets;%unique({out.target}); %%cfg.monkey
 
 if reprocess
     data_path = cfg.sites_lfp_fldr;
