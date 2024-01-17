@@ -100,7 +100,7 @@ if reprocess
         
         avg = struct;
         for cn = 1:size(condition,2)
-            avg(cn).cond_name = cfg.conditionname{cn};
+            avg(cn).cond_name = cfg.condition(cn).name;
             avg(cn).itpc = cat(3,condition(:,cn).itpc);
             avg(cn).pow = cat(3,condition(:,cn).pow);
             avg(cn).lfp = cat(3,condition(:,cn).lfp);
@@ -141,13 +141,13 @@ end
 
 %%
 % plotting the results:
-cond = cfg.conditionname;
-freq = cfg.tfr.foi;
-frequency_bands=cfg.tfr.frequency_bands;
+cond = {cfg.condition.name};
+freq = cfg.lfp.foi;
+frequency_bands=cfg.lfp.frequency_bands;
 plot_names={'POW','ITPC','Power_BP','ITPC_BP','LFP_Evoked'};
 
 % Smoothing Kernel here:
-win = 1:cfg.smoothWin; win=win-(numel(win)+1)/2;
+win = 1:cfg.lfp.smoothWin; win=win-(numel(win)+1)/2;
 half_win = ceil(size(win,2)/2)-1;
 gaussian_kernel=normpdf(win,0,numel(win)/6);
 gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
@@ -167,7 +167,7 @@ for tr = 1: length(targets)
         line([0 0], ylim, 'color', 'k');
         
         % horizontal lines to separate frequency bands
-        fbandstart = unique(cfg.tfr.frequency_bands(:))';
+        fbandstart = unique(cfg.lfp.frequency_bands(:))';
         fbandstart_idx = zeros(size(fbandstart));
         for f = fbandstart
             f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
@@ -190,7 +190,7 @@ for tr = 1: length(targets)
         line([0 0], ylim, 'color', 'k');
         
         % horizontal lines to separate frequency bands
-        fbandstart = unique(cfg.tfr.frequency_bands(:))';
+        fbandstart = unique(cfg.lfp.frequency_bands(:))';
         fbandstart_idx = zeros(size(fbandstart));
         for f = fbandstart
             f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
@@ -374,7 +374,7 @@ clc
 
 %%
 % ploting the avgogram of the timing of the Max ITPC/POW:
-bins=cfg.analyse_states{1,3}:cfg.tfr.timestep*10:cfg.analyse_states{1,4};
+bins=cfg.analyse_states{1,3}:cfg.lfp.timestep*10:cfg.analyse_states{1,4};
 for tr = 1: length(targets)
     figure;
     for cn = 1:length(cond)

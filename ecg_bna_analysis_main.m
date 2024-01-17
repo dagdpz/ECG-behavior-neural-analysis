@@ -163,14 +163,15 @@ for v = 1:length(versions)
     if cfg.process_population
         
         keys=ecg_bna_get_unit_list(cfg,0);
-        %cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
+        cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
         
         if cfg.process_LFP
+            cfg.monkey = cfg.session_info.Monkey;
             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             
-            %     grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg,'w_units');
-            %     grand_avg = ecg_bna_compute_grand_avg(ecg_bna_cfg,'wo_units');
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
         end
         
