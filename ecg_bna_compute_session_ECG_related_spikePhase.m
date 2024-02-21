@@ -1,5 +1,8 @@
 function ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
 
+cos_mod      = fittype('a*cos(x-b)+c');% a - scaling factor, b - phase of the peak, c - intercept
+vonMises_mod = fittype('a1*( exp( k1*(cos(x-t1)) ) / (2*pi*besseli(0, k1)) ) + d1');
+
 basepath_to_save=[cfg.SPK_root_results_fldr filesep 'cardioballistic'];
 if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
@@ -8,7 +11,7 @@ end
 %% load list of selected units - won't process all the crap
 if cfg.spk.apply_exclusion_criteria
     
-    unit_list = load([cfg.SPK_root_results_fldr filesep cfg.spk.unit_list]);
+    unit_list = load([cfg.SPK_root_results_fldr filesep 'unit_lists' filesep cfg.spk.unit_list]);
     unitList = unique(unit_list.unit_ids);
     
     % figure out which units take from this session
@@ -41,18 +44,51 @@ for unitNum = 1:length(population)
     data.quantSNR                                          = pop.avg_SNR;
     data.Single_rating                                     = pop.avg_single_rating;
     data.stability_rating                                  = pop.avg_stability;
-    data.thresholds_microV                                 = single([0; 0; 0; 0]);
+    data.thresholds_microV                                 = single([NaN; NaN; NaN; NaN]);
     data.FR                                                = single(mean(pop.FR_average));
     data.cc_lag_list                                       = cfg.spk.lag_list;
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
         data.(L).spike_phases_radians           = single(NaN);
         data.(L).spike_phases_histogram         = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).waveforms_microvolts           = single(nan(1,32));
-        data.(L).waveforms_upsampled_microvolts = single(nan(1,128));
+        data.(L).spike_phases_histogram_smoothed= single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).histogram_MI                   = single(NaN);
+        data.(L).histogram_p                    = single(NaN);
+        data.(L).histogram_phase                = single(NaN);
+        data.(L).rsquared                       = single(NaN);
+        data.(L).cosine.startPoint              = single([NaN NaN NaN]);
+        data.(L).cosine.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).cosine.coefs                   = single([NaN NaN NaN]);
+        data.(L).cosine.rsquared                = single(NaN);
+        data.(L).cosine.adjrsquared             = single(NaN);
+        data.(L).cosine.sse                     = single(NaN);
+        data.(L).cosine.dfe                     = single(NaN);
+        data.(L).cosine.rmse                    = single(NaN);
+        data.(L).cosine.pvalue                  = single(NaN);
+        data.(L).vonMisesPos.startPoint         = single([NaN NaN NaN NaN]);
+        data.(L).vonMisesPos.yfit               = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).vonMisesPos.coefs              = single([NaN NaN NaN NaN]);
+        data.(L).vonMisesPos.rsquared           = single(NaN);
+        data.(L).vonMisesPos.adjrsquared        = single(NaN);
+        data.(L).vonMisesPos.sse                = single(NaN);
+        data.(L).vonMisesPos.dfe                = single(NaN);
+        data.(L).vonMisesPos.rmse               = single(NaN);
+        data.(L).vonMisesPos.pvalue             = single(NaN);
+        data.(L).vonMisesNeg.startPoint         = single([NaN NaN NaN NaN]);
+        data.(L).vonMisesNeg.yfit               = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).vonMisesNeg.coefs              = single([NaN NaN NaN NaN]);
+        data.(L).vonMisesNeg.rsquared           = single(NaN);
+        data.(L).vonMisesNeg.adjrsquared        = single(NaN);
+        data.(L).vonMisesNeg.sse                = single(NaN);
+        data.(L).vonMisesNeg.dfe                = single(NaN);
+        data.(L).vonMisesNeg.rmse               = single(NaN);
+        data.(L).vonMisesNeg.pvalue             = single(NaN);
+        data.(L).waveforms_microvolts           = single(nan(1,32)); % 32 - number of points per spike
+        data.(L).waveforms_upsampled_microvolts = single(nan(1,128)); % 128 - number of points per upsampled spike 4*32
         data.(L).waveforms_byBin_microvolts     = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).AMP_microV                     = single(NaN);
         data.(L).AMP_voltageBinned              = single(nan(1,500));
+        data.(L).AMP_voltageBins                = single(nan(1,500));
         data.(L).HW_ms                          = single(NaN);
         data.(L).TPW_ms                         = single(NaN);
         data.(L).REP_ms                         = single(NaN);
@@ -93,10 +129,12 @@ for unitNum = 1:length(population)
         data.(L).distance2thr                   = single(nan(1,1));
         data.(L).cc_PSTH_feature                = single(nan(1,4));
         data.(L).pp_PSTH_feature                = single(nan(1,4));
+        data.(L).pperm_PSTH_feature             = single(nan(1,4)); % permuted p for the correlation between each feature and phase PSTH
         data.(L).FRbyRR_Hz                      = single(nan(1,1));
         data.(L).cycleDurations_s               = single(nan(1,1));
         data.(L).pearson_r                      = single(nan(length(cfg.spk.lag_list), 1));
         data.(L).pearson_p                      = single(nan(length(cfg.spk.lag_list), 1));
+        data.(L).permuted_p                     = single(nan(length(cfg.spk.lag_list), 1));
     end
     
     % find the corresponding WC file and load it
@@ -116,7 +154,7 @@ for unitNum = 1:length(population)
         %% get condition AND valid block trials only
         CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
         tr=ismember([T.block],blocks) & CT;
-        if sum(tr)<=1 % do calculations only if number of trials > 1
+        if sum(tr)<=1 || (~isfield(Rpeaks, 'Rpeak_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'Rpeak_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation) % do calculations only if number of trials > 1
             continue
         end
         popcell=pop.trial(tr);
@@ -130,8 +168,8 @@ for unitNum = 1:length(population)
         state1_times               = cellfun(@(x,y) x(y == 1), states_onset, states, 'Uniformoutput', false); % trial starts
         state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
         % compute RR-intervals
-        valid_RRinterval_ends      = single([Rpeaks(b).RPEAK_ts]);
-        valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).RPEAK_dur]);
+        valid_RRinterval_ends      = single([Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
+        valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
         % 0. figure out RR-intervals lying within trials
         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
         trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
@@ -155,14 +193,120 @@ for unitNum = 1:length(population)
         % 4. merge all spike times and waveforms together
         AT_one_stream = cat(1, AT_one_stream_cell{:});
         WF_one_stream = cat(1, WF_one_stream_cell{:});
+        if size(WF_one_stream,1) < 10
+            continue
+        end
         % 5. calculate heart cycle phase where individual spikes ended up
         [eventPhases, eventsTaken] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
         % 6. Put results for real data together
         data.(L).spike_phases_radians                 = eventPhases;
         data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
-        data.(L).spike_phases_histogram_smoothed      = smooth(data.(L).spike_phases_histogram, 'rlowess', 1);
         
-        bin = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers);
+        % Mosher's cosine fit the smoothed phase histogram
+        [modIndex_phase_hist,phase_hist] = ...
+            fitCardiacModulation(cfg.spk.phase_bin_centers, ...
+            data.(L).spike_phases_histogram, {'PSTH'}, 0, [221]);
+        
+        data.(L).spike_phases_histogram_smoothed = phase_hist;
+        data.(L).histogram_MI                    = modIndex_phase_hist(1);
+        data.(L).histogram_p                     = modIndex_phase_hist(2);
+        data.(L).histogram_phase                 = modIndex_phase_hist(3);
+        data.(L).rsquared                        = modIndex_phase_hist(4);
+        
+        % cosine fit with lsqcurvefit
+        a1 = (max(phase_hist) - min(phase_hist))/2;
+        b1 = circ_mean(cfg.spk.phase_bin_centers, phase_hist);
+        c1 = mean(phase_hist);
+        
+        startPoint_cos = [a1 b1 c1];
+        
+        [fittedmdl,gof] = fit(cfg.spk.phase_bin_centers',phase_hist',cos_mod,'StartPoint',startPoint_cos, 'Lower', [-Inf 0 -Inf], 'Upper', [Inf 2*pi Inf]);
+        
+        coefs = coeffvalues(fittedmdl); % get model coefficients
+                
+        yfit = cos_mod(coefs(1),coefs(2),coefs(3),cfg.spk.phase_bin_centers);
+        
+        % employ a linear fit to get a p-value vs. fitting with a
+        % constant model
+        mdl = fitlm(phase_hist, yfit);
+        
+        data.(L).cosine.startPoint  = startPoint_cos;
+        data.(L).cosine.yfit        = yfit;
+        data.(L).cosine.coefs       = coefs;
+        data.(L).cosine.rsquared    = gof.rsquare;
+        data.(L).cosine.adjrsquared = gof.adjrsquare;
+        data.(L).cosine.sse         = gof.sse;
+        data.(L).cosine.dfe         = gof.dfe;
+        data.(L).cosine.rmse        = gof.rmse;
+        data.(L).cosine.CI          = confint(fittedmdl);
+        data.(L).cosine.pvalue      = mdl.Coefficients.pValue(2);
+        
+        clear fittedmdl gof yfit coefs mdl
+        
+        % von Mises fits - positive
+        a1 = max(phase_hist) - min(phase_hist);
+        k1 = circ_kappa(cfg.spk.phase_bin_centers, phase_hist - mean(phase_hist) + 0.1592);
+        t1 = circ_mean(cfg.spk.phase_bin_centers, phase_hist);
+        d1 = min(phase_hist);
+        
+        if isnan(k1)
+            k1 = 0;
+        end
+        
+        startPoint_vmpos = [a1 d1 k1 t1]; % a1 - scaling factor; k1 - kappa; t1 - thetahat; d1 - baseline
+        
+        [fittedmdl,gof] = fit(cfg.spk.phase_bin_centers',phase_hist',vonMises_mod,'StartPoint',startPoint_vmpos, 'Lower', [0 -10^6 exp(-4) 0], 'Upper', [10^6 10^6 exp(4) 2*pi]);
+        
+        coefs = coeffvalues(fittedmdl); % get model coefficients
+        
+        yfit = vonMises_mod(coefs(1),coefs(2),coefs(3), coefs(4), cfg.spk.phase_bin_centers);
+        
+        % employ a linear fit to get a p-value vs. fitting with a
+        % constant model
+        mdl = fitlm(yfit, phase_hist);
+        
+        data.(L).vonMisesPos.coefs       = coefs;
+        data.(L).vonMisesPos.yfit        = yfit;
+        data.(L).vonMisesPos.rsquared    = gof.rsquare;
+        data.(L).vonMisesPos.adjrsquared = gof.adjrsquare;
+        data.(L).vonMisesPos.sse         = gof.sse;
+        data.(L).vonMisesPos.dfe         = gof.dfe;
+        data.(L).vonMisesPos.rmse        = gof.rmse;
+        data.(L).vonMisesPos.CI          = confint(fittedmdl);
+        data.(L).vonMisesPos.pvalue      = mdl.Coefficients.pValue(2);
+        
+        clear fittedmdl gof coefs yfit mdl
+        
+        % von Mises fits - negative
+        a1 = max(phase_hist) - min(phase_hist);
+        k1 = circ_kappa(cfg.spk.phase_bin_centers, (-1)*phase_hist - mean((-1)*phase_hist) + (max(phase_hist) - min(phase_hist))/2 + 0.1592);
+        t1 = cfg.spk.phase_bin_centers(find(phase_hist == min(phase_hist),1,'first'));
+        d1 = mean(phase_hist);
+        
+        startPoint_vmneg = [a1 d1 k1 t1]; % a1 - scaling factor; k1 - kappa; t1 - thetahat; d1 - baseline
+        
+        [fittedmdl,gof] = fit(cfg.spk.phase_bin_centers',phase_hist',vonMises_mod,'StartPoint',startPoint_vmneg, 'Lower', [-10^6 -10^6 exp(-4) 0], 'Upper', [0 10^6 exp(4) 2*pi]);
+        
+        coefs = coeffvalues(fittedmdl); % get model coefficients
+                
+        yfit = vonMises_mod(coefs(1),coefs(2),coefs(3), coefs(4), cfg.spk.phase_bin_centers);
+        
+        mdl = fitlm(yfit, phase_hist);
+        
+        data.(L).vonMisesNeg.coefs       = coefs;
+        data.(L).vonMisesNeg.yfit        = yfit;
+        data.(L).vonMisesNeg.rsquared    = gof.rsquare;
+        data.(L).vonMisesNeg.adjrsquared = gof.adjrsquare;
+        data.(L).vonMisesNeg.sse         = gof.sse;
+        data.(L).vonMisesNeg.dfe         = gof.dfe;
+        data.(L).vonMisesNeg.rmse        = gof.rmse;
+        data.(L).vonMisesNeg.CI          = confint(fittedmdl);
+        data.(L).vonMisesNeg.pvalue      = mdl.Coefficients.pValue(2);
+        
+        clear fittedmdl gof coefs yfit mdl
+        
+
+        [~, ~, bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
         
         data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
         waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
@@ -258,31 +402,50 @@ for unitNum = 1:length(population)
         
         % 11. estimate how much spike amplitude is far from the
         % thresholds
-        data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, [0:500]); % bin amplitudes
+        % bin from the closest threshold first
+        higher_threshold_detected = ...
+            all(rmmissing(data.(L).AMP_microV) > data.thresholds_microV(1));
+        lower_threshold_detected = ...
+            all(rmmissing(data.(L).AMP_microV) > data.thresholds_microV(2));
+        if higher_threshold_detected && lower_threshold_detected % both thresholds are lower than all the spike amplitudes
+            % take the higher one
+            data.(L).AMP_voltageBins   = data.thresholds_microV(1):500;
+            data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, data.(L).AMP_voltageBins); % bin amplitudes
+        elseif lower_threshold_detected && ~higher_threshold_detected
+            % take the lower one
+            data.(L).AMP_voltageBins   = data.thresholds_microV(2):500;
+            data.(L).AMP_voltageBinned = histc(data.(L).AMP_microV, data.(L).AMP_voltageBins);
+        elseif ~lower_threshold_detected && ~higher_threshold_detected
+            error('It''s an unknown error: there are spikes below both thresholds')
+        elseif ~lower_threshold_detected && higher_threshold_detected
+            error('It''s an unknown error: there are spikes that are below only lower threshold')
+        end
+        
         first_nonzero_bin          = find(data.(L).AMP_voltageBinned,1,'first');
-        thr6std                    = ceil(data.thresholds_microV(1));
-        thr4std                    = ceil(data.thresholds_microV(2));
         
-        distance2thr = [first_nonzero_bin-thr6std first_nonzero_bin-thr4std]; % number of bins to thresholds
-        distance2thr(distance2thr < 0) = []; % drop negative (those weren't detected by the corresponding threshold)
-        distance2thr = min(distance2thr); % just in case we still have both, take the shortest distance to a threshold
-        
-        data.(L).distance2thr = distance2thr; % basically, number of empty bins from the spike with the lowest amplitude and the closest threshold
+        data.(L).distance2thr = first_nonzero_bin; % basically, number of empty bins from the spike with the lowest amplitude and the closest threshold
         
         % 12. compute correlation between features phase dynamics and
         % spike dynamics
         [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
-        data.(L).cc_PSTH_feature(1) = cc(2,1); % for spike AMP
-        data.(L).pp_PSTH_feature(1) = pp(2,1);
+        data.(L).cc_PSTH_feature(1)    = cc(2,1); % for spike AMP
+        data.(L).pp_PSTH_feature(1)    = pp(2,1);
+%         data.(L).pperm_PSTH_feature(1) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+        
         [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
-        data.(L).cc_PSTH_feature(2) = cc(2,1); % for HW
-        data.(L).pp_PSTH_feature(2) = pp(2,1);
+        data.(L).cc_PSTH_feature(2)    = cc(2,1); % for HW
+        data.(L).pp_PSTH_feature(2)    = pp(2,1);
+%         data.(L).pperm_PSTH_feature(2) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+        
         [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
-        data.(L).cc_PSTH_feature(3) = cc(2,1); % for spike TPW
-        data.(L).pp_PSTH_feature(3) = pp(2,1);
+        data.(L).cc_PSTH_feature(3)    = cc(2,1); % for spike TPW
+        data.(L).pp_PSTH_feature(3)    = pp(2,1);
+%         data.(L).pperm_PSTH_feature(3) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+        
         [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
-        data.(L).cc_PSTH_feature(4) = cc(2,1); % for spike REP
-        data.(L).pp_PSTH_feature(4) = pp(2,1);
+        data.(L).cc_PSTH_feature(4)    = cc(2,1); % for spike REP
+        data.(L).pp_PSTH_feature(4)    = pp(2,1);
+%         data.(L).pperm_PSTH_feature(4) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
         
         % II. Compute unit firing rate per RR-interval
         [data.(L).FRbyRR_Hz, ...
@@ -290,14 +453,34 @@ for unitNum = 1:length(population)
             computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
         % compute correlation with different lag
         for lagNum = 1:length(cfg.spk.lag_list)
-            [temp_r, temp_p] = corrcoef(data.(L).FRbyRR_Hz, circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum)));
+            % create data variables
+            fr_hz = data.(L).FRbyRR_Hz;
+            rr_s  = circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum));
+            
+            % compute correlation coefficient
+            [temp_r, temp_p] = corrcoef(fr_hz, rr_s);
             data.(L).pearson_r(lagNum) = temp_r(2,1);
             data.(L).pearson_p(lagNum) = temp_p(2,1);
+            data.(L).permuted_p(lagNum) = mult_comp_perm_corr(fr_hz, rr_s, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+            clear temp_r temp_p
+            
         end
     end
     save([cfg.cardioballistic_folder filesep data.unitId '_' data.target '__spikes_ECGphase.mat'], 'data', '-v7.3')
     clear data
 end
+end
+
+function y = vonMisesPDF(alpha, thetahat, kappa, d, a)
+    y = a*exp(kappa * cos(alpha - thetahat)) / (2*pi*besseli(0, kappa)) + d;
+end
+
+function y = cospdf(x, a, b, c)
+    y = abs(a)*cos(x-b)+c;
+end
+
+function rsq = compute_rsquared()
+
 end
 
 function [max_consec_bins, feature_modulation_index] = significant_bins(average_real, lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled)
@@ -420,11 +603,11 @@ AMP.WF_by_phase = cat(2, AMP.WF_by_phase{:});
 AMP.mean_by_bin = AMP.WF_by_phase(37,:)';
 end
 
-function out = circ_smooth(input, smooth_win)
-
-A = repmat(input, 3, 1);
-A_smoothed = smooth(A, smooth_win);
-
-out = A_smoothed(length(input)+1:end-length(input));
-
-end
+% function out = circ_smooth(input)
+% 
+% A = repmat(input, 3, 1);
+% A_smoothed = smooth(A, 'rlowess', 1);
+% 
+% out = A_smoothed(length(input)+1:end-length(input));
+% 
+% end
