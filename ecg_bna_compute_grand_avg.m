@@ -156,251 +156,250 @@ half_win = ceil(size(win,2)/2)-1;
 gaussian_kernel=normpdf(win,0,numel(win)/6);
 gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
 
-% %% tfr_time not defined well!
-% for tr = 1: length(targets)
-%     %
-%     if grand_avg(tr).nSites == 0
-%         continue;
-%     end
-%     for cn = 1:length(cond)
-%         % create figure
-%         h(cn) = figure('units','normalized','position',[0 0 1 1]);
-%         toplot={grand_avg(tr).avg(cn).pow_avg,grand_avg(tr).avg(cn).itpc_avg};
-%         % =========================== Power ============================= %
-%         sp=1;
-%         sph(cn,sp)=subplot(3,2,sp);
-%         image(tfr_time, 1:numel(freq), squeeze(grand_avg(tr).avg(cn).pow_avg),'CDataMapping','scaled');
-%         set(gca,'YDir','normal');
-%         line([0 0], ylim, 'color', 'k');
-%         
-%         % horizontal lines to separate frequency bands
-%         fbandstart = unique(cfg.lfp.frequency_bands(:))';
-%         fbandstart_idx = zeros(size(fbandstart));
-%         for f = fbandstart
-%             f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
-%             line([tfr_time(1) tfr_time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
-%             fbandstart_idx(fbandstart == f) = f_idx;
-%         end
-%         set(gca,'TickDir','out')
-%         set(gca, 'ytick', fbandstart_idx);
-%         set(gca, 'yticklabel', fbandstart);
-%         set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
-%         title(plot_names{sp},'fontsize',10,'interpreter','none');
-%         nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
-%         collim{cn,sp}=[min(nonnan(:)) max(nonnan(:))];
-% %         collim{cn,sp}=[-3 3];% from Bacchus
-%         set(gca,'Xlim',[-.25 .25]);
-%         
-%         % =========================== ITPC ============================= %
-%         sp=2;
-%         sph(cn,sp)=subplot(3,2,sp);
-%         image(tfr_time, 1:numel(freq), squeeze(grand_avg(tr).avg(cn).itpc_avg),'CDataMapping','scaled');
-%         set(gca,'YDir','normal');
-%         line([0 0], ylim, 'color', 'k');
-%         
-%         % horizontal lines to separate frequency bands
-%         fbandstart = unique(cfg.lfp.frequency_bands(:))';
-%         fbandstart_idx = zeros(size(fbandstart));
-%         for f = fbandstart
-%             f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
-%             line([tfr_time(1) tfr_time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
-%             fbandstart_idx(fbandstart == f) = f_idx;
-%         end
-%         set(gca,'TickDir','out')
-%         set(gca, 'ytick', fbandstart_idx);
-%         set(gca, 'yticklabel', fbandstart);
-%         set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
-%         title(plot_names{sp},'fontsize',10,'interpreter','none');
-%         nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
-%         collim{cn,sp}=[min(nonnan(:)) max(nonnan(:))];
-% %         collim{cn,sp}=[0 .3];% from Bacchus
-%         set(gca,'Xlim',[-.25 .25]);
-%         
-%         %========================== Bandpassed POWER ==================== %
-%         % Smoothing of the POWbp here:
-%         jnk = [];
-%         concat_input = cat(2,(grand_avg(tr).avg(cn).powbp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).powbp_avg(:,:)));
-%         concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).powbp_avg(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).powbp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed = jnk(:,half_win+1:end-half_win);
-%         
-%         sp=3;
-%         sph(cn,sp)=subplot(3,2,sp);
-%         hold on;
-%         set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).powbp_avg,1)),'xlim',[time(1) time(end)]);
-%         plot(repmat(time,size(grand_avg(tr).avg(cn).powbp_avg,1),1)', squeeze(smoothed)')
-%         line([0 0], ylim, 'color', 'k');
-%         xlabel('Time(s)'); ylabel('Power (W)');
-%         legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
-%         title(plot_names{sp},'fontsize',10,'interpreter','none');
-%         set(gca,'Xlim',[-.25 .25]);
-% %         set(gca,'Ylim',[-3 3]);
-%         
-%         %========================== Bandpassed ITPC ==================== %
-%         % Smoothing of the ITPCbp here:
-%         jnk = [];
-%         concat_input = cat(2,(grand_avg(tr).avg(cn).itpcbp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).itpcbp_avg(:,:)));
-%         concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).itpcbp_avg(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).itpcbp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed = jnk(:,half_win+1:end-half_win);
-%         
-%         sp=4;
-%         sph(cn,sp)=subplot(3,2,sp);
-%         hold on;
-%         set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).itpcbp_avg,1)),'xlim',[time(1) time(end)]);
-%         plot(repmat(time,size(grand_avg(tr).avg(cn).itpcbp_avg,1),1)', squeeze(smoothed)')
-%         line([0 0], ylim, 'color', 'k');
-%         xlabel('Time(s)'); ylabel('ITPC');
-%         legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
-%         title(plot_names{sp},'fontsize',10,'interpreter','none');
-%         set(gca,'Xlim',[-.25 .25]);
-% %         set(gca,'Ylim',[0 0.3]);
-%         
-%         %========================== LFP evoked Potential ==================== %
-%         % Smoothing of the  LFP evoked Potential here:
-%         jnk = [];
-%         lfp_se=sterr(grand_avg(tr).avg(cn).lfp,3,0);
-%         lfp_std=std(grand_avg(tr).avg(cn).lfp,0,3);
-%         percentile25=prctile(grand_avg(tr).avg(cn).lfp,25,3);
-%         percentile75=prctile(grand_avg(tr).avg(cn).lfp,75,3);
-%         concat_input = cat(2,(grand_avg(tr).avg(cn).lfp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).lfp_avg(:,:)));
-%         concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).lfp_avg(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed_mean = jnk(:,half_win+1:end-half_win);
-%         concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
-%         concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed_std = jnk(:,half_win+1:end-half_win);
-%         concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
-%         concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed_25 = jnk(:,half_win+1:end-half_win);
-%         concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
-%         concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-%         for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
-%             jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-%         end
-%         clear concat_input
-%         smoothed_75 = jnk(:,half_win+1:end-half_win);
-%         
-%         sp=5;
-%         sph(cn,sp)=subplot(3,2,sp);
-%         hold on;
-%         set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).lfp_avg,1)),'xlim',[time(1) time(end)]);
-%         lineProps={'color',[0 0 1]};
-%         %shadedErrorBar(time,smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);
-%         shadedErrorBar(time,smoothed_mean,smoothed_std,lineProps,1);
-%         %plot(repmat(time,size(grand_avg(tr).avg(cn).lfp_avg,1),1)', squeeze(smoothed_mean)')
-%         line([0 0], ylim, 'color', 'k');
-%         line([time(1) time(end)], [0 0], 'color', 'k');
-%         xlabel('Time(s)'); ylabel(' LFP evoked Potential');
-%         title(plot_names{sp},'fontsize',10,'interpreter','none');
-%         set(gca,'Xlim',[-.25 .25]);
-% %         set(gca,'Ylim',[-60 40]);% for Bacchus
-% %         set(gca,'Ylim',[-6 6]);% for Magnus
-%         
-%         %=================================================================%
-%         %% format spectra colors
-%         cbtitle = {'(P - \mu) / std','P - \mu'};
-%         for sp=1:2
-%             subplot(3,2,sp);
-%             cm = colormap('jet');
-%             cb = colorbar;
-%             set(get(cb,'title'),'string', cbtitle{sp}, 'fontsize',8);
-%             colormap(cm);
-%         end
-%         
-%         results_file{cn} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','avg of ',num2str(grand_avg(tr).nSites),' sites ',withunits, '- ',grand_avg(tr).avg(cn).cond_name]);
-%         mtit([ cfg.monkey,'-',targets{tr},'-avg of ',num2str(grand_avg(tr).nSites),' sites ' ,withunits, ' - ',grand_avg(tr).avg(cn).cond_name],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
-%         
-%     end
-%     
-%     
-%     for cn = 1:length(cond)
-%         figure(h(cn));
-%         for sp=1:2
-%             subplot(sph(cn,sp));
-%             set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
-%         end
-%         export_fig(h(cn),[results_file{cn},'.pdf']);
-% %         saveas(h(cn),results_file{cn});
-%     end
-%     
-% end
-% close all,
-% clc
-% 
+%% tfr_time not defined well!
+for tr = 1: length(targets)
+    %
+    if grand_avg(tr).nSites == 0
+        continue;
+    end
+    for cn = 1:length(cond)
+        % create figure
+        h(cn) = figure('units','normalized','position',[0 0 1 1]);
+        toplot={grand_avg(tr).avg(cn).pow_avg,grand_avg(tr).avg(cn).itpc_avg};
+        % =========================== Power ============================= %
+        sp=1;
+        sph(cn,sp)=subplot(3,2,sp);
+        image(tfr_time, 1:numel(freq), squeeze(grand_avg(tr).avg(cn).pow_avg),'CDataMapping','scaled');
+        set(gca,'YDir','normal');
+        line([0 0], ylim, 'color', 'k');
+        
+        % horizontal lines to separate frequency bands
+        fbandstart = unique(cfg.lfp.frequency_bands(:))';
+        fbandstart_idx = zeros(size(fbandstart));
+        for f = fbandstart
+            f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+            line([tfr_time(1) tfr_time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+            fbandstart_idx(fbandstart == f) = f_idx;
+        end
+        set(gca,'TickDir','out')
+        set(gca, 'ytick', fbandstart_idx);
+        set(gca, 'yticklabel', fbandstart);
+        set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
+        title(plot_names{sp},'fontsize',10,'interpreter','none');
+        nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
+        collim{cn,sp}=[min(nonnan(:)) max(nonnan(:))];
+%         collim{cn,sp}=[-3 3];% from Bacchus
+        set(gca,'Xlim',[-.25 .25]);
+        
+        % =========================== ITPC ============================= %
+        sp=2;
+        sph(cn,sp)=subplot(3,2,sp);
+        image(tfr_time, 1:numel(freq), squeeze(grand_avg(tr).avg(cn).itpc_avg),'CDataMapping','scaled');
+        set(gca,'YDir','normal');
+        line([0 0], ylim, 'color', 'k');
+        
+        % horizontal lines to separate frequency bands
+        fbandstart = unique(cfg.lfp.frequency_bands(:))';
+        fbandstart_idx = zeros(size(fbandstart));
+        for f = fbandstart
+            f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+            line([tfr_time(1) tfr_time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+            fbandstart_idx(fbandstart == f) = f_idx;
+        end
+        set(gca,'TickDir','out')
+        set(gca, 'ytick', fbandstart_idx);
+        set(gca, 'yticklabel', fbandstart);
+        set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
+        title(plot_names{sp},'fontsize',10,'interpreter','none');
+        nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
+        collim{cn,sp}=[min(nonnan(:)) max(nonnan(:))];
+%         collim{cn,sp}=[0 .3];% from Bacchus
+        set(gca,'Xlim',[-.25 .25]);
+        
+        %========================== Bandpassed POWER ==================== %
+        % Smoothing of the POWbp here:
+        jnk = [];
+        concat_input = cat(2,(grand_avg(tr).avg(cn).powbp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).powbp_avg(:,:)));
+        concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).powbp_avg(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).powbp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed = jnk(:,half_win+1:end-half_win);
+        
+        sp=3;
+        sph(cn,sp)=subplot(3,2,sp);
+        hold on;
+        set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).powbp_avg,1)),'xlim',[time(1) time(end)]);
+        plot(repmat(time,size(grand_avg(tr).avg(cn).powbp_avg,1),1)', squeeze(smoothed)')
+        line([0 0], ylim, 'color', 'k');
+        xlabel('Time(s)'); ylabel('Power (W)');
+        legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        title(plot_names{sp},'fontsize',10,'interpreter','none');
+        set(gca,'Xlim',[-.25 .25]);
+%         set(gca,'Ylim',[-3 3]);
+        
+        %========================== Bandpassed ITPC ==================== %
+        % Smoothing of the ITPCbp here:
+        jnk = [];
+        concat_input = cat(2,(grand_avg(tr).avg(cn).itpcbp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).itpcbp_avg(:,:)));
+        concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).itpcbp_avg(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).itpcbp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed = jnk(:,half_win+1:end-half_win);
+        
+        sp=4;
+        sph(cn,sp)=subplot(3,2,sp);
+        hold on;
+        set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).itpcbp_avg,1)),'xlim',[time(1) time(end)]);
+        plot(repmat(time,size(grand_avg(tr).avg(cn).itpcbp_avg,1),1)', squeeze(smoothed)')
+        line([0 0], ylim, 'color', 'k');
+        xlabel('Time(s)'); ylabel('ITPC');
+        legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        title(plot_names{sp},'fontsize',10,'interpreter','none');
+        set(gca,'Xlim',[-.25 .25]);
+%         set(gca,'Ylim',[0 0.3]);
+        
+        %========================== LFP evoked Potential ==================== %
+        % Smoothing of the  LFP evoked Potential here:
+        jnk = [];
+        lfp_se=sterr(grand_avg(tr).avg(cn).lfp,3,0);
+        lfp_std=std(grand_avg(tr).avg(cn).lfp,0,3);
+        percentile25=prctile(grand_avg(tr).avg(cn).lfp,25,3);
+        percentile75=prctile(grand_avg(tr).avg(cn).lfp,75,3);
+        concat_input = cat(2,(grand_avg(tr).avg(cn).lfp_avg(:,half_win:-1:1)),(grand_avg(tr).avg(cn).lfp_avg(:,:)));
+        concat_input = cat(2,concat_input, (grand_avg(tr).avg(cn).lfp_avg(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed_mean = jnk(:,half_win+1:end-half_win);
+        concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
+        concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed_std = jnk(:,half_win+1:end-half_win);
+        concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
+        concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed_25 = jnk(:,half_win+1:end-half_win);
+        concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
+        concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
+        for k=1:size(grand_avg(tr).avg(cn).lfp_avg,1)
+            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
+        end
+        clear concat_input
+        smoothed_75 = jnk(:,half_win+1:end-half_win);
+        
+        sp=5;
+        sph(cn,sp)=subplot(3,2,sp);
+        hold on;
+        set(gca,'ColorOrder',jet(size(grand_avg(tr).avg(cn).lfp_avg,1)),'xlim',[time(1) time(end)]);
+        lineProps={'color',[0 0 1]};
+        %shadedErrorBar(time,smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);
+        shadedErrorBar(time,smoothed_mean,smoothed_std,lineProps,1);
+        %plot(repmat(time,size(grand_avg(tr).avg(cn).lfp_avg,1),1)', squeeze(smoothed_mean)')
+        line([0 0], ylim, 'color', 'k');
+        line([time(1) time(end)], [0 0], 'color', 'k');
+        xlabel('Time(s)'); ylabel(' LFP evoked Potential');
+        title(plot_names{sp},'fontsize',10,'interpreter','none');
+        set(gca,'Xlim',[-.25 .25]);
+%         set(gca,'Ylim',[-60 40]);% for Bacchus
+%         set(gca,'Ylim',[-6 6]);% for Magnus
+        
+        %=================================================================%
+        %% format spectra colors
+        cbtitle = {'(P - \mu) / std','P - \mu'};
+        for sp=1:2
+            subplot(3,2,sp);
+            cm = colormap('jet');
+            cb = colorbar;
+            set(get(cb,'title'),'string', cbtitle{sp}, 'fontsize',8);
+            colormap(cm);
+        end
+        
+        results_file{cn} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','avg of ',num2str(grand_avg(tr).nSites),' sites ',withunits, '- ',grand_avg(tr).avg(cn).cond_name]);
+        mtit([ cfg.monkey,'-',targets{tr},'-avg of ',num2str(grand_avg(tr).nSites),' sites ' ,withunits, ' - ',grand_avg(tr).avg(cn).cond_name],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+        
+    end
+    
+    
+    for cn = 1:length(cond)
+        figure(h(cn));
+        for sp=1:2
+            subplot(sph(cn,sp));
+            set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
+        end
+        export_fig(h(cn),[results_file{cn},'.pdf']);
+%         saveas(h(cn),results_file{cn});
+    end
+    
+end
+close all,
+clc
+
 %%
 freqb = {'delta 2-4 Hz','theta 4-8 Hz','alpha 8-14 Hz','beta 14-30 Hz','lowgamma 30-50 Hz','highgamma 70-150 Hz'};
 freqName = {'delta','theta','alpha','beta','lowGamma','highGamma'};
 color = jet(length(frequency_bands));
 
-% for tr = 1:length(targets)
-%     if grand_avg(tr).nSites == 0
-%         continue;
-%     end
-%     h = figure('Name',['Max ITPCbp/POWbp of Target=',grand_avg(tr).target],'NumberTitle','off');
-%     for cn = 1:length(cond)
-%         for fb = 1: length(freqb)
-%             % itpcbp
-%             subplot(2,2,2*cn-1)
-%             scatter(grand_avg(tr).avg(cn).max_itpcbp_time(fb,:),grand_avg(tr).avg(cn).max_itpcbp(fb,:),15,color(fb,:))
-%             hold on
-%             title([' max itpc-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(grand_avg(tr).nSites),...
-%                 ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('time (s)','Interpreter','latex'), ylabel('Max ITPC value','Interpreter','latex');
-% %             set(gca,'xlim',[-0.5,0.5],'ylim',[0,1])
-%             set(gca,'xlim',[-0.25,0.25],'ylim',[0,1])
-%             
-%             % powbp
-%             subplot(2,2,2*cn)
-%             scatter(grand_avg(tr).avg(cn).max_powbp_time(fb,:),grand_avg(tr).avg(cn).max_powbp(fb,:),15,color(fb,:))
-%             hold on
-%             title([' max power-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(grand_avg(tr).nSites),...
-%                 ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('time (s)','Interpreter','latex'), ylabel('Max POWER value','Interpreter','latex');
-% %             set(gca,'xlim',[-0.5,0.5])
-%             set(gca,'xlim',[-0.25,0.25])
-%             
-%         end
-%         
-%         subplot(2,2,2*cn-1)
-%         plot([0,0],get(gca,'ylim'),'k--')
-%         %
-%         subplot(2,2,2*cn)
-%         plot([0,0],get(gca,'ylim'),'k--')
-%         legend(freqb,'FontSize',5)
-%         legend('boxoff')
-%         
-%     end
-%     mtit(['Target=',strrep(grand_avg(tr).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-%     results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','Max_ITPCbp_POWbp_of ',num2str(grand_avg(tr).nSites),' sites ', withunits]);
-%     %     mtit([ ecg_bna_cfg.monkey,'-',targets{tr},'-avg of ',num2str(grand_avg(tr).nSites),' sites in all sessions - ',grand_avg(tr).avg(cn).cond_name],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
-%     export_fig(h,[results_file,'.pdf']);
-% %     saveas(h,[results_file]);
-% end
-% close all,
-% clc
+for tr = 1:length(targets)
+    if grand_avg(tr).nSites == 0
+        continue;
+    end
+    h = figure('Name',['Max ITPCbp/POWbp of Target=',grand_avg(tr).target],'NumberTitle','off');
+    for cn = 1:length(cond)
+        for fb = 1: length(freqb)
+            % itpcbp
+            subplot(2,2,2*cn-1)
+            scatter(grand_avg(tr).avg(cn).max_itpcbp_time(fb,:),grand_avg(tr).avg(cn).max_itpcbp(fb,:),15,color(fb,:))
+            hold on
+            title([' max itpc-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(grand_avg(tr).nSites),...
+                ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            xlabel('time (s)','Interpreter','latex'), ylabel('Max ITPC value','Interpreter','latex');
+%             set(gca,'xlim',[-0.5,0.5],'ylim',[0,1])
+            set(gca,'xlim',[-0.25,0.25],'ylim',[0,1])
+            
+            % powbp
+            subplot(2,2,2*cn)
+            scatter(grand_avg(tr).avg(cn).max_powbp_time(fb,:),grand_avg(tr).avg(cn).max_powbp(fb,:),15,color(fb,:))
+            hold on
+            title([' max power-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(grand_avg(tr).nSites),...
+                ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            xlabel('time (s)','Interpreter','latex'), ylabel('Max POWER value','Interpreter','latex');
+%             set(gca,'xlim',[-0.5,0.5])
+            set(gca,'xlim',[-0.25,0.25])
+            
+        end
+        
+        subplot(2,2,2*cn-1)
+        plot([0,0],get(gca,'ylim'),'k--')
+        %
+        subplot(2,2,2*cn)
+        plot([0,0],get(gca,'ylim'),'k--')
+        legend(freqb,'FontSize',5)
+        legend('boxoff')
+        
+    end
+    mtit(['Target=',strrep(grand_avg(tr).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
+    results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','Max_ITPCbp_POWbp_of ',num2str(grand_avg(tr).nSites),' sites ', withunits]);
+    %     mtit([ ecg_bna_cfg.monkey,'-',targets{tr},'-avg of ',num2str(grand_avg(tr).nSites),' sites in all sessions - ',grand_avg(tr).avg(cn).cond_name],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+    export_fig(h,[results_file,'.pdf']);
+%     saveas(h,[results_file]);
+end
+close all,
+clc
 
 %%
 % ploting the avgogram of the timing of the Max ITPC/POW:
-% bins=cfg.analyse_states{1,3}:cfg.lfp.timestep*10:cfg.analyse_states{1,4};
-bins=cfg.analyse_states{1,3}:cfg.lfp.timestep*5:cfg.analyse_states{1,4};
+bins=cfg.analyse_states{1,3}:cfg.lfp.timestep*10:cfg.analyse_states{1,4};
 for tr = 1: length(targets)
     if grand_avg(tr).nSites == 0
         continue;
@@ -444,66 +443,66 @@ end
 close all,
 clc
 
-% 
-% % ploting number of significant sites in each bin for ITPC/POW/evoked lfp:
-% bins=tfr_time;
-% for tr = 1: length(targets)
-%     if grand_avg(tr).nSites == 0
-%         continue;
-%     end
-%     h = figure;
-%     for cn = 1:length(cond)
-%         for fb = 1: length(freqb)
-%             % itpcbp
-%             sp1=subplot(3,2,cn);
-%             plot(bins,squeeze(grand_avg(tr).avg(cn).itpcbp_sig_avg(fb,:)),'-','Color',color(fb,:));
-%             hold on
-%             title([' fraction significant itpc-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).max_itpcbp,2)),...
-%                 ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant ITPC times','Interpreter','latex');
-%             set(gca,'xlim',[-0.25,0.25])
-% %             xlim([bins(1) bins(end)]);
-%             
-%             % powbp
-%             sp2=subplot(3,2,cn+2);
-%             plot(bins,squeeze(grand_avg(tr).avg(cn).powbp_sig_avg(fb,:)),'-','Color',color(fb,:));
-%             hold on
-%             title([' fraction significant power-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).max_powbp,2)),...
-%                 ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant POWER times','Interpreter','latex');
-%             set(gca,'xlim',[-0.25,0.25])
-% %             xlim([bins(1) bins(end)]);
-%             
-%             
-%             
-%             
-%         end
-%         
-%         legend(freqb,'FontSize',5)
-%         legend('boxoff')
-%         
-%         % evoked lfp
-%         sp3=subplot(3,2,cn+4);
-%         plot(bins,grand_avg(tr).avg(cn).lfp_sig_avg,'-','Color',[0 0 1]);
-%         hold on
-%         title([' fraction significant evoked lfp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).lfp_sig_avg,2)),...
-%             ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%         xlabel('Significant evoked LFP times','Interpreter','latex');
-%         set(gca,'xlim',[-0.25,0.25])
-% %         xlim([bins(1) bins(end)]);
-%         
-%         
-%         plot(sp1,[0,0],get(sp1,'ylim'),'k--')
-%         plot(sp2,[0,0],get(sp2,'ylim'),'k--')
-%     end
-%     mtit(['Target=',strrep(grand_avg(tr).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-%     results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','Significant_bins_for ',num2str(grand_avg(tr).nSites),' sites ', withunits]);
-%     export_fig(h,[results_file,'.pdf']);
-% %     saveas(h,[results_file]);
-% end
-% 
-% close all,
-% clc
-% 
+
+% ploting number of significant sites in each bin for ITPC/POW/evoked lfp:
+bins=tfr_time;
+for tr = 1: length(targets)
+    if grand_avg(tr).nSites == 0
+        continue;
+    end
+    h = figure;
+    for cn = 1:length(cond)
+        for fb = 1: length(freqb)
+            % itpcbp
+            sp1=subplot(3,2,cn);
+            plot(bins,squeeze(grand_avg(tr).avg(cn).itpcbp_sig_avg(fb,:)),'-','Color',color(fb,:));
+            hold on
+            title([' fraction significant itpc-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).max_itpcbp,2)),...
+                ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            xlabel('Significant ITPC times','Interpreter','latex');
+            set(gca,'xlim',[-0.25,0.25])
+%             xlim([bins(1) bins(end)]);
+            
+            % powbp
+            sp2=subplot(3,2,cn+2);
+            plot(bins,squeeze(grand_avg(tr).avg(cn).powbp_sig_avg(fb,:)),'-','Color',color(fb,:));
+            hold on
+            title([' fraction significant power-bp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).max_powbp,2)),...
+                ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            xlabel('Significant POWER times','Interpreter','latex');
+            set(gca,'xlim',[-0.25,0.25])
+%             xlim([bins(1) bins(end)]);
+            
+            
+            
+            
+        end
+        
+        legend(freqb,'FontSize',5)
+        legend('boxoff')
+        
+        % evoked lfp
+        sp3=subplot(3,2,cn+4);
+        plot(bins,grand_avg(tr).avg(cn).lfp_sig_avg,'-','Color',[0 0 1]);
+        hold on
+        title([' fraction significant evoked lfp in ', strrep(cond{cn},'_',' '),' for ',num2str(size(grand_avg(tr).avg(cn).lfp_sig_avg,2)),...
+            ' sites,',num2str(grand_avg(tr).avg(cn).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+        xlabel('Significant evoked LFP times','Interpreter','latex');
+        set(gca,'xlim',[-0.25,0.25])
+%         xlim([bins(1) bins(end)]);
+        
+        
+        plot(sp1,[0,0],get(sp1,'ylim'),'k--')
+        plot(sp2,[0,0],get(sp2,'ylim'),'k--')
+    end
+    mtit(['Target=',strrep(grand_avg(tr).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
+    results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','Significant_bins_for ',num2str(grand_avg(tr).nSites),' sites ', withunits]);
+    export_fig(h,[results_file,'.pdf']);
+%     saveas(h,[results_file]);
+end
+
+close all,
+clc
+
 
 end
