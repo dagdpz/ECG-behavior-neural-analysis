@@ -96,10 +96,23 @@ for v = 1:length(versions)
                 
                 fprintf('Analysing for session %s\n', session_name);
                 
-                % Read LFP data
-                cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
-                cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
-                
+                if cfg.lfp.IBI==1
+                    if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                        
+                    elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
+                    end
+                    
+                else
+                    % Read LFP data
+                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
+                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
+                end
                 %% this is new
                 sitesdir=fileparts(sessions_info(i).Input_LFP{:});
                 [sitefiles]=dir(sessions_info(i).Input_LFP{:});

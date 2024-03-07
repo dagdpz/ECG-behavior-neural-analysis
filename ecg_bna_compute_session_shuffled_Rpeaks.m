@@ -24,9 +24,31 @@ N=cfg.n_permutations;
 
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
+    if (cfg.IBI==1)
+        if cfg.IBI_low == 1 || cfg.IBI_high == 0
+            tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh), find(out(b).R2R_valid < cfg.IBI_thrsh)-1);
+            tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
+            out(b).idx_valid_R2R_consec = tmp2;
+%             tmp = []; tmp2 = [];
+        elseif cfg.IBI_high == 1 || cfg.IBI_low == 0
+            tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh), find(out(b).R2R_valid > cfg.IBI_thrsh)-1);
+            tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
+            out(b).idx_valid_R2R_consec = tmp2;
+%             tmp = []; tmp2 = [];
+        end
+    end
     Rpeaks(b).block=out(b).nrblock_combinedFiles;
     Rpeaks(b).offset=offset_blocks_Rpeak(b);
     if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)
+        Rpeaks(b).block=NaN;
+        Rpeaks(b).RPEAK_ts=[];
+        Rpeaks(b).RR_durations = [];
+        Rpeaks(b).shuffled_ts=[];
+        offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
+        continue
+    end
+    % new condition for checking if idx_R2R_valid_cons is empty or not
+    if isempty(out(b).idx_valid_R2R_consec)
         Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).RR_durations = [];
@@ -59,10 +81,18 @@ for b=1:numel(out)
         R2R_consec     = out(b).R2R_t(out(b).idx_valid_R2R_consec);
         R2R_intersect  = intersect(R2R_consec,R2R_t);
         idx_valid_R2R_consec = find(ismember(R2R_intersect, R2R_t));
-        if idx_valid_R2R_consec(1) == 1
-            % drop the first Rpeak if it's consecutive as the jittering 
-            % function complains about such a situation
-            idx_valid_R2R_consec(1) = [];
+        if isempty(idx_valid_R2R_consec)
+            Rpeaks(b).RPEAK_ts_insp=[];         % this offset is just a trick to be able to append Rpeaks across blocks easily
+            Rpeaks(b).RPEAK_dur_insp=[]; % durations of RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).RPEAK_ts)
+            Rpeaks(b).shuffled_ts_insp=[];
+            Rpeaks(b).shuffled_dur_insp = []; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
+            continue;
+        else
+            if idx_valid_R2R_consec(1) == 1
+                % drop the first Rpeak if it's consecutive as the jittering
+                % function complains about such a situation
+                idx_valid_R2R_consec(1) = [];
+            end
         end
         
         [RPEAK_ts, RPEAK_dur, RPEAK_ts_p, RPEAK_dur_p] = ...
@@ -86,10 +116,19 @@ for b=1:numel(out)
         R2R_consec     = out(b).R2R_t(out(b).idx_valid_R2R_consec);
         R2R_intersect  = intersect(R2R_consec,R2R_t);
         idx_valid_R2R_consec = find(ismember(R2R_intersect, R2R_t));
-        if idx_valid_R2R_consec(1) == 1
-            % drop the first Rpeak if it's consecutive as the jittering 
-            % function complains about such a situation
-            idx_valid_R2R_consec(1) = [];
+        if isempty(idx_valid_R2R_consec)
+            Rpeaks(b).RPEAK_ts_exp=[];         % this offset is just a trick to be able to append Rpeaks across blocks easily
+            Rpeaks(b).RPEAK_dur_exp=[]; % durations of RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).RPEAK_ts)
+            Rpeaks(b).shuffled_ts_exp=[];            
+            Rpeaks(b).shuffled_dur_exp = []; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
+            continue;
+        else
+            if idx_valid_R2R_consec(1) == 1
+                % drop the first Rpeak if it's consecutive as the jittering
+                % function complains about such a situation
+                idx_valid_R2R_consec(1) = [];
+            end
+
         end
         
         [RPEAK_ts, RPEAK_dur, RPEAK_ts_p, RPEAK_dur_p] = ...
