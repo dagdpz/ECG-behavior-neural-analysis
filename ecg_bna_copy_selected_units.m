@@ -6,6 +6,8 @@ if ~exist(destination_folder, 'dir')
     mkdir(destination_folder)
 end
 
+delete([destination_folder '\*'])
+
 for unitNum = 1:length(unit_ids)
     
     fileList = dir([source_folder filesep '*' unit_ids{unitNum} '*']);
