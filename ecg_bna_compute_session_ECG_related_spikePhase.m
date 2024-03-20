@@ -165,14 +165,14 @@ for unitNum = 1:length(population)
         states                     = {trcell.states};
         TDT_ECG1_t0_from_rec_start = {trcell.TDT_ECG1_t0_from_rec_start};
         block_nums                 = {trcell.block};
-        state1_times               = cellfun(@(x,y) x(y == 1), states_onset, states, 'Uniformoutput', false); % trial starts
-        state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends
+        state2_times               = cellfun(@(x,y) x(y == 2), states_onset, states, 'Uniformoutput', false); % trial starts = state 2
+        state90_times              = cellfun(@(x,y) x(y == 90), states_onset, states, 'Uniformoutput', false); % trial ends = state 90
         % compute RR-intervals
         valid_RRinterval_ends      = single([Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
         valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
         % 0. figure out RR-intervals lying within trials
-        trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state1_times, TDT_ECG1_t0_from_rec_start, block_nums);
-        trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
         
         RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
         for RRnum = 1:length(RR_within_trial_idx)

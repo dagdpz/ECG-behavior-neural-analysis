@@ -71,9 +71,9 @@ for u=1:numel(population)
         % add trial onset time to each spike so its basically one stream again
         % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
         % removing overlapping spikes here            % add trial onset time         % add block separator
-        arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==1)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
+        arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==2)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
         trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell);
-        trial_ends=cellfun(@(x) x.states_onset(x.states==98)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
+        trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
         trial_ends=[trial_ends{:}];
         
         if numel(trial_onsets)<=1
