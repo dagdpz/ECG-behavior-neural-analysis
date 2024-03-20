@@ -132,7 +132,7 @@ for flNum = 1:length(fileList)
         sgtitle(sgtitleText,'interpreter','none')
     end
     
-    export_fig([basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
+    export_fig(gcf,[basepath_to_save, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
 end
 end
