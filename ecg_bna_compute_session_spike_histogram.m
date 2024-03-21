@@ -6,7 +6,7 @@ offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
 
 if cfg.spk.apply_exclusion_criteria
-    load([cfg.SPK_root_results_fldr filesep cfg.spk.unit_list], 'unit_ids')
+    load([cfg.unit_lists filesep cfg.spk.unit_list], 'unit_ids')
     
     pop_units  = {population.unit_ID};
     inc_ids    = ismember(pop_units, unit_ids);
@@ -76,7 +76,7 @@ for u=1:numel(population)
         trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
         trial_ends=[trial_ends{:}];
         
-        if numel(trial_onsets)<=1
+        if numel(trial_onsets)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
             continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
         end
         
