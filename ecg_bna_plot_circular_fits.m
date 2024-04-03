@@ -845,8 +845,13 @@ end
 
 function plot_scalingFactor_histograms(dt, var_prefix, cfg, cond1_num, cond2_num, C, targName, file_prefix, basepath_to_save, selection)
 
+bin_centers_a    = -0.195:0.01:0.195;
+
+bin_centers_diff = -0.145:0.01:0.145;
+
 figure
 set(gcf, 'Position', [557   620   754   200*length(var_prefix)])
+colororder(C(2:end,:))
 
 for lin_field_num = 1:length(var_prefix)
     
@@ -867,21 +872,67 @@ for lin_field_num = 1:length(var_prefix)
         vMNeg_a_cond2{lin_field_num} = dt.(cfg.condition(cond2_num).name).([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(:,1);
     end
     
-    % median difference in scaling factors
-    M_pos{lin_field_num} = median([abs(vMPos_a_cond1{lin_field_num}) - abs(vMPos_a_cond2{lin_field_num})]);
-    M_neg{lin_field_num} = median([abs(vMNeg_a_cond1{lin_field_num}) - abs(vMNeg_a_cond2{lin_field_num})]);
+    % bin scaling factors
+    vMPos_a_cond1_binned{lin_field_num} = histc(vMPos_a_cond1{lin_field_num}, bin_centers_a);
+    vMNeg_a_cond1_binned{lin_field_num} = histc(vMNeg_a_cond1{lin_field_num}, bin_centers_a);
     
+    vMPos_a_cond2_binned{lin_field_num} = histc(vMPos_a_cond2{lin_field_num}, bin_centers_a);
+    vMNeg_a_cond2_binned{lin_field_num} = histc(vMNeg_a_cond2{lin_field_num}, bin_centers_a);
+    
+    % plot scaling factor histograms
     s1(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),1+2*(lin_field_num-1));
-    hist([abs(vMPos_a_cond1{lin_field_num}) - abs(vMPos_a_cond2{lin_field_num})])
+    stairs(bin_centers_a, [vMPos_a_cond1_binned{lin_field_num} vMNeg_a_cond1_binned{lin_field_num}], 'LineWidth', 2)
+    legend('von Mises Pos.', 'von Mises Neg.')
+    title(cfg.condition(cond1_num).name)
+    xlabel('Scaling Factor')
+    ylabel('Unit Counts')
+    
+    s2(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),2*lin_field_num);
+    stairs(bin_centers_a, [vMPos_a_cond2_binned{lin_field_num} vMNeg_a_cond2_binned{lin_field_num}], 'LineWidth', 2)
+    title(cfg.condition(cond2_num).name)
+    
+    sgtitle([targName ': Scaling Factors'])
+    
+end
+
+linkaxes([s1 s2], 'y')
+
+filename = [file_prefix targName '_' cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name];
+export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+close(gcf);
+    
+figure
+set(gcf, 'Position', [557   620   754   200*length(var_prefix)])
+
+for lin_field_num = 1:length(var_prefix)
+
+    % compute differences of absolute scaling factors
+    vMPos_a_absdiff = abs(vMPos_a_cond1{lin_field_num}) - abs(vMPos_a_cond2{lin_field_num});
+
+    vMNeg_a_absdiff = abs(vMNeg_a_cond1{lin_field_num}) - abs(vMNeg_a_cond2{lin_field_num});
+    
+    % median difference in scaling factors
+    M_pos{lin_field_num} = median(vMPos_a_absdiff);
+    M_neg{lin_field_num} = median(vMNeg_a_absdiff);
+    
+    % binned scaling factor differences
+    vMPos_a_absdiff_binned = histc(vMPos_a_absdiff, bin_centers_diff);
+    vMNeg_a_absdiff_binned = histc(vMNeg_a_absdiff, bin_centers_diff);
+    
+    S1(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),1+2*(lin_field_num-1));
+    stairs(bin_centers_diff, vMPos_a_absdiff_binned, 'LineWidth', 2)
+    hold on
+    plot(M_pos{lin_field_num}, 0, '.', 'MarkerSize', 15)
     title('Pos. von Mises: Scaling Factor Difference')
     xlabel('Scaling Factor (abs(Rest) - abs(Task))')
     
-    s2(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),2*lin_field_num);
-    hist([abs(vMNeg_a_cond1{lin_field_num}) - abs(vMNeg_a_cond2{lin_field_num})])
+    S2(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),2*lin_field_num);
+    stairs(bin_centers_diff, vMNeg_a_absdiff_binned, 'LineWidth', 2)
+    hold on
+    plot(M_neg{lin_field_num}, 0, '.', 'MarkerSize', 15)
     title('Neg. von Mises: Scaling Factor Difference')
-    xlabel('Scaling Factor (abs(Rest) - abs(Task))')
     
-    sgtitle([targName ': Scaling Factors'])
+    sgtitle([targName ': Scaling Factor Differences'])
     
     % check if means are zeros
     p_wilcoxon_paired{1,lin_field_num} = signrank(abs(vMPos_a_cond1{lin_field_num}),abs(vMPos_a_cond2{lin_field_num}));
@@ -894,9 +945,9 @@ for lin_field_num = 1:length(var_prefix)
 
 end
 
-linkaxes([s1 s2], 'xy')
+linkaxes([S1 S2], 'xy')
 
-filename = [file_prefix targName '_' cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name];
+if strfind(file_prefix, 'MedSplit_')
 export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
 close(gcf);
 
@@ -907,7 +958,7 @@ end
 
 function plot_kappa_histograms(dt, var_prefix, cfg, cond1_num, cond2_num, C, targName, file_prefix, basepath_to_save, selection)
 
-kappa_bin_edges = exp(-1:5);
+kappa_bin_edges = exp(-1:2);
 
 figure
 set(gcf, 'Position', [557   620   754   200*length(var_prefix)])
@@ -956,11 +1007,13 @@ for lin_field_num = 1:length(var_prefix)
     xlabel('log(\kappa)')
     title(cfg.condition(cond1_num).name)
     legend({'von Mises Pos.', 'von Mises Neg.'})
+    xlim([-2 4])
     
     s2(lin_field_num) = subplot(length(var_prefix),length(cfg.condition),2*lin_field_num);
     bar(kappa_bin_edges,[vMPos_kappa_cond2_binned{lin_field_num} vMNeg_kappa_cond2_binned{lin_field_num}])
     xlabel('log(\kappa)')
     title(cfg.condition(cond2_num).name)
+    xlim([-2 4])
     
     p_wilcoxon_paired{lin_field_num,1} = signrank(vMPos_kappa_cond1{lin_field_num}, vMPos_kappa_cond2{lin_field_num});
     
