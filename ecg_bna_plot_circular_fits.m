@@ -985,3 +985,63 @@ T = table({'Pos. von Mises', 'Neg. von Mises'}', M_cond1', M_cond2', p_wilcoxon_
 writetable(T, [basepath_to_save filesep filename '.xls'])
 end
 
+function plot_kappas_vs_phase(data, var_prefix, cfg, cond1_num, cond2_num, C, targName, file_prefix, basepath_to_save, selection)
+
+if exist('selection', 'var')
+    % take kappas
+    vMPos_kappa_cond1 = log(dt.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,3));
+    vMNeg_kappa_cond1 = log(dt.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,3));
+    
+    vMPos_kappa_cond2 = log(dt.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,3));
+    vMNeg_kappa_cond2 = log(dt.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,3));
+    
+    % take phases
+    vMPos_Phase_cond1 = dt.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,4);
+    vMNeg_Phase_cond1 = dt.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,4);
+    
+    vMPos_Phase_cond2 = dt.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,4);
+    vMNeg_Phase_cond2 = dt.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,4);
+else
+    % take kappas
+    vMPos_kappa_cond1 = log(data.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(:,3));
+    vMNeg_kappa_cond1 = log(data.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(:,3));
+    
+    vMPos_kappa_cond2 = log(data.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(:,3));
+    vMNeg_kappa_cond2 = log(data.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(:,3));
+    
+    % take phases
+    vMPos_Phase_cond1 = data.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(:,4);
+    vMNeg_Phase_cond1 = data.(cfg.condition(cond1_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(:,4);
+    
+    vMPos_Phase_cond2 = data.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesPos']).coefs(:,4);
+    vMNeg_Phase_cond2 = data.(cfg.condition(cond2_num).name)([var_prefix{lin_field_num} 'vonMisesNeg']).coefs(:,4);
+end
+
+figure,
+set(gcf, 'Position', [557   620   754   206])
+colororder(C(2:end,:))
+
+subplot(1,2,1)
+scatter(vMPos_kappa_cond1,vMPos_Phase_cond1, '.', 'MarkerEdgeColor', cfg.condition(1).color)
+hold on
+scatter(vMPos_kappa_cond2,vMPos_Phase_cond2, '.', 'MarkerEdgeColor', cfg.condition(2).color)
+box on
+ylim([0 2*pi])
+title('Pos. von Mises')
+xlabel('log(\kappa)')
+ylabel('Peak Phase [0-2\pi]')
+legend({cfg.condition.name}, 'Location', 'Best')
+
+subplot(1,2,2)
+scatter(vMNeg_kappa_cond1,vMNeg_Phase_cond1, '.', 'MarkerEdgeColor', cfg.condition(1).color)
+hold on
+scatter(vMNeg_kappa_cond2,vMNeg_Phase_cond2, '.', 'MarkerEdgeColor', cfg.condition(2).color)
+box on
+ylim([0 2*pi])
+title('Neg. von Mises')
+
+filename = [file_prefix targName '_' cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name];
+export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+close(gcf)
+
+end
