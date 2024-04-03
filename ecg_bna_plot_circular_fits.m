@@ -985,27 +985,3 @@ T = table({'Pos. von Mises', 'Neg. von Mises'}', M_cond1', M_cond2', p_wilcoxon_
 writetable(T, [basepath_to_save filesep filename '.xls'])
 end
 
-%     circ_wwtest(phase_by_area_rest, area_id)
-% 	circ_wwtest(phase_by_area_task, area_id)
-
-
-%     %% R-squared-weighted
-%     circ_mean(out_rest.cosine.coefs(:,2))
-%     circ_mean(out_rest.cosine.coefs(:,2), out_rest.cosine.rsquared)
-%
-%     circ_mean(out_task.cosine.coefs(:,2))
-%     circ_mean(out_task.cosine.coefs(:,2), out_task.cosine.rsquared)
-%
-%
-%     circ_mean(out_rest.vonMisesPos.coefs(:,2))
-%     circ_mean(out_rest.vonMisesPos.coefs(:,2), out_rest.vonMisesPos.rsquared)
-%
-%     circ_mean(out_task.vonMisesPos.coefs(:,2))
-%     circ_mean(out_task.vonMisesPos.coefs(:,2), out_task.vonMisesPos.rsquared)
-%
-%
-%     circ_mean(out_rest.vonMisesNeg.coefs(:,2))
-%     circ_mean(out_rest.vonMisesNeg.coefs(:,2), out_rest.vonMisesNeg.rsquared)
-%
-%     circ_mean(out_task.vonMisesNeg.coefs(:,2))
-%     circ_mean(out_task.vonMisesNeg.coefs(:,2), out_task.vonMisesNeg.rsquared)
