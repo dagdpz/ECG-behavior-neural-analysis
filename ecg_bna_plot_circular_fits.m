@@ -623,6 +623,8 @@ writetable(T, [basepath_to_save filesep filename '.xls'])
 end
 
 function plot_RpeakNum_histograms(ephys_dt, var_prefix, cfg, cond1_num, cond2_num, targName, file_prefix, basepath_to_save)
+bin_centers = 250:500:11750;
+
 figure,
 set(gcf, 'Position', [557   620   754   206])
 
@@ -630,16 +632,18 @@ M1 = nanmedian(ephys_dt.(cfg.condition(cond1_num).name).NrEvents);
 M2 = nanmedian(ephys_dt.(cfg.condition(cond2_num).name).NrEvents);
 
 s1 = subplot(1,2,1);
-hist(ephys_dt.(cfg.condition(cond1_num).name).NrEvents);
+hist(ephys_dt.(cfg.condition(cond1_num).name).NrEvents, bin_centers);
 title([cfg.condition(cond1_num).name '-' var_prefix ': median = ' num2str(M1) ' heart cycles'])
+xlim([0 12000])
 xlabel('Number of Heart Cycles')
 ylabel('Number of Units')
 
 s2 = subplot(1,2,2);
-hist(ephys_dt.(cfg.condition(cond2_num).name).NrEvents);
+hist(ephys_dt.(cfg.condition(cond2_num).name).NrEvents, bin_centers);
+xlim([0 12000])
 title([cfg.condition(cond2_num).name '-' var_prefix ': median = ' num2str(M2) ' heart cycles'])
 
-linkaxes([s1 s2], 'xy')
+linkaxes([s1 s2], 'y')
 
 filename = [file_prefix targName '_' cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name];
 export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf');
