@@ -502,46 +502,8 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
         
         plot_kappa_histograms(dt, {'lowIBI_', 'highIBI_'}, cfg, cond1_num, cond2_num, C, unqTargets{targNum}, 'MedSplit_SigKappas_', basepath_to_save, selection)
 
-        %% plot kappas vs phases for significant units
-        
-        % take kappas
-        vMPos_sigKappa_cond1 = log(dt.(cfg.condition(cond1_num).name).vonMisesPos.coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,3));
-        vMNeg_sigKappa_cond1 = log(dt.(cfg.condition(cond1_num).name).vonMisesNeg.coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,3));
-        
-        vMPos_sigKappa_cond2 = log(dt.(cfg.condition(cond2_num).name).vonMisesPos.coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,3));
-        vMNeg_sigKappa_cond2 = log(dt.(cfg.condition(cond2_num).name).vonMisesNeg.coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,3));
-        
-        % take phases
-        vMPos_sigPhase_cond1 = dt.(cfg.condition(cond1_num).name).vonMisesPos.coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,4);
-        vMNeg_sigPhase_cond1 = dt.(cfg.condition(cond1_num).name).vonMisesNeg.coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,4);
-        
-        vMPos_sigPhase_cond2 = dt.(cfg.condition(cond2_num).name).vonMisesPos.coefs(selection.vmpos_sig_cond1_ids | selection.vmpos_sig_cond2_ids | selection.vmpos_sig_both_ids,4);
-        vMNeg_sigPhase_cond2 = dt.(cfg.condition(cond2_num).name).vonMisesNeg.coefs(selection.vmneg_sig_cond1_ids | selection.vmneg_sig_cond2_ids | selection.vmneg_sig_both_ids,4);
-        
-        figure,
-        set(gcf, 'Position', [557   620   754   206])
-        subplot(1,2,1)
-        scatter(vMPos_sigKappa_cond1,vMPos_sigPhase_cond1, '.', 'MarkerEdgeColor', cfg.condition(1).color)
-        hold on
-        scatter(vMPos_sigKappa_cond2,vMPos_sigPhase_cond2, '.', 'MarkerEdgeColor', cfg.condition(2).color)
-        box on
-        ylim([0 2*pi])
-        title('Pos. von Mises')
-        xlabel('log(\kappa)')
-        ylabel('Peak Phase [0-2\pi]')
-        legend({cfg.condition.name}, 'Location', 'Best')
-        
-        subplot(1,2,2)
-        scatter(vMNeg_sigKappa_cond1,vMNeg_sigPhase_cond1, '.', 'MarkerEdgeColor', cfg.condition(1).color)
-        hold on
-        scatter(vMNeg_sigKappa_cond2,vMNeg_sigPhase_cond2, '.', 'MarkerEdgeColor', cfg.condition(2).color)
-        box on
-        ylim([0 2*pi])
-        title('Neg. von Mises')
-        
-        filename = ['SigKappa_vs_SigPhase_' unqTargets{targNum} '_' cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name];
-        export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
-        close all;
+        %% plot significant kappas vs phases
+        plot_kappas_vs_phase(dt, {''}, cfg, cond1_num, cond2_num, C, unqTargets{targNum}, 'SigKappa_vs_SigPhase_', basepath_to_save)
         
         
         %% compare circular distribution parameters
