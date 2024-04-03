@@ -792,11 +792,13 @@ for lin_field_num = 1:length(var_prefix)
     vMPos_Phase_cond2_binned{lin_field_num} = histc(vMPos_Phase_cond2{lin_field_num}, phase_bin_edges);
     vMNeg_Phase_cond2_binned{lin_field_num} = histc(vMNeg_Phase_cond2{lin_field_num}, phase_bin_edges);
 
-    circ_med_rest(:,lin_field_num) = {circ_median(cos_Phase_cond1{lin_field_num});
-        circ_median(vMPos_Phase_cond1{lin_field_num});
+    circ_med_rest(:,lin_field_num) = ...
+        {mod(circ_median(cos_Phase_cond1{lin_field_num}), 2*pi);
+        mod(circ_median(vMPos_Phase_cond1{lin_field_num}), 2*pi);
         mod(circ_median(vMNeg_Phase_cond1{lin_field_num}), 2*pi)};
-    circ_med_task(:,lin_field_num) = {circ_median(cos_Phase_cond2{lin_field_num});
-        circ_median(vMPos_Phase_cond2{lin_field_num});
+    circ_med_task(:,lin_field_num) = ...
+        {mod(circ_median(cos_Phase_cond2{lin_field_num}), 2*pi);
+        mod(circ_median(vMPos_Phase_cond2{lin_field_num}), 2*pi);
         mod(circ_median(vMNeg_Phase_cond2{lin_field_num}), 2*pi)};
 
     cos_Phase_cond1_binned{lin_field_num} = cos_Phase_cond1_binned{lin_field_num}(:);
