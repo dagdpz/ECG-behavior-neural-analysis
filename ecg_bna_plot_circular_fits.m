@@ -609,17 +609,17 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
 end
 end
 
-function plot_stability_vs_linear_gof(data, lin_field_name, cfg, cond1_num, cond2_num, targName, file_prefix, basepath_to_save)
+function plot_stability_vs_linear_gof(data, field_name, cfg, cond1_num, cond2_num, targName, file_prefix, basepath_to_save)
 
 stability = data.stability_rating;
 
 figure,
-set(gcf, 'Position', [557   620   754   200*length(lin_field_name)])
+set(gcf, 'Position', [557   620   754   200*length(field_name)])
 
-for lin_field_num = 1:length(lin_field_name)
+for lin_field_num = 1:length(field_name)
     
-    Rsq_cond1{lin_field_num} = data.(cfg.condition(cond1_num).name).(lin_field_name{lin_field_num}).rsquared;
-    Rsq_cond2{lin_field_num} = data.(cfg.condition(cond2_num).name).(lin_field_name{lin_field_num}).rsquared;
+    Rsq_cond1{lin_field_num} = data.(cfg.condition(cond1_num).name).(field_name{lin_field_num}).rsquared;
+    Rsq_cond2{lin_field_num} = data.(cfg.condition(cond2_num).name).(field_name{lin_field_num}).rsquared;
     
     [cc_cond1_tmp, p_cond1_tmp] = corrcoef(Rsq_cond1{lin_field_num}, stability);
     cc_cond1{lin_field_num}     = cc_cond1_tmp(1,2);
@@ -629,17 +629,17 @@ for lin_field_num = 1:length(lin_field_name)
     p_cond2{lin_field_num}      = p_cond2_tmp(1,2);
     clear cc_cond1_tmp p_cond1_tmp cc_cond2_tmp p_cond2_tmp
     
-    s1(lin_field_num) = subplot(length(lin_field_name),length(cfg.condition),1+2*(lin_field_num-1));
+    s1(lin_field_num) = subplot(length(field_name),length(cfg.condition),1+2*(lin_field_num-1));
     scatter(log10(Rsq_cond1{lin_field_num}), stability, '.', 'MarkerEdgeColor', cfg.condition(cond1_num).color)
     xlabel('log10(R^2 of Linear Fit)')
     ylabel('Stability')
-    title({[cfg.condition(cond1_num).name ': ' lin_field_name{lin_field_num}],
+    title({[cfg.condition(cond1_num).name ': ' field_name{lin_field_num}],
         ['cc = ' num2str(cc_cond1{lin_field_num}) '; p = ' num2str(p_cond1{lin_field_num})]}, 'interpreter', 'none')
     box on
     
-    s2(lin_field_num) = subplot(length(lin_field_name),length(cfg.condition),2*lin_field_num);
+    s2(lin_field_num) = subplot(length(field_name),length(cfg.condition),2*lin_field_num);
     scatter(log10(Rsq_cond2{lin_field_num}), stability, '.', 'MarkerEdgeColor', cfg.condition(cond2_num).color)
-    title({[cfg.condition(cond2_num).name ': ' lin_field_name{lin_field_num}], ...
+    title({[cfg.condition(cond2_num).name ': ' field_name{lin_field_num}], ...
         ['cc = ' num2str(cc_cond2{lin_field_num}) '; p = ' num2str(p_cond2{lin_field_num})]}, 'interpreter', 'none')
     box on
     
@@ -653,7 +653,7 @@ filename = [file_prefix targName '_' cfg.condition(cond1_num).name '_' cfg.condi
 export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf');
 close(gcf);
     
-T = table({[cfg.condition(cond1_num).name ': ' lin_field_name{1}], [cfg.condition(cond2_num).name]}', ...
+T = table({[cfg.condition(cond1_num).name ': ' field_name{1}], [cfg.condition(cond2_num).name]}', ...
     [cc_cond1; cc_cond2], [p_cond1; p_cond2], ...
     'VariableNames', {'Condition', 'Pearson''s Rho', 'Pearson''s p-value'});
 writetable(T, [basepath_to_save filesep filename '.xls'])
