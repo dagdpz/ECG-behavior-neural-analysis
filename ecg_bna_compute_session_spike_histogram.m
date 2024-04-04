@@ -2,7 +2,6 @@ function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
 BINS=(cfg.analyse_states{1,3}:cfg.spk.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
-offset_blocks_Rpeak=[Rpeaks.offset];
 Rblocks=[Rpeaks.block];
 
 if cfg.spk.apply_exclusion_criteria
@@ -65,46 +64,34 @@ for u=1:numel(population)
         %% get condition AND valid block trials only
         CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
         tr=ismember([T.block],blocks) & CT;
-        popcell=num2cell(pop.trial(tr));
-        trcell=num2cell(T(tr));
+        if sum(tr)==0
+           continue; 
+        end
         
-        % add trial onset time to each spike so its basically one stream again
-        % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
-        % removing overlapping spikes here            % add trial onset time         % add block separator
-        arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==2)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
-        trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell);
-        trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
-        trial_ends=[trial_ends{:}];
-        
-        if numel(trial_onsets)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
+        if (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
             continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
         end
         
+        popcell=pop.trial(tr);
+        trcell=T(tr);
+        [trial_onsets, trial_ends,AT]=ecg_bna_synchronize_with_trigger(trcell,popcell,Rpeaks);
+        
+        
         %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
-        AT=vertcat(arrival_times{:});
-        AT(AT>trial_ends(end))=[];
-        [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.spk);
+        PSTH_time=trial_onsets(1):cfg.spk.PSTH_binwidth:trial_ends(end);
+        [SD_stream, RAST]=ecg_bna_spike_density(AT,PSTH_time,cfg.spk);
         
         %% retrieve R-peaks and their reshuffles
-        RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
+        RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]; % relative to first trial INI (?!)
         RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
         RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
         RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
-        %% define which parts of the continous PSTH are during a trial
-        trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
-        trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
-        trial_onset_samples(trial_onset_samples==0)=1;
-        during_trial_index=false(size(PSTH_time));
-        drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
-        trial_onset_samples = trial_onset_samples(~drop_samples);
-        trial_ends_samples = trial_ends_samples(~drop_samples);
-        for t=1:numel(trial_onset_samples)
-            during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
-        end
+       
+        [during_trial_index,bins]=get_valid_PSTH_indexes(PSTH_time,trial_onsets,trial_ends,cfg);
         
-        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
-        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
-        SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.spk);
+        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_stream,PSTH_time,during_trial_index,bins,cfg);
+        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_stream,PSTH_time,during_trial_index,bins,cfg);
+        SD                = do_statistics(realPSTHs,shuffledPSTH,bins,cfg.spk);
         
         Output.(L).SD                           = SD.SD_mean ;
         Output.(L).SD_STD                       = SD.SD_STD;
@@ -120,7 +107,7 @@ for u=1:numel(population)
         Output.(L).sig_sign                     = SD.sig_sign;
         Output.(L).NrTrials                     = sum(tr);
         Output.(L).NrEvents                     = realPSTHs.n_events;
-        Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
+        Output.(L).FR                           = mean(SD_stream); %% not too sure this was the intended one...
         Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
         %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
         Output.(L).Rds                          = hist(realPSTHs.RDs{1},cfg.spk.histbins); % put RR durations to plot those in the histograms later
@@ -169,34 +156,62 @@ for u=1:numel(population)
 end
 end
 
-function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)
-RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+function [during_trial_index,bins]=get_valid_PSTH_indexes(PSTH_time,trial_onsets,trial_ends,cfg)
+
+
+%% define which parts of the continous PSTH are during a trial
+trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+trial_onset_samples=trial_onset_samples+1;
+trial_ends_samples=trial_ends_samples+1;
+
 bins_before=round(cfg.analyse_states{3}/cfg.spk.PSTH_binwidth);
 bins_after=round(cfg.analyse_states{4}/cfg.spk.PSTH_binwidth);
 bins=bins_before:bins_after;
 
-%% remove samples that would land outside
-rpeaks2exclude = ...
-    RPEAK_samples>=numel(SD)-bins_after | RPEAK_samples<=-bins_before;
+during_trial_index=false(size(PSTH_time));
+drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those (??)
+trial_onset_samples = trial_onset_samples(~drop_samples);
+trial_ends_samples = trial_ends_samples(~drop_samples);
+for t=1:numel(trial_onset_samples)
+    during_trial_index(trial_onset_samples(t)-(bins_before-1):trial_ends_samples(t)-bins_after)=true;
+end
+during_trial_index(1:-bins_before)=false;
+during_trial_index(end-bins_after:end)=false;
+% 
+% %% remove samples that would land outside
+% rpeaks2exclude = ...
+%     RPEAK_samples>=numel(SD)-bins_after | RPEAK_samples<=-bins_before;
+% 
+% RPEAK_ts(rpeaks2exclude)       = NaN;
+% RPEAK_samples(rpeaks2exclude)  = NaN;
+% RPEAK_dur(rpeaks2exclude)      = NaN;
+end
 
-RPEAK_ts(rpeaks2exclude)       = NaN;
-RPEAK_samples(rpeaks2exclude)  = NaN;
-RPEAK_dur(rpeaks2exclude)      = NaN;
+function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,bins,cfg)
+
+RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.spk.PSTH_binwidth);
 
 %% preallocate "out" structure
+n=size(RPEAK_samples,1);
+m=numel(bins);
+
 out.raster    = NaN;
-out.mean      = nan(1,51);
-out.std       = nan(1,51);
-out.SEM       = nan(1,51);
-out.n_events  = NaN;
+out.mean      = nan([n m]);
+out.std       = nan([n m]);
+out.SEM       = nan([n m]);
+out.n_events  = NaN([n 1]);
 out.RTs       = {};
 out.RDs       = {};
 
 %% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of reshuffled data
-for p=1:size(RPEAK_samples,1)
-    RT=RPEAK_ts(p,~isnan(RPEAK_samples(p,:)));      % take time-stamps
-    RS=RPEAK_samples(p,~isnan(RPEAK_samples(p,:))); % take samples
-    RD=RPEAK_dur(p,~isnan(RPEAK_samples(p,:)));     % take durations
+for p=1:n
+% %% remove samples that would land outside
+    rpeaks2_valid = RPEAK_samples(p,:)<=numel(SD) & RPEAK_samples(p,:)>0;
+    
+    RT=RPEAK_ts(p,rpeaks2_valid);      % take time-stamps
+    RS=RPEAK_samples(p,rpeaks2_valid); % take samples
+    RD=RPEAK_dur(p,rpeaks2_valid);     % take durations
     
     within_trial_idx = during_trial_index(RS);
     
@@ -204,11 +219,11 @@ for p=1:size(RPEAK_samples,1)
     RS=RS(within_trial_idx);
     RD=RD(within_trial_idx);
     
-    idx_by_trial = bsxfun(@plus,RS',bins); % bsxfun produces a RPEAK-(nBins-1) matrix with samples taken from SDF for each R-peak
-    if size(RPEAK_samples,1) == 1
-        out.raster = RAST(idx_by_trial);
+    idx_by_event = bsxfun(@plus,RS',bins); % bsxfun produces a RPEAK-(nBins-1) matrix with samples taken from SDF for each R-peak
+    if n == 1
+        out.raster = RAST(idx_by_event);
     end
-    PSTH = SD(idx_by_trial); 
+    PSTH = SD(idx_by_event); 
     out.mean(p,:)=mean(PSTH, 1);
     out.std(p,:) = std(PSTH, [], 1);
     out.SEM(p,:)=sterr(PSTH);
@@ -218,7 +233,7 @@ for p=1:size(RPEAK_samples,1)
 end
 end
 
-function [SD,RAST,PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg)
+function [SD,RAST,PSTH_time]=ecg_bna_spike_density(AT,PSTH_time,cfg)
 %% make SD across all trials appended (no average)!
 switch cfg.kernel_type
     case 'gaussian'
@@ -227,7 +242,6 @@ switch cfg.kernel_type
         n_bins=round(2*cfg.gaussian_kernel/cfg.PSTH_binwidth);
         Kernel=ones(1,n_bins)/n_bins/cfg.PSTH_binwidth; %%*1000 cause a one full spike in one 1ms bin means 1000sp/s locally
 end
-PSTH_time=trial_onsets(1):cfg.PSTH_binwidth:trial_ends(end);
 RAST = hist(AT,PSTH_time);
 SD= conv(RAST,Kernel,'same');
 end
