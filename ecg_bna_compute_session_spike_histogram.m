@@ -72,8 +72,8 @@ for u=1:numel(population)
         % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
         % removing overlapping spikes here            % add trial onset time         % add block separator
         arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==2)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
-        trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell);
-        trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
+        trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell);
+        trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
         trial_ends=[trial_ends{:}];
         
         if numel(trial_onsets)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
@@ -98,8 +98,11 @@ for u=1:numel(population)
         drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
         trial_onset_samples = trial_onset_samples(~drop_samples);
         trial_ends_samples = trial_ends_samples(~drop_samples);
+        
+        bins_window_start_relative_to_trigger=cfg.analyse_states{1,3}/cfg.spk.PSTH_binwidth;
+        bins_window_end_relative_to_trigger=cfg.analyse_states{1,4}/cfg.spk.PSTH_binwidth;
         for t=1:numel(trial_onset_samples)
-            during_trial_index(trial_onset_samples(t):trial_ends_samples(t))=true;
+            during_trial_index(trial_onset_samples(t)-bins_window_start_relative_to_trigger:trial_ends_samples(t)-bins_window_end_relative_to_trigger)=true;
         end
         
         realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
