@@ -1451,7 +1451,7 @@ end
 
 function save_figure_as(filename,basepath_to_save,savePlot)
 if savePlot;
-    export_fig([basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
-    close all;
+    export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+    close(gcf);
 end
 end
