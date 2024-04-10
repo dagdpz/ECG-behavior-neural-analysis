@@ -25,6 +25,7 @@ cfg.results_folder = ['Y:\Projects\' cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 
+sanitycheck=0;
 for v = 1:length(versions)
     cfg.version = versions{v};
     run([github_folder filesep 'Settings' filesep cfg.project filesep 'ECG_bna' filesep cfg.version '.m']);
@@ -42,6 +43,9 @@ for v = 1:length(versions)
             session_name = [sessions_info(i).Monkey '_' sessions_info(i).Date];
             load(sessions_info(i).Input_trials);
             
+            blocks=unique([trials.block]);
+            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks);
+
             % First make seed and ecg shuffles, then use those shuffles for all subfunctions
             seed_filename=[cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
             if exist(seed_filename,'file')
@@ -54,7 +58,7 @@ for v = 1:length(versions)
             
             
             if cfg.process_spikes
-                
+                cfg.Input_WC=sessions_info(i).Input_WC;
                 
                 %% apply exclusion criteria and save lists of units - we do it once
                 if cfg.spk.compute_unit_subsets
@@ -68,25 +72,41 @@ for v = 1:length(versions)
                 
                 %% do ECG spike analysis and computations related to cardioballistic effect
                 if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase
-                    Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
-                    %Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
-                    cfg.Input_WC=sessions_info(i).Input_WC;
-                    load(sessions_info(i).Input_spikes);
-                    if cfg.spk.compute_spike_histograms
-                        ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg);
+                    %Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
+                    
+                    cfg.event_types=cfg.analyse_states(:,2);
+                    cfg.events=cfg.analyse_states(:,1);
+                    
+                    
+                    
+                    for e=1:numel(cfg.events)
+                        current_event=cfg.analyse_states(e,:);
+                        Event=ecg_bna_get_events(sessions_info(i),trials,current_event,blockstart);
+                        Triggers.(cfg.events{e})=ecg_bna_jitter(Event,cfg.spk);
                     end
                     
-                    if cfg.spk.compute_spike_phase
-                        ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
+                    if sanitycheck
+                        load(strrep(sessions_info(i).Input_spikes,'population','by_block'));
+                        ecg_bna_sanity_check(by_block,trials,Triggers,blockstart,cfg)
                     end
+                    load(sessions_info(i).Input_spikes);
+                    if cfg.spk.compute_spike_histograms
+                        ecg_bna_PSTH(trials,population,Triggers,blockstart,cfg)
+                    end
+                    
+%                     if cfg.spk.compute_spike_phase
+%                         ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
+%                     end
                 end
                 
                 if cfg.spk.plot_spike_histograms
-                    ecg_bna_plot_session_spike_histogram(sessions_info(i),cfg);
+                    EPO=ecg_bna_get_plotoptions(cfg,'spk');
+                    ecg_bna_plot_PSTH(sessions_info(i),EPO,cfg);
+                    %ecg_bna_plot_session_spike_histogram(sessions_info(i),cfg);
                 end
-                if cfg.spk.plot_spike_phase
-                    ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
-                end
+%                 if cfg.spk.plot_spike_phase
+%                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
+%                 end
                 aa=1;
             end
             if cfg.process_LFP
@@ -124,6 +144,11 @@ for v = 1:length(versions)
                     site_LFP= ecg_bna_process_LFP(sites, cfg, ts_original);
                     n_LFP_samples_per_block=site_LFP.tfs.n_samples_per_block;
                     
+                    
+                    %% the following part can be replaced by simply cutting out the nonpresent blocks for this site from triggers
+%                     site_triggers=Triggers;
+%                     for all_empty blocks
+%                     end
                     
                     %% CHECK BLOCKS OVERLAP - remove LFP for which there is no trigger block - we did the opposite already in resample_triggers!
                     blocks_not_present_in_triggers=n_LFP_samples_per_block(1, ~ismember(n_LFP_samples_per_block(1,:),[Rpeaks.block]));
