@@ -12,10 +12,13 @@ if ~exist(basepath_to_save,'dir')
     mkdir(basepath_to_save);
 end
 
-TaskTyp = {'Rest', 'Task'};
-condition_colors = {[0 0 1], [1 0 0]};
-lineProps = {{'color','b','linewidth',4}, ...
-    {'color','r','linewidth',4}};
+TaskTyp = {cfg.condition.name};
+condition_colors = {cfg.condition.color};
+% set up line properties
+lineProps = cell(length(cfg.condition), 1);
+for conNum = 1:length(cfg.condition)
+    lineProps{conNum} = {'color', cfg.condition(conNum).color, 'linewidth',4};
+end
 
 TargetBrainArea = cellfun(@(x) [x.target]', SPK_PSTH, 'Uniformoutput', false);
 TargetBrainArea = [TargetBrainArea{:}];
