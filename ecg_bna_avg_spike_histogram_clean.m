@@ -380,6 +380,16 @@ end
 for a = 1: N_Areas
     T=Ana_TargetBrainArea{a};
     figure('Name',sprintf(T),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+    
+    %Bar graph how many
+    subplot(2,4,3);
+    toplot=arrayfun(@(x) Out.(T).(x.name).Pc_SignFR, cfg.condition, 'uniformoutput', false);
+    barpairs =  vertcat(toplot{:});
+    b = bar(barpairs,'stacked', 'Facecolor','flat' );
+    b(3).FaceColor = [1 1 1];
+    legend(b, {'increase FR', 'decrease FR', 'non-significant'}, 'Location', 'Best')
+    set(gca,'XTickLabel',ConNames,'fontsize',10);
+    
     for c=1:N_conditions
         L=cfg.condition(c).name;
         ccol=cfg.condition(c).color;
@@ -403,15 +413,6 @@ for a = 1: N_Areas
         title({[L ': units = ' ,num2str(sum(sig)), ' of ' ,num2str(sum(Idx_Units_NonNaN)) ], ['Population:  (all significant)' (T) ' units']},'interpreter','none');
         ylabel('normalized Firing rate (%)','fontsize',14 );
         xlabel('Time relative to R-peak (ms)','fontsize',14 );
-        
-        %Bar graph how many
-        subplot(2,4,3);
-        toplot=arrayfun(@(x) Out.(T).(x.name).Pc_SignFR, cfg.condition, 'uniformoutput', false);
-        barpairs =  vertcat(toplot{:});
-        b = bar(barpairs,'stacked', 'Facecolor','flat' );
-        b(3).FaceColor = [1 1 1];
-        legend(b, {'increase FR', 'decrease FR', 'non-significant'}, 'Location', 'Best')
-        set(gca,'XTickLabel',ConNames,'fontsize',10);
         
         % display only significant units showing a increase in FR
         subplot(2,4,5); %
