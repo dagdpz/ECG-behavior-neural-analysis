@@ -427,7 +427,7 @@ for a = 1: N_Areas
         
         % display only significant units showing a decrease in FR
         subplot(2,4,6);
-        text(PSTH_bins(2),c*2, [L ': units = ' ,num2str(sum(inc & sig)) ],'Color',ccol)
+        text(PSTH_bins(2),c*2, [L ': units = ' ,num2str(sum(dec & sig)) ],'Color',ccol)
         SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(dec & sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(dec & sig,:), 1))) ;
         shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(dec & sig,:),1), SDmean_SEM ,lineProps{c},1);
         set(gca,'ylim',[-10, 10]);
