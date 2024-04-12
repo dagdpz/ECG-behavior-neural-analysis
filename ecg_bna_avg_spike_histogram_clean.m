@@ -1391,7 +1391,7 @@ if OnlyUnits_withRestANDTask
             L=cfg.condition(c).name;
             
             subplot(N_conditions,N_Areas,a + N_Areas*(c-1))
-            colororder([1 1 1; 0.8500 0.3250 0.0980; 0 0.4470 0.7410])
+            colororder([0.8500 0.3250 0.0980; 0 0.4470 0.7410; 1 1 1])
             MIs_Pc_all  = Out.(T).(L).FR_ModIndex_PcS_signed;
             pos_idx     = Out.(T).(L).sig_sign > 0;
             neg_idx     = Out.(T).(L).sig_sign < 0;
@@ -1401,7 +1401,7 @@ if OnlyUnits_withRestANDTask
             sig_pos = histcounts(MIs_Pc_all(pos_idx & sign_all), -60:10:60);
             sig_neg = histcounts(MIs_Pc_all(neg_idx & sign_all), -60:10:60);
             
-            bar(-55:10:60, [non_sig; sig_pos; sig_neg], 'stacked')
+            bar(-55:10:60, [sig_pos; sig_neg; non_sig], 'stacked')
             
             if c == 1
                 title(T)
@@ -1410,7 +1410,7 @@ if OnlyUnits_withRestANDTask
             title([L ': ' T])
             
             if a == 1 && c == 1
-                legend({'Non-Significant', 'Sig. Pos.', 'Sig. Neg.'}, 'Location', 'Best')
+                legend({'Sig. Pos.', 'Sig. Neg.', 'Non-Significant'}, 'Location', 'Best')
                 xlabel('% signal change')
                 ylabel('Unit Counts')
             end
