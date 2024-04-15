@@ -674,16 +674,22 @@ end
 
 
 function output = cardioballistic_fit(feature_data, eventPhases, cfg)
-scaled_AMP = feature_data / nanmean(feature_data);
-[y,dropnan]  = rmmissing(scaled_AMP);
+scaled_feature = feature_data / nanmean(feature_data);
+
+% compute starting point for scaling factor
+a1 = (max(scaled_feature) - min(scaled_feature))/2;
+
+% compute starting point for phase
+[y,dropnan]  = rmmissing(scaled_feature);
 ph           = eventPhases(~dropnan);
-a1 = (max(scaled_AMP) - min(scaled_AMP))/2;
 b1 = mod(circ_mean(ph, y'), 2*pi); % add modulo by 2pi as circ_mean and circ_median can return negative output even having input within 0-2pi
-c1 = nanmean(scaled_AMP);
+
+% starting point for intercept
+c1 = nanmean(scaled_feature);
 
 startPoint = [a1 b1 c1];
 
-[fittedmdl,gof,~,lin_mdl] = cosine_fit(eventPhases, scaled_AMP', cfg, startPoint);
+[fittedmdl,gof,~,lin_mdl] = cosine_fit(eventPhases, scaled_feature', cfg, startPoint);
 
 coefs = coeffvalues(fittedmdl);
 coefs(2) = mod(coefs(2),2*pi);
@@ -696,7 +702,6 @@ coefs(2) = mod(coefs(2),2*pi);
 % - intercept from linear model
 output = [coefs(1) lin_mdl.Coefficients.pValue(2) coefs(2) gof.rsquare lin_mdl.Coefficients.Estimate(1)];
 
-clear fittedmdl gof yfit lin_mdl
 end
 
 function [fittedmdl,gof,yfit,lin_mdl] = vonMises_fit(x, y, cfg, startPoint, pos_neg_id)
