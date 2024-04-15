@@ -188,9 +188,9 @@ RPEAK_dur(rpeaks2exclude)      = NaN;
 
 %% preallocate "out" structure
 out.raster    = NaN;
-out.mean      = nan(1,51);
-out.std       = nan(1,51);
-out.SEM       = nan(1,51);
+out.mean      = nan(1,numel(bins));
+out.std       = nan(1,numel(bins));
+out.SEM       = nan(1,numel(bins));
 out.n_events  = NaN;
 out.RTs       = {};
 out.RDs       = {};
