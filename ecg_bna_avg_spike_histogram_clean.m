@@ -821,7 +821,7 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                 %% INCREASE
                 subplot(length(cfg.spk.compare_conditions{groupNum}),6,2*(i_Time-1)+1 +(c-1)*6);
                 hold on; axis square; box on;
-                title([L ' INCREASE ' ThreeTiming{i_Time}],'interpreter','none');
+%                 title([L ' INCREASE ' ThreeTiming{i_Time}],'interpreter','none');
                 ylabel('normalized Firing rate (% pSc)','fontsize',11 );
                 xlabel('Time relative to R-peak (ms)','fontsize',11 );
                 %   text(-400,-4* a, [(T), ' R: n = ' ,num2str(sum(inc & idx_sig & idx_Time)) ],'Color',acol)
@@ -836,11 +836,16 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                 SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(inc & tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:)))) ;
                 shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1), SDmean_SEM ,lineProps,1);
                 MI_groups =  max(nanmean(out.SDsubstractedSDP_normalized(inc & tim,WindowIdx),1)) - min(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1)) ;
-                %             end
-                % set(gca,'ylim',[-15, 15]);
-                % vline(50); vline(-50); vline(250); vline(-250);
-                % set(gca, 'XTick', PSTH_bins)
                 
+                if a == 1
+                    title({[L ' INCREASE ' ThreeTiming{i_Time}]})
+                end
+                ttl_set1 = get(gca, 'Title');
+                ttl_str1 = ttl_set1.String;
+                ttl_str1 = [ttl_str1; {['\color[rgb]{' num2str(acol) '}' T ' : units = ' num2str(sum(inc & tim))]}];
+                title(ttl_str1)
+                
+                vline(0, 'k')
                 
                 %% Table stuff
                 %             Table_Units = table(T,L,{'sigINCREASE'}, ThreeTiming(i_Time),  sum(inc & sig & tim), roundto(MI_groups,2) );
@@ -849,7 +854,7 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                 %% DECREASE
                 subplot(length(cfg.spk.compare_conditions{groupNum}),6,2*(i_Time-1)+2 +(c-1)*6);
                 hold on; axis square; box on;
-                title([L ' DECREASE ', ThreeTiming{i_Time}],'interpreter','none');
+%                 title([L ' DECREASE ', ThreeTiming{i_Time}],'interpreter','none');
                 ylabel('normalized Firing rate (% pSc)','fontsize',11 );
                 xlabel('Time relative to R-peak (ms)','fontsize',11 );
                 %   text(-400,4* a, [(T), 'R: n = ' ,num2str(sum(idx_SigDec & idx_sig & idx_Time)) ],'Color',acol)
@@ -861,11 +866,16 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                 SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(dec & tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1))) ;
                 shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1), SDmean_SEM ,lineProps,1);
                 MI_groups =   max(nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1)) - min(nanmean(out.SDsubstractedSDP_normalized(dec & tim,WindowIdx),1));
-                %end
-                %set(gca,'ylim',[-15, 15]); %please do not do this
-                %vline(50); vline(-50); vline(250); vline(-250);
-                %set(gca, 'XTick', PSTH_bins)
                 
+                if a == 1
+                    title({[L ' DECREASE ' ThreeTiming{i_Time}]})
+                end
+                ttl_set1 = get(gca, 'Title');
+                ttl_str1 = ttl_set1.String;
+                ttl_str1 = [ttl_str1; {['\color[rgb]{' num2str(acol) '}' T ' : units = ' num2str(sum(dec & tim))]}];
+                title(ttl_str1)
+                
+                vline(0, 'k')
                 
                 %% Table stuff
                 %             Table_Units = table(T,L,{'sigDECREASE'}, ThreeTiming(i_Time),  sum(idx_SigDec & idx_sig & idx_Time), roundto(MI_groups,2)  );
@@ -958,6 +968,7 @@ end
 %% GENERATE A TABLE FOR ALL THE NUMBER OF UNITS PER CATEGORY
 figure('Name',sprintf('CardiacRelated_ChangeFR_Time'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
 ThreeTiming = {'inc T<-50 or dec T>50', '-50>T<50', 'inc T>50 or dec T<-50'} ;
+
 for c=1:N_conditions
     L=cfg.condition(c).name;
     for i_Time = 1: length(ThreeTiming)
@@ -985,19 +996,24 @@ for c=1:N_conditions
             
             subplot(N_conditions,3,i_Time +(c-1)*3);
             hold on; axis square; box on;
-            text(-400,-4*a, [T, ' R: n = ' ,num2str(sum(tim)) ],'Color',acol)
             SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(tim,:),1))) ;
             shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(tim,:),1), SDmean_SEM ,lineProps,1);
             
-            %set(gca,'ylim',[-15, 15]);
-            title([L ' ' ThreeTiming(i_Time)],'interpreter','none');
-            ylabel('normalized Firing rate (% pSc)','fontsize',14 );
-            xlabel('Time relative to R-peak (ms)','fontsize',14 );
-            xlim(1000 * [cfg.analyse_states{3} cfg.analyse_states{4}])
-            ylim([-20 20])
-%             vline(50); vline(-50); vline(250); vline(-250);
-            vline(0, 'k')
-            % set(gca, 'XTick', PSTH_bins)
+            if a == 1
+                title({[L ' ' ThreeTiming{i_Time}]})
+            end
+            ttl_set1 = get(gca, 'Title');
+            ttl_str1 = ttl_set1.String;
+            ttl_str1 = [ttl_str1; {['\color[rgb]{' num2str(acol) '}' T ' : units = ' num2str(sum(tim))]}];
+            title(ttl_str1)
+            
+            if a == N_Areas
+                ylabel('normalized Firing rate (% pSc)','fontsize',14 );
+                xlabel('Time relative to R-peak (ms)','fontsize',14 );
+                xlim(1000 * [cfg.analyse_states{3} cfg.analyse_states{4}])
+                ylim([-20 20])
+                vline(0, 'k')
+            end
             ax = gca;
             ax.FontSize = 14;
         end
