@@ -491,7 +491,6 @@ for a = 1: N_Areas
         out = [Out.(T).(L)];
         sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
         
-        
         %% Modulation Index
         subplot(2,N_Areas,a);
         ylabel('Modulation index (%)','fontsize',14 );
@@ -1113,7 +1112,7 @@ if OnlyUnits_withRestANDTask
         end
         save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_Scatter_Pc_signal_change'],output_folder,savePlot)
     end
-    
+    clear cc pp
     %% modulation index - FR
     for groupNum = 1:length(cfg.spk.compare_conditions)
         cond1_num = cfg.spk.compare_conditions{groupNum}(1);
@@ -1312,11 +1311,16 @@ if OnlyUnits_withRestANDTask
             all_valid_cond2_times = [all_valid_cond2_times; valid_cond2_times];
             all_unit_counts      = [all_unit_counts; unit_count];
             
-            if isequal(sig_cond2_cond1, logical(zeros(5,1))) | isequal(sig_cond2_cond1, logical(sig_cond2_cond1))
+            if sum(sig_cond2_cond1) == 0
+                cc(a) = NaN;
+                pp(a) = NaN;
                 continue
             end
             
-            [cc(a), pp(a)] = corr(valid_cond1_times(sig_cond2_cond1), valid_cond2_times(sig_cond2_cond1));
+            [cc_tmp, pp_tmp] = corrcoef(valid_cond1_times(sig_cond2_cond1), valid_cond2_times(sig_cond2_cond1));
+            cc(a) = cc_tmp(2,1);
+            pp(a) = pp_tmp(2,1);
+            clear cc_tmp pp_tmp
             
         end
         
@@ -1329,10 +1333,6 @@ if OnlyUnits_withRestANDTask
             'Direction', 'out', ...
             'Color', [repmat(colors(1,:), 4, 1); repmat(colors(2,:), 4, 1); repmat(colors(3,:), 4, 1)]);
         hold on
-        x = -250:250;
-        for a = 1:3
-            line(x, cc(a)*x, 'Color', colors(a,:))
-        end
         
         legend('VPL: Non Significant', ['VPL: ' cfg.condition(cond1_num).name ' Sig.'], ['VPL: ' cfg.condition(cond2_num).name ' Sig'], ['VPL: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
             'dPul: Non Significant', ['dPul: ' cfg.condition(cond1_num).name ' Sig.'], ['dPul: ' cfg.condition(cond2_num).name ' Sig'], ['dPul: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
@@ -1418,6 +1418,7 @@ if OnlyUnits_withRestANDTask
         end
         
     end
+    
     sgtitle('Modulation Magnitude in Rest and Task')
     save_figure_as('Histograms_Magnitude_Signal_Change_Significant',output_folder,savePlot)
     
