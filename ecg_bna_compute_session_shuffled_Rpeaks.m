@@ -1,6 +1,7 @@
 function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,cfg)
 %% load seed/reset RGN seed
 load(session_info.Input_ECG);
+load(session_info.Input_trials);
 
 % get the number of permutations from settings
 global N
@@ -24,14 +25,18 @@ N=cfg.n_permutations;
 
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
+    % To get IBI high/low in Task/Rest blocks Separately:
+    b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
+    trial_nBlocks_type = unique([trials(b_idx).type]);
+
     if (cfg.IBI==1)
         if cfg.IBI_low == 1 || cfg.IBI_high == 0
-            tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh), find(out(b).R2R_valid < cfg.IBI_thrsh)-1);
+            tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))-1);
             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
             out(b).idx_valid_R2R_consec = tmp2;
 %             tmp = []; tmp2 = [];
         elseif cfg.IBI_high == 1 || cfg.IBI_low == 0
-            tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh), find(out(b).R2R_valid > cfg.IBI_thrsh)-1);
+            tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))-1);
             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
             out(b).idx_valid_R2R_consec = tmp2;
 %             tmp = []; tmp2 = [];

@@ -177,12 +177,41 @@ for v = 1:length(versions)
         
         keys=ecg_bna_get_unit_list(cfg,0);
         cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
+%         
+%         % ==================================================================================================        
+%         %            Temp, for checking similar selected units of Luba
+%         % ==================================================================================================
+%         monkeys = unique({cfg.session_info.Monkey});
+%         load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_',monkeys{1},...
+%             '_TaskRest\unit_lists\unitInfo_after_exclusion_stableTaskAndRest_noCB_corr.mat']);
+% %         load(['Y:\Projects\Pulv_bodysignal\ephys\ECG_TaskRest_',monkeys{1},...
+% %             '_merged\tuning_table_combined_CI.mat']);
+% %         
+%         site_ID_idx  = contains(keys.tuning_table(2:end,1),unit_ids);
+%         cfg.site_IDS = keys.tuning_table(site_ID_idx,find_column_index(keys.tuning_table,'site_ID'));
+%         % ==================================================================================================
+%         % ==================================================================================================
         
         if cfg.process_LFP
             monkeys = unique({cfg.session_info.Monkey});
             cfg.monkey = [monkeys{:}];
-            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
-            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
+            if contains(fieldnames(cfg.lfp),'IBI') | cfg.lfp.IBI==1
+                    if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                        
+                    elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
+                    end
+                    
+            else
+                    % Read LFP data
+                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
+                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
+            end
             
             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
