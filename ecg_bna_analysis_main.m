@@ -174,9 +174,6 @@ for v = 1:length(versions)
     
     %% average across sessions
     if cfg.process_population
-        
-        keys=ecg_bna_get_unit_list(cfg,0);
-        cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
 %         
 %         % ==================================================================================================        
 %         %            Temp, for checking similar selected units of Luba
@@ -193,6 +190,9 @@ for v = 1:length(versions)
 %         % ==================================================================================================
         
         if cfg.process_LFP
+            keys=ecg_bna_get_unit_list(cfg,0);
+            cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
+            
             monkeys = unique({cfg.session_info.Monkey});
             cfg.monkey = [monkeys{:}];
             if contains(fieldnames(cfg.lfp),'IBI') | cfg.lfp.IBI==1
