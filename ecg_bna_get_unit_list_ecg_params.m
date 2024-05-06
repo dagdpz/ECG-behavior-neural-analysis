@@ -44,7 +44,7 @@ for listNum = 1:length(list_of_lists)
     end
     
     clear dt enoughRpeaks
-    
+                                             
     dt = ecg_bna_load_variables(cfg, unit_ids, 'cardioballistic', 'data', {'distance2thr', 'AMP_MI', 'cc_PSTH_feature', 'pp_PSTH_feature'});
     enough_bins = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
@@ -71,6 +71,8 @@ for listNum = 1:length(list_of_lists)
     high_Rsq = zeros(length(cfg.condition), length(unit_ids));
     AMP_cc   = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
+        
+        L = cfg.condition(conNum).name;
         
         h_AMP_MI(conNum,:) = dt.(L).AMP_MI(:,2) < 0.01;
         high_Rsq(conNum,:) = dt.(L).AMP_MI(:,4) > 0.3; % to drop false positives
