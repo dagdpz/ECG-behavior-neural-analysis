@@ -69,6 +69,7 @@ for listNum = 1:length(list_of_lists)
     
     h_AMP_MI = zeros(length(cfg.condition), length(unit_ids));
     high_Rsq = zeros(length(cfg.condition), length(unit_ids));
+    AMP_pp   = zeros(length(cfg.condition), length(unit_ids));
     AMP_cc   = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
         
@@ -76,13 +77,15 @@ for listNum = 1:length(list_of_lists)
         
         h_AMP_MI(conNum,:) = dt.(L).AMP_MI(:,2) < 0.01;
         high_Rsq(conNum,:) = dt.(L).AMP_MI(:,4) > 0.3; % to drop false positives
-        AMP_cc(conNum,:)   = dt.(L).pp_PSTH_feature;
+        AMP_pp(conNum,:)   = dt.(L).pp_PSTH_feature;
+        AMP_cc(conNum,:)   = dt.(L).cc_PSTH_feature;
         
     end
     
     % p < 0.05 - significant correlation between phase PSTH and phase
     % dynamic of AMP feature
-    [~, h_AMP_cc] = bonf_holm(AMP_cc);
+    AMP_pp(AMP_cc >= 0) = NaN;
+    [~, h_AMP_cc] = bonf_holm(AMP_pp);
     
 %     with_CBE = any(h_AMP_MI' & high_Rsq');
     with_CBE = any(h_AMP_MI);
@@ -92,7 +95,7 @@ for listNum = 1:length(list_of_lists)
     
     no_cardioballistic_effect_corrected = no_cardioballistic_effect | ids_enough_bins;
     
-    no_cardioballistic_effect_corrected_ccs = (no_cardioballistic_effect | ids_enough_bins) & ~any(h_AMP_cc);
+    no_cardioballistic_effect_corrected_ccs = no_cardioballistic_effect | ids_enough_bins | (all(h_AMP_cc) & all(AMP_cc < 0));
     % find unit ids and targets with enough R-peak counts
     unit_ids_600 = unit_ids(ids_enough_Rpeaks);
     targets_600  = targets(ids_enough_Rpeaks);
