@@ -67,6 +67,8 @@ for unitNum = 1:length(population)
         data.(L).linear.dfe                     = single(NaN);
         data.(L).linear.rmse                    = single(NaN);
         data.(L).linear.pvalue                  = single([NaN; NaN]);
+        data.(L).linear.aic                     = single(NaN);
+        data.(L).linear.bic                     = single(NaN);
         data.(L).cosine.average                 = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).cosine.startPoint              = single([NaN NaN NaN]);
         data.(L).cosine.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
@@ -77,6 +79,8 @@ for unitNum = 1:length(population)
         data.(L).cosine.dfe                     = single(NaN);
         data.(L).cosine.rmse                    = single(NaN);
         data.(L).cosine.pvalue                  = single(NaN);
+        data.(L).cosine.aic                     = single(NaN);
+        data.(L).cosine.bic                     = single(NaN);
         data.(L).vonMisesPos.average            = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).vonMisesPos.startPoint         = single([NaN NaN NaN NaN]);
         data.(L).vonMisesPos.yfit               = single(nan(1,cfg.spk.N_phase_bins));
@@ -87,6 +91,8 @@ for unitNum = 1:length(population)
         data.(L).vonMisesPos.dfe                = single(NaN);
         data.(L).vonMisesPos.rmse               = single(NaN);
         data.(L).vonMisesPos.pvalue             = single(NaN);
+        data.(L).vonMisesPos.aic                = single(NaN);
+        data.(L).vonMisesPos.bic                = single(NaN);
         data.(L).vonMisesNeg.average            = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).vonMisesNeg.startPoint         = single([NaN NaN NaN NaN]);
         data.(L).vonMisesNeg.yfit               = single(nan(1,cfg.spk.N_phase_bins));
@@ -97,6 +103,8 @@ for unitNum = 1:length(population)
         data.(L).vonMisesNeg.dfe                = single(NaN);
         data.(L).vonMisesNeg.rmse               = single(NaN);
         data.(L).vonMisesNeg.pvalue             = single(NaN);
+        data.(L).vonMisesNeg.aic                = single(NaN);
+        data.(L).vonMisesNeg.bic                = single(NaN);
         
         % median split - IBI low
         data.(L).IBI_median                     = single(NaN);
@@ -117,6 +125,9 @@ for unitNum = 1:length(population)
         data.(L).lowIBI_linear.dfe              = single(NaN);
         data.(L).lowIBI_linear.rmse             = single(NaN);
         data.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
+        data.(L).lowIBI_linear.aic                = single(NaN);
+        data.(L).lowIBI_linear.bic                = single(NaN);
+        
         data.(L).lowIBI_cosine.average          = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
         data.(L).lowIBI_cosine.yfit             = single(nan(1,cfg.spk.N_phase_bins));
@@ -127,6 +138,9 @@ for unitNum = 1:length(population)
         data.(L).lowIBI_cosine.dfe              = single(NaN);
         data.(L).lowIBI_cosine.rmse             = single(NaN);
         data.(L).lowIBI_cosine.pvalue           = single(NaN);
+        data.(L).lowIBI_cosine.aic                = single(NaN);
+        data.(L).lowIBI_cosine.bic                = single(NaN);
+        
         data.(L).lowIBI_vonMisesPos.average     = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
         data.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,cfg.spk.N_phase_bins));
@@ -137,6 +151,9 @@ for unitNum = 1:length(population)
         data.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
         data.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
         data.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
+        data.(L).lowIBI_vonMisesPos.aic                = single(NaN);
+        data.(L).lowIBI_vonMisesPos.bic                = single(NaN);
+        
         data.(L).lowIBI_vonMisesNeg.average     = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
         data.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,cfg.spk.N_phase_bins));
@@ -147,6 +164,8 @@ for unitNum = 1:length(population)
         data.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
         data.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
         data.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
+        data.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
+        data.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
         
         % median split - IBI high
         data.(L).highIBI_timeRRstart            = single(NaN);
@@ -165,6 +184,9 @@ for unitNum = 1:length(population)
         data.(L).highIBI_linear.dfe             = single(NaN);
         data.(L).highIBI_linear.rmse            = single(NaN);
         data.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
+        data.(L).highIBI_linear.aic             = single(NaN);
+        data.(L).highIBI_linear.bic             = single(NaN);
+        
         data.(L).highIBI_cosine.average         = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
         data.(L).highIBI_cosine.yfit            = single(nan(1,cfg.spk.N_phase_bins));
@@ -175,6 +197,9 @@ for unitNum = 1:length(population)
         data.(L).highIBI_cosine.dfe             = single(NaN);
         data.(L).highIBI_cosine.rmse            = single(NaN);
         data.(L).highIBI_cosine.pvalue          = single(NaN);
+        data.(L).highIBI_cosine.aic             = single(NaN);
+        data.(L).highIBI_cosine.bic             = single(NaN);
+        
         data.(L).highIBI_vonMisesPos.average    = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
         data.(L).highIBI_vonMisesPos.yfit       = single(nan(1,cfg.spk.N_phase_bins));
@@ -185,6 +210,9 @@ for unitNum = 1:length(population)
         data.(L).highIBI_vonMisesPos.dfe        = single(NaN);
         data.(L).highIBI_vonMisesPos.rmse       = single(NaN);
         data.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
+        data.(L).highIBI_vonMisesPos.aic        = single(NaN);
+        data.(L).highIBI_vonMisesPos.bic        = single(NaN);
+        
         data.(L).highIBI_vonMisesNeg.average    = single(nan(1,cfg.spk.N_phase_bins));
         data.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
         data.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,cfg.spk.N_phase_bins));
@@ -195,6 +223,8 @@ for unitNum = 1:length(population)
         data.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
         data.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
         data.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
+        data.(L).highIBI_vonMisesNeg.aic        = single(NaN);
+        data.(L).highIBI_vonMisesNeg.bic        = single(NaN);
         
         data.(L).waveforms_microvolts           = single(nan(1,32)); % 32 - number of points per spike
         data.(L).waveforms_upsampled_microvolts = single(nan(1,128)); % 128 - number of points per upsampled spike 4*32
@@ -346,22 +376,23 @@ for unitNum = 1:length(population)
         [highIBI_eventPhases, highIBI_eventsTaken, highIBI_cycleNums_withSpikes] = DAG_eventPhase(data.(L).highIBI_timeRRstart, data.(L).highIBI_timeRRend, AT_one_stream);
         
         % check the number of spikes left after computing phases
-        if length(eventPhases) < 3 || length(lowIBI_eventPhases) < 3 || length(highIBI_eventPhases) < 3
+        if length(eventPhases) < 3 || length(lowIBI_eventPhases) < 3 || length(highIBI_eventPhases) < 3 || ...
+                length(valid_RRinterval_starts) < 3 || length(data.(L).lowIBI_timeRRstart) < 3 || length(data.(L).highIBI_timeRRstart) < 3
             continue
         end
         
         % 6. Put results for real data together
         data.(L).spike_phases_radians                 = eventPhases;
         data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers); % compute overal phase histogram
-        data.(L).spike_phases_histogram2              = hist3([eventPhases, cycleNums_withSpikes'], 'ctrs', {cfg.spk.phase_bin_centers 1:length(valid_RRinterval_starts)});
+        data.(L).spike_phases_histogram2              = hist3([eventPhases, cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(valid_RRinterval_starts)});
         
         data.(L).lowIBI_spike_phases_radians          = lowIBI_eventPhases;
         data.(L).lowIBI_spike_phases_histogram        = hist(data.(L).lowIBI_spike_phases_radians, cfg.spk.phase_bin_centers);
-        data.(L).lowIBI_spike_phases_histogram2       = hist3([lowIBI_eventPhases, lowIBI_cycleNums_withSpikes'], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).lowIBI_timeRRstart)});
+        data.(L).lowIBI_spike_phases_histogram2       = hist3([lowIBI_eventPhases, lowIBI_cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).lowIBI_timeRRstart)});
         
         data.(L).highIBI_spike_phases_radians         = highIBI_eventPhases;
         data.(L).highIBI_spike_phases_histogram       = hist(data.(L).highIBI_spike_phases_radians, cfg.spk.phase_bin_centers);
-        data.(L).highIBI_spike_phases_histogram2      = hist3([highIBI_eventPhases, highIBI_cycleNums_withSpikes'], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).highIBI_timeRRstart)});
+        data.(L).highIBI_spike_phases_histogram2      = hist3([highIBI_eventPhases, highIBI_cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).highIBI_timeRRstart)});
         
         % Mosher's cosine fit the smoothed phase histogram
         [modIndex_phase_hist,phase_hist] = ...
@@ -376,43 +407,43 @@ for unitNum = 1:length(population)
         
         % LINEAR FITS
         % linear fit with 'fitlm' for all the data
-        data.(L).linear              = mistress_linear_fit(cfg, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts));
+        data.(L).linear              = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'linear');
         
         % linear fit for the lower IBI
-        data.(L).lowIBI_linear       = mistress_linear_fit(cfg, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart));
+        data.(L).lowIBI_linear       = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'linear');
         
         % linear fit for the higher IBI
-        data.(L).highIBI_linear      = mistress_linear_fit(cfg, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart));
+        data.(L).highIBI_linear      = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'linear');
         
         % COSINE FITS
         % cosine fit with 'fit' on all data points instead of smoothed mean
-        data.(L).cosine              = mistress_cosine_fit(cfg, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts));
+        data.(L).cosine              = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'cosine');
         
         % cosine fit for the lower IBI
-        data.(L).lowIBI_cosine       = mistress_cosine_fit(cfg, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart));
+        data.(L).lowIBI_cosine       = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'cosine');
         
         % cosine fit for the higher IBI
-        data.(L).highIBI_cosine      = mistress_cosine_fit(cfg, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart));
+        data.(L).highIBI_cosine      = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'cosine');
         
         % POSITIVE VON MISES FITS
         % fit all the data
-        data.(L).vonMisesPos         = mistress_von_Mises(cfg, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 1);
+        data.(L).vonMisesPos         = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', 1);
         
         % pos. von Mises fits - low IBI
-        data.(L).lowIBI_vonMisesPos  = mistress_von_Mises(cfg, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 1);
+        data.(L).lowIBI_vonMisesPos  = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', 1);
         
         % pos. von Mises fits - high IBI
-        data.(L).highIBI_vonMisesPos = mistress_von_Mises(cfg, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 1);
+        data.(L).highIBI_vonMisesPos = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', 1);
         
         % NEGATIVE VON MISES FITS
         % fit all the data
-        data.(L).vonMisesNeg         = mistress_von_Mises(cfg, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), -1);
+        data.(L).vonMisesNeg         = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', -1);
         
         % neg. von Mises fits - low IBI
-        data.(L).lowIBI_vonMisesNeg  = mistress_von_Mises(cfg, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), -1);
+        data.(L).lowIBI_vonMisesNeg  = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', -1);
         
         % neg. von Mises fits - high IBI
-        data.(L).highIBI_vonMisesNeg = mistress_von_Mises(cfg, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), -1);
+        data.(L).highIBI_vonMisesNeg = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', -1);
         
         
         [~, ~, bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
@@ -587,92 +618,6 @@ for unitNum = 1:length(population)
 end
 end
 
-function output = mistress_linear_fit(cfg, spike_phases_histogram2, n_valid_RRinterval)
-x = repmat(cfg.spk.phase_bin_centers,1,n_valid_RRinterval);
-lin_mdl = fitlm(x, spike_phases_histogram2(:));
-
-output.yfit        = lin_mdl.Coefficients.Estimate(2)*cfg.spk.phase_bin_centers + lin_mdl.Coefficients.Estimate(1);
-output.coefs       = lin_mdl.Coefficients.Estimate; % 1 - intercept, 2 - slope
-output.rsquared    = lin_mdl.Rsquared.Ordinary;
-output.adjrsquared = lin_mdl.Rsquared.Adjusted;
-output.sse         = lin_mdl.SSE;
-output.dfe         = lin_mdl.DFE;
-output.rmse        = lin_mdl.RMSE;
-output.pvalue      = lin_mdl.Coefficients.pValue; % 1 - intercept, 2 - slope
-
-end
-
-function output = mistress_cosine_fit(cfg, spike_phases_histogram2, n_valid_RRinterval)
-x = repmat(cfg.spk.phase_bin_centers,1,n_valid_RRinterval);
-
-currCurve = nanmean(spike_phases_histogram2, 2);
-
-a1 = (nanmax(currCurve) - nanmin(currCurve))/2;
-b1 = mod(circ_mean(cfg.spk.phase_bin_centers', currCurve), 2*pi); % add modulo by 2pi as circ_mean and circ_median can return negative output even having input within 0-2pi
-c1 = nanmean(currCurve);
-
-startPoint_cos = [a1 b1 c1];
-
-[fittedmdl,gof,yfit,lin_mdl] = cosine_fit(x', spike_phases_histogram2(:), cfg, startPoint_cos);
-coefs    = coeffvalues(fittedmdl);
-coefs(2) = mod(coefs(2), 2*pi);
-
-output.average     = currCurve;
-output.startPoint  = startPoint_cos;
-output.yfit        = yfit;
-output.coefs       = coefs;
-output.rsquared    = gof.rsquare;
-output.adjrsquared = gof.adjrsquare;
-output.sse         = gof.sse;
-output.dfe         = gof.dfe;
-output.rmse        = gof.rmse;
-output.CI          = confint(fittedmdl);
-output.pvalue      = lin_mdl.Coefficients.pValue(2);
-
-end
-
-function output = mistress_von_Mises(cfg, spike_phases_histogram2, n_valid_RRinterval, scaling_factor_sign)
-% von Mises fits - positive
-x = repmat(cfg.spk.phase_bin_centers,1,n_valid_RRinterval);
-
-currCurve = nanmean(spike_phases_histogram2, 2);
-
-a1 = nanmax(currCurve) - nanmin(currCurve);
-if scaling_factor_sign > 0
-    k1 = circ_kappa(cfg.spk.phase_bin_centers, (currCurve - nanmin(currCurve)) / ( nanmax(currCurve) - nanmin(currCurve) ));
-    t1 = mod(circ_mean(cfg.spk.phase_bin_centers', currCurve), 2*pi); % add modulo by 2pi as circ_mean and circ_median can return negative output even having input within 0-2pi
-else
-    currCurve_tmp = -1 * currCurve;
-    k1 = circ_kappa(cfg.spk.phase_bin_centers, (currCurve_tmp - nanmin(currCurve_tmp)) / ( nanmax(currCurve_tmp) - nanmin(currCurve_tmp) )); % normalize data within [0 1], find kappa
-    t1 = cfg.spk.phase_bin_centers(find(currCurve == min(currCurve), 1, 'first'));
-end
-d1 = nanmean(currCurve);
-
-if isnan(k1)
-    k1 = 0;
-end
-
-startPoint_vm = [a1 d1 k1 t1]; % a1 - scaling factor; k1 - kappa; t1 - thetahat; d1 - baseline
-
-[fittedmdl,gof,yfit,lin_mdl] = vonMises_fit(x', spike_phases_histogram2(:), cfg, startPoint_vm, scaling_factor_sign);
-coefs    = coeffvalues(fittedmdl);
-coefs(4) = mod(coefs(4), 2*pi);
-
-output.average     = currCurve;
-output.startPoint  = startPoint_vm;
-output.coefs       = coefs;
-output.yfit        = yfit;
-output.rsquared    = gof.rsquare;
-output.adjrsquared = gof.adjrsquare;
-output.sse         = gof.sse;
-output.dfe         = gof.dfe;
-output.rmse        = gof.rmse;
-output.CI          = confint(fittedmdl);
-output.pvalue      = lin_mdl.Coefficients.pValue(2);
-
-end
-
-
 function output = cardioballistic_fit(feature_data, eventPhases, cfg)
 scaled_feature = feature_data / nanmean(feature_data);
 
@@ -704,59 +649,6 @@ output = [coefs(1) lin_mdl.Coefficients.pValue(2) coefs(2) gof.rsquare lin_mdl.C
 
 end
 
-function [fittedmdl,gof,yfit,lin_mdl] = vonMises_fit(x, y, cfg, startPoint, pos_neg_id)
-if pos_neg_id > 0
-    lower_bounds = cfg.fit.vMpos_lower;
-    upper_bounds = cfg.fit.vMpos_upper;
-else
-    lower_bounds = cfg.fit.vMneg_lower;
-    upper_bounds = cfg.fit.vMneg_upper;
-end
-
-% do the non-linear fit
-[fittedmdl,gof] = fit(x,y,cfg.fit.vonMises_mod,'StartPoint', startPoint, 'Lower', lower_bounds, 'Upper', upper_bounds);
-
-coefs    = coeffvalues(fittedmdl); % get model coefficients
-coefs(4) = mod(coefs(4),2*pi);
-
-yfit_all = cfg.fit.vonMises_mod(coefs(1), coefs(2), coefs(3), coefs(4), x);
-yfit     = cfg.fit.vonMises_mod(coefs(1), coefs(2), coefs(3), coefs(4), cfg.spk.phase_bin_centers);
-
-% employ a linear fit to get a p-value vs. fitting with a
-% constant model
-lin_mdl = fitlm(y, yfit_all);
-
-end
-
-function [fittedmdl,gof,yfit,lin_mdl] = cosine_fit(x, y, cfg, startPoint_cos)
-% drop nans
-[y,dropnans] = rmmissing(y);
-x            = x(~dropnans);
-
-% do the non-linear fit
-[fittedmdl,gof] = fit(double(x),y,cfg.fit.cos_mod,'StartPoint', startPoint_cos, 'Lower', cfg.fit.cos_lower, 'Upper', cfg.fit.cos_upper);
-
-coefs = coeffvalues(fittedmdl); % get model coefficients
-coefs(2) = mod(coefs(2),2*pi);
-
-yfit_all = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), x);
-yfit     = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), cfg.spk.phase_bin_centers);
-
-% employ a linear fit to get a p-value vs. fitting with a
-% constant model
-lin_mdl = fitlm(y(:), yfit_all);
-
-end
-
-
-function y = vonMisesPDF(alpha, thetahat, kappa, d, a)
-y = a*exp(kappa * cos(alpha - thetahat)) / (2*pi*besseli(0, kappa)) + d;
-end
-
-function y = cospdf(x, a, b, c)
-y = abs(a)*cos(x-b)+c;
-end
-
 function [max_consec_bins, feature_modulation_index] = significant_bins(average_real, lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled)
 % figure out significant differences of spike feature dynamics
 sig_above = average_real > upperPercentile_97_5;
@@ -785,6 +677,26 @@ end
 
 feature_modulation_index = ...
     (max(average_real) - min(average_real)) / mean(average_reshuffled, 'omitnan');
+
+end
+
+function [fittedmdl,gof,yfit,lin_mdl] = cosine_fit(x, y, cfg, startPoint_cos)
+% drop nans
+[y,dropnans] = rmmissing(y);
+x            = x(~dropnans);
+
+% do the non-linear fit
+[fittedmdl,gof] = fit(double(x),y,cfg.fit.cos_mod,'StartPoint', startPoint_cos, 'Lower', cfg.fit.cos_lower, 'Upper', cfg.fit.cos_upper);
+
+coefs = coeffvalues(fittedmdl); % get model coefficients
+coefs(2) = mod(coefs(2),2*pi);
+
+yfit_all = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), x);
+yfit     = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), cfg.spk.phase_bin_centers);
+
+% employ a linear fit to get a p-value vs. fitting with a
+% constant model
+lin_mdl = fitlm(y(:), yfit_all);
 
 end
 
