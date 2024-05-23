@@ -1,181 +1,403 @@
 function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg)
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
-BINS=(cfg.analyse_states{1,3}:cfg.spk.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
-offset_blocks_Rpeak=[Rpeaks.offset];
-Rblocks=[Rpeaks.block];
+for numTiming = 1:length(cfg.analyse_states)
 
-if cfg.spk.apply_exclusion_criteria
-    load([cfg.unit_lists filesep cfg.spk.unit_list], 'unit_ids')
-    
-    pop_units  = {population.unit_ID};
-    inc_ids    = ismember(pop_units, unit_ids);
-    population = population(inc_ids);
-    
-end
+    curr_analyse_states = cfg.analyse_states{numTiming};
+    BINS=(curr_analyse_states{1,3}:cfg.spk.PSTH_binwidth:curr_analyse_states{1,4})*1000;
+    offset_blocks_Rpeak=[Rpeaks.offset];
+    Rblocks=[Rpeaks.block];
 
-for u=1:numel(population)
-    tic
-    pop=population(u);
-    disp(['Processing ' pop.unit_ID])
-    T=ph_get_unit_trials(pop,trials);
-    
-    %% Make sure we only take overlapping blocks
-    blocks_unit=unique([pop.block]);
-    blocks=intersect(blocks_unit,Rblocks);
-    b=ismember(Rblocks,blocks);
-    
-    % preallocate 'Output' structure
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
-        % unit id and recording quality parameters
-        Output.unit_ID               = pop.unit_ID;
-        Output.target                = pop.target;
-        Output.quantSNR              = pop.avg_SNR;
-        Output.Single_rating         = pop.avg_single_rating;
-        Output.stability_rating      = pop.avg_stability;
-        % ecg-related variables
-        Output.(L).SD                = single(nan(1, length(BINS)));
-        Output.(L).SD_STD            = single(nan(1, length(BINS)));
-        Output.(L).SD_SEM            = single(nan(1, length(BINS)));
-        Output.(L).SDP               = single(nan(1, length(BINS)));
-        Output.(L).SDPCL             = single(nan(1, length(BINS)));
-        Output.(L).SDPCu             = single(nan(1, length(BINS)));
-        Output.(L).sig_all           = single(zeros(1, length(BINS)));
-        Output.(L).sig               = single(zeros(1, length(BINS)));
-        Output.(L).sig_FR_diff       = single(nan(1));
-        Output.(L).sig_time          = single(nan(1));
-        Output.(L).sig_n_bins        = single(zeros(1));
-        Output.(L).sig_sign          = single(zeros(1));
-        Output.(L).NrTrials          = single(nan(1));
-        Output.(L).NrEvents          = single(nan(1));
-        Output.(L).FR                = single(nan(1));
-        Output.(L).raster            = single(nan(1));
-        Output.(L).Rts               = single(nan(1)); % RR ends
-        Output.(L).Rds               = single(nan(1)); % RR durations
-        Output.(L).Rds_perm          = single(nan(1));
-        Output.(L).SDsubstractedSDP            = single(nan(1, length(BINS)));
-        Output.(L).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
-        Output.(L).FR_ModIndex_SubtrSDP        = single(nan(1));
-        Output.(L).FR_ModIndex_PcS             = single(nan(1));
+    % for pseudocircular fitting
+    bin_ids = 1+curr_analyse_states{5}:101-curr_analyse_states{6};
+
+    if cfg.spk.apply_exclusion_criteria
+        load([cfg.unit_lists filesep cfg.spk.unit_list], 'unit_ids')
+        
+        pop_units  = {population.unit_ID};
+        inc_ids    = ismember(pop_units, unit_ids);
+        population = population(inc_ids);
+        
     end
     
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
-        %% get condition AND valid block trials only
-        CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
-        tr=ismember([T.block],blocks) & CT;
-        popcell=num2cell(pop.trial(tr));
-        trcell=num2cell(T(tr));
+    for u=1:numel(population)
+        tic
+        pop=population(u);
+        disp(['Processing ' pop.unit_ID])
+        T=ph_get_unit_trials(pop,trials);
         
-        % add trial onset time to each spike so its basically one stream again
-        % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
-        % removing overlapping spikes here            % add trial onset time         % add block separator
-        arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==2)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
-        trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell);
-        trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
-        trial_ends=[trial_ends{:}];
+        %% Make sure we only take overlapping blocks
+        blocks_unit=unique([pop.block]);
+        blocks=intersect(blocks_unit,Rblocks);
+        b=ismember(Rblocks,blocks);
         
-        if numel(trial_onsets)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
-            continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
+        % preallocate 'Output' structure
+        for c=1:numel(cfg.condition)
+            L=cfg.condition(c).name;
+            % unit id and recording quality parameters
+            Output.unit_ID               = pop.unit_ID;
+            Output.target                = pop.target;
+            Output.quantSNR              = pop.avg_SNR;
+            Output.Single_rating         = pop.avg_single_rating;
+            Output.stability_rating      = pop.avg_stability;
+            % ecg-related variables
+            Output.(L).SD                = single(nan(1, length(BINS)));
+            Output.(L).SD_STD            = single(nan(1, length(BINS)));
+            Output.(L).SD_SEM            = single(nan(1, length(BINS)));
+            Output.(L).SDP               = single(nan(1, length(BINS)));
+            Output.(L).SDPCL             = single(nan(1, length(BINS)));
+            Output.(L).SDPCu             = single(nan(1, length(BINS)));
+            Output.(L).sig_all           = single(zeros(1, length(BINS)));
+            Output.(L).sig               = single(zeros(1, length(BINS)));
+            Output.(L).sig_FR_diff       = single(nan(1));
+            Output.(L).sig_time          = single(nan(1));
+            Output.(L).sig_n_bins        = single(zeros(1));
+            Output.(L).sig_sign          = single(zeros(1));
+            Output.(L).NrTrials          = single(nan(1));
+            Output.(L).NrEvents          = single(nan(1));
+            Output.(L).FR                = single(nan(1));
+            Output.(L).raster            = single(nan(1));
+            Output.(L).Rts               = single(nan(1)); % RR ends
+            Output.(L).Rds               = single(nan(1)); % RR durations
+            Output.(L).Rds_perm          = single(nan(1));
+            Output.(L).SDsubstractedSDP            = single(nan(1, length(BINS)));
+            Output.(L).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
+            Output.(L).FR_ModIndex_SubtrSDP        = single(nan(1));
+            Output.(L).FR_ModIndex_PcS             = single(nan(1));
+            
+            Output.bin_centers                     = BINS(bin_ids);
+            Output.phase_bin_centers               = 2 * pi * BINS(bin_ids) / range(BINS(bin_ids));
+                                                     
+            Output.(L).linear.yfit                 = single(nan(1,length(bin_ids)));
+            Output.(L).linear.coefs                = single([NaN NaN]);
+            Output.(L).linear.rsquared             = single(NaN);
+            Output.(L).linear.adjrsquared          = single(NaN);
+            Output.(L).linear.sse                  = single(NaN);
+            Output.(L).linear.dfe                  = single(NaN);
+            Output.(L).linear.rmse                 = single(NaN);
+            Output.(L).linear.pvalue               = single([NaN; NaN]);
+            Output.(L).linear.aic                  = single(NaN);
+            Output.(L).linear.bic                  = single(NaN);
+            
+            Output.(L).cosine.average              = single(nan(1,length(bin_ids)));
+            Output.(L).cosine.startPoint           = single([NaN NaN NaN]);
+            Output.(L).cosine.yfit                 = single(nan(1,length(bin_ids)));
+            Output.(L).cosine.coefs                = single([NaN NaN NaN]);
+            Output.(L).cosine.rsquared             = single(NaN);
+            Output.(L).cosine.adjrsquared          = single(NaN);
+            Output.(L).cosine.sse                  = single(NaN);
+            Output.(L).cosine.dfe                  = single(NaN);
+            Output.(L).cosine.rmse                 = single(NaN);
+            Output.(L).cosine.pvalue               = single(NaN);
+            Output.(L).cosine.aic                  = single(NaN);
+            Output.(L).cosine.bic                  = single(NaN);
+            
+            Output.(L).vonMisesPos.average         = single(nan(1,length(bin_ids)));
+            Output.(L).vonMisesPos.startPoint      = single([NaN NaN NaN NaN]);
+            Output.(L).vonMisesPos.yfit            = single(nan(1,length(bin_ids)));
+            Output.(L).vonMisesPos.coefs           = single([NaN NaN NaN NaN]);
+            Output.(L).vonMisesPos.rsquared        = single(NaN);
+            Output.(L).vonMisesPos.adjrsquared     = single(NaN);
+            Output.(L).vonMisesPos.sse             = single(NaN);
+            Output.(L).vonMisesPos.dfe             = single(NaN);
+            Output.(L).vonMisesPos.rmse            = single(NaN);
+            Output.(L).vonMisesPos.pvalue          = single(NaN);
+            Output.(L).vonMisesPos.aic             = single(NaN);
+            Output.(L).vonMisesPos.bic             = single(NaN);
+            
+            Output.(L).vonMisesNeg.average         = single(nan(1,length(bin_ids)));
+            Output.(L).vonMisesNeg.startPoint      = single([NaN NaN NaN NaN]);
+            Output.(L).vonMisesNeg.yfit            = single(nan(1,length(bin_ids)));
+            Output.(L).vonMisesNeg.coefs           = single([NaN NaN NaN NaN]);
+            Output.(L).vonMisesNeg.rsquared        = single(NaN);
+            Output.(L).vonMisesNeg.adjrsquared     = single(NaN);
+            Output.(L).vonMisesNeg.sse             = single(NaN);
+            Output.(L).vonMisesNeg.dfe             = single(NaN);
+            Output.(L).vonMisesNeg.rmse            = single(NaN);
+            Output.(L).vonMisesNeg.pvalue          = single(NaN);
+            Output.(L).vonMisesNeg.aic             = single(NaN);
+            Output.(L).vonMisesNeg.bic             = single(NaN);
+            
+            % median split - IBI low
+            Output.(L).IBI_median                     = single(NaN);
+            
+            Output.(L).lowIBI_timeRRstart             = single(NaN);
+            Output.(L).lowIBI_timeRRend               = single(NaN);
+            Output.(L).lowIBI_starts                  = single(NaN);
+            Output.(L).lowIBI_meanHR_bpm              = single(NaN);
+            Output.(L).lowIBI_medianHR_bpm            = single(NaN);
+            Output.(L).lowIBI_stdHR_bpm               = single(NaN);
+            Output.(L).lowIBI_SDNN_ms                 = single(NaN);
+            
+            % median split - IBI high
+            Output.(L).highIBI_timeRRstart            = single(NaN);
+            Output.(L).highIBI_timeRRend              = single(NaN);
+            Output.(L).highIBI_starts                 = single(NaN);
+            Output.(L).highIBI_meanHR_bpm             = single(NaN);
+            Output.(L).highIBI_medianHR_bpm           = single(NaN);
+            Output.(L).highIBI_stdHR_bpm              = single(NaN);
+            Output.(L).highIBI_SDNN_ms                = single(NaN);
+            
+            Output.(L).lowIBI_linear.yfit             = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_linear.coefs            = single([NaN NaN]);
+            Output.(L).lowIBI_linear.rsquared         = single(NaN);
+            Output.(L).lowIBI_linear.adjrsquared      = single(NaN);
+            Output.(L).lowIBI_linear.sse              = single(NaN);
+            Output.(L).lowIBI_linear.dfe              = single(NaN);
+            Output.(L).lowIBI_linear.rmse             = single(NaN);
+            Output.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
+            Output.(L).lowIBI_linear.aic                = single(NaN);
+            Output.(L).lowIBI_linear.bic                = single(NaN);
+            
+            Output.(L).lowIBI_cosine.average          = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
+            Output.(L).lowIBI_cosine.yfit             = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_cosine.coefs            = single([NaN NaN NaN]);
+            Output.(L).lowIBI_cosine.rsquared         = single(NaN);
+            Output.(L).lowIBI_cosine.adjrsquared      = single(NaN);
+            Output.(L).lowIBI_cosine.sse              = single(NaN);
+            Output.(L).lowIBI_cosine.dfe              = single(NaN);
+            Output.(L).lowIBI_cosine.rmse             = single(NaN);
+            Output.(L).lowIBI_cosine.pvalue           = single(NaN);
+            Output.(L).lowIBI_cosine.aic                = single(NaN);
+            Output.(L).lowIBI_cosine.bic                = single(NaN);
+            
+            Output.(L).lowIBI_vonMisesPos.average     = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
+            Output.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_vonMisesPos.coefs       = single([NaN NaN NaN NaN]);
+            Output.(L).lowIBI_vonMisesPos.rsquared    = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.adjrsquared = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.sse         = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.aic                = single(NaN);
+            Output.(L).lowIBI_vonMisesPos.bic                = single(NaN);
+            
+            Output.(L).lowIBI_vonMisesNeg.average     = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
+            Output.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,length(bin_ids)));
+            Output.(L).lowIBI_vonMisesNeg.coefs       = single([NaN NaN NaN NaN]);
+            Output.(L).lowIBI_vonMisesNeg.rsquared    = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.adjrsquared = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.sse         = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
+            Output.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
+            
+            Output.(L).highIBI_linear.yfit            = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_linear.coefs           = single([NaN NaN]);
+            Output.(L).highIBI_linear.rsquared        = single(NaN);
+            Output.(L).highIBI_linear.adjrsquared     = single(NaN);
+            Output.(L).highIBI_linear.sse             = single(NaN);
+            Output.(L).highIBI_linear.dfe             = single(NaN);
+            Output.(L).highIBI_linear.rmse            = single(NaN);
+            Output.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
+            Output.(L).highIBI_linear.aic             = single(NaN);
+            Output.(L).highIBI_linear.bic             = single(NaN);
+            
+            Output.(L).highIBI_cosine.average         = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
+            Output.(L).highIBI_cosine.yfit            = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_cosine.coefs           = single([NaN NaN NaN]);
+            Output.(L).highIBI_cosine.rsquared        = single(NaN);
+            Output.(L).highIBI_cosine.adjrsquared     = single(NaN);
+            Output.(L).highIBI_cosine.sse             = single(NaN);
+            Output.(L).highIBI_cosine.dfe             = single(NaN);
+            Output.(L).highIBI_cosine.rmse            = single(NaN);
+            Output.(L).highIBI_cosine.pvalue          = single(NaN);
+            Output.(L).highIBI_cosine.aic             = single(NaN);
+            Output.(L).highIBI_cosine.bic             = single(NaN);
+            
+            Output.(L).highIBI_vonMisesPos.average    = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
+            Output.(L).highIBI_vonMisesPos.yfit       = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_vonMisesPos.coefs      = single([NaN NaN NaN NaN]);
+            Output.(L).highIBI_vonMisesPos.rsquared   = single(NaN);
+            Output.(L).highIBI_vonMisesPos.adjrsquared= single(NaN);
+            Output.(L).highIBI_vonMisesPos.sse        = single(NaN);
+            Output.(L).highIBI_vonMisesPos.dfe        = single(NaN);
+            Output.(L).highIBI_vonMisesPos.rmse       = single(NaN);
+            Output.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
+            Output.(L).highIBI_vonMisesPos.aic        = single(NaN);
+            Output.(L).highIBI_vonMisesPos.bic        = single(NaN);
+            
+            Output.(L).highIBI_vonMisesNeg.average    = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
+            Output.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,length(bin_ids)));
+            Output.(L).highIBI_vonMisesNeg.coefs      = single([NaN NaN NaN NaN]);
+            Output.(L).highIBI_vonMisesNeg.rsquared   = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.adjrsquared= single(NaN);
+            Output.(L).highIBI_vonMisesNeg.sse        = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.aic        = single(NaN);
+            Output.(L).highIBI_vonMisesNeg.bic        = single(NaN);
+            
         end
         
-        %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
-        AT=vertcat(arrival_times{:});
-        AT(AT>trial_ends(end))=[];
-        [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.spk);
-        
-        %% retrieve R-peaks and their reshuffles
-        RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
-        RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
-        RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
-        RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
-        %% define which parts of the continous PSTH are during a trial
-        trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
-        trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
-        trial_onset_samples(trial_onset_samples==0)=1;
-        during_trial_index=false(size(PSTH_time));
-        drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
-        trial_onset_samples = trial_onset_samples(~drop_samples);
-        trial_ends_samples = trial_ends_samples(~drop_samples);
-        
-        bins_window_start_relative_to_trigger=cfg.analyse_states{1,3}/cfg.spk.PSTH_binwidth;
-        bins_window_end_relative_to_trigger=cfg.analyse_states{1,4}/cfg.spk.PSTH_binwidth;
-        for t=1:numel(trial_onset_samples)
-            during_trial_index(trial_onset_samples(t)-bins_window_start_relative_to_trigger:trial_ends_samples(t)-bins_window_end_relative_to_trigger)=true;
-        end
-        
-        realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
-        shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,cfg);
-        SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.spk);
-        
-        Output.(L).SD                           = SD.SD_mean ;
-        Output.(L).SD_STD                       = SD.SD_STD;
-        Output.(L).SD_SEM                       = SD.SD_SEM ;
-        Output.(L).SDP                          = SD.SDPmean ;
-        Output.(L).SDPCL                        = SD.SDPconf(1,:) ;
-        Output.(L).SDPCu                        = SD.SDPconf(2,:) ;
-        Output.(L).sig_all                      = SD.sig_all;
-        Output.(L).sig                          = SD.sig;
-        Output.(L).sig_FR_diff                  = SD.sig_FR_diff;
-        Output.(L).sig_time                     = SD.sig_time;
-        Output.(L).sig_n_bins                   = SD.sig_n_bins;
-        Output.(L).sig_sign                     = SD.sig_sign;
-        Output.(L).NrTrials                     = sum(tr);
-        Output.(L).NrEvents                     = realPSTHs.n_events;
-        Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
-        Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-        %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
-        Output.(L).Rds                          = hist(realPSTHs.RDs{1},cfg.spk.histbins); % put RR durations to plot those in the histograms later
-        Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],cfg.spk.histbins);
-        Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
-        Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
-        Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
-        Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
-        
-        clear realPSTHs shuffledPSTH SD
-        
-        %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
-        if Sanity_check %% this needs to be fixed as well, this might be incorrect after least update...
-            ECG_data=[pop.trial(tr).TDT_ECG1];
-            ECG_time=cellfun(@(x) [1/x.TDT_ECG1_SR:1/x.TDT_ECG1_SR:numel(x.TDT_ECG1)/x.TDT_ECG1_SR]+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false);
-            CG_time=[ECG_time{:}];
-            tt=0;
-            clear ECG_to_plot
-            for t=1:numel(RPEAK_ts)
-                ECg_t_idx=CG_time>RPEAK_ts(t)-0.5 & CG_time<RPEAK_ts(t)+0.5;
-                if round(sum(ECg_t_idx)-trcell{1}.TDT_ECG1_SR)~=0
-                    continue
-                end
-                tt=tt+1;
-                ECG_to_plot(tt,:)=ECG_data(ECg_t_idx);
+        for c=1:numel(cfg.condition)
+            L=cfg.condition(c).name;
+            %% get condition AND valid block trials only
+            CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
+            tr=ismember([T.block],blocks) & CT;
+            popcell=num2cell(pop.trial(tr));
+            trcell=num2cell(T(tr));
+            
+            % add trial onset time to each spike so its basically one stream again
+            % also, make sure spikes aren't counted twice (because previous trial is appended in beginning;
+            % removing overlapping spikes here            % add trial onset time         % add block separator
+            arrival_times=cellfun(@(x,y) y.arrival_times(y.arrival_times>x.states_onset(x.states==2)) + x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,popcell,'uniformoutput',false);
+            trial_onsets=cellfun(@(x) x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell);
+            trial_ends=cellfun(@(x) x.states_onset(x.states==90)+x.TDT_ECG1_t0_from_rec_start+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false); % no clue why this needs to be nonuniformoutput, it did work earlier so this is confusing...
+            trial_ends=[trial_ends{:}];
+            
+            if numel(trial_onsets)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
+                continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
             end
             
-            figure
-            filename=[unit_ID '_block_' num2str(block) '_ECG_average'];
-            lineProps={'color','b','linewidth',1};
-            shadedErrorBar(1:size(ECG_to_plot,2),mean(ECG_to_plot,1),sterr(ECG_to_plot,1),lineProps,1);
-            export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
-            close(gcf);
+            %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
+            AT=vertcat(arrival_times{:});
+            AT(AT>trial_ends(end))=[];
+            [SD_all_trials, RAST, PSTH_time]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.spk);
             
-            figure
-            filename=[unit_ID '_block_' num2str(block) '_ECG_per5trials'];
-            plot(ECG_to_plot(1:5:end,:)');
-            export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
-            close(gcf);
+            %% retrieve R-peaks and their reshuffles
+            RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
+            RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
+            RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
+            RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
+            %% define which parts of the continous PSTH are during a trial
+            trial_onset_samples=ceil((trial_onsets-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+            trial_ends_samples=floor((trial_ends-PSTH_time(1))/cfg.spk.PSTH_binwidth);
+            trial_onset_samples(trial_onset_samples==0)=1;
+            during_trial_index=false(size(PSTH_time));
+            drop_samples = trial_onset_samples < 1 | trial_ends_samples < 1; % in very rare cases samples have negative values, drop those
+            trial_onset_samples = trial_onset_samples(~drop_samples);
+            trial_ends_samples = trial_ends_samples(~drop_samples);
+            
+            bins_window_start_relative_to_trigger=curr_analyse_states{3}/cfg.spk.PSTH_binwidth;
+            bins_window_end_relative_to_trigger=curr_analyse_states{4}/cfg.spk.PSTH_binwidth;
+            for t=1:numel(trial_onset_samples)
+                during_trial_index(trial_onset_samples(t)-bins_window_start_relative_to_trigger:trial_ends_samples(t)-bins_window_end_relative_to_trigger)=true;
+            end
+            
+            realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg);
+            shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg);
+            SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.spk);
+            
+            Output.(L).SD                           = SD.SD_mean ;
+            Output.(L).SD_STD                       = SD.SD_STD;
+            Output.(L).SD_SEM                       = SD.SD_SEM ;
+            Output.(L).SDP                          = SD.SDPmean ;
+            Output.(L).SDPCL                        = SD.SDPconf(1,:) ;
+            Output.(L).SDPCu                        = SD.SDPconf(2,:) ;
+            Output.(L).sig_all                      = SD.sig_all;
+            Output.(L).sig                          = SD.sig;
+            Output.(L).sig_FR_diff                  = SD.sig_FR_diff;
+            Output.(L).sig_time                     = SD.sig_time;
+            Output.(L).sig_n_bins                   = SD.sig_n_bins;
+            Output.(L).sig_sign                     = SD.sig_sign;
+            Output.(L).NrTrials                     = sum(tr);
+            Output.(L).NrEvents                     = realPSTHs.n_events;
+            Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
+            Output.(L).raster                       = logical(realPSTHs.raster); % logical replaces all numbers >0 with 1 and reduces memory load
+            %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
+            Output.(L).Rds                          = hist(realPSTHs.RDs{1},cfg.spk.histbins); % put RR durations to plot those in the histograms later
+            Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],cfg.spk.histbins);
+            Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
+            Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
+            Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
+            
+            Output.(L).linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'linear');
+            Output.(L).cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'cosine');
+            Output.(L).cosine.coefs(2)      = Output.(L).cosine.coefs(2)+min(Output.phase_bin_centers);
+            Output.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', 1);
+            Output.(L).vonMisesPos.coefs(4) = Output.(L).vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+            Output.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', -1);
+            Output.(L).vonMisesNeg.coefs(4) = Output.(L).vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+            
+            % implement median split to heart-cycle durations
+            Output.(L).IBI_median           = median(realPSTHs.RDs{1});
+            
+            lowIBIids  = realPSTHs.RDs{1} < Output.(L).IBI_median;
+            highIBIids = realPSTHs.RDs{1} > Output.(L).IBI_median;
+            
+            % check the number of spikes left after computing phases
+            if realPSTHs.n_events < 3 || sum(lowIBIids) < 3 || sum(highIBIids) < 3
+                continue
+            end
+            
+            % low IBI
+            Output.(L).lowIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'linear');
+            Output.(L).lowIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'cosine');
+            Output.(L).lowIBI_cosine.coefs(2)      = Output.(L).lowIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
+            Output.(L).lowIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', 1);
+            Output.(L).lowIBI_vonMisesPos.coefs(4) = Output.(L).lowIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+            Output.(L).lowIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', -1);
+            Output.(L).lowIBI_vonMisesNeg.coefs(4) = Output.(L).lowIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+            
+            % high IBI
+            Output.(L).highIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'linear');
+            Output.(L).highIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'cosine');
+            Output.(L).highIBI_cosine.coefs(2)      = Output.(L).highIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
+            Output.(L).highIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', 1);
+            Output.(L).highIBI_vonMisesPos.coefs(4) = Output.(L).highIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+            Output.(L).highIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', -1);
+            Output.(L).highIBI_vonMisesNeg.coefs(4) = Output.(L).highIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+            
+            clear realPSTHs shuffledPSTH SD
+            
+            %% The part following here is internal sanity check and should be turned off in general since there typically is no ECG data in the spike format
+            if Sanity_check %% this needs to be fixed as well, this might be incorrect after least update...
+                ECG_data=[pop.trial(tr).TDT_ECG1];
+                ECG_time=cellfun(@(x) [1/x.TDT_ECG1_SR:1/x.TDT_ECG1_SR:numel(x.TDT_ECG1)/x.TDT_ECG1_SR]+x.TDT_ECG1_t0_from_rec_start+x.TDT_ECG1_tStart+offset_blocks_Rpeak(Rblocks==x.block),trcell,'uniformoutput',false);
+                CG_time=[ECG_time{:}];
+                tt=0;
+                clear ECG_to_plot
+                for t=1:numel(RPEAK_ts)
+                    ECg_t_idx=CG_time>RPEAK_ts(t)-0.5 & CG_time<RPEAK_ts(t)+0.5;
+                    if round(sum(ECg_t_idx)-trcell{1}.TDT_ECG1_SR)~=0
+                        continue
+                    end
+                    tt=tt+1;
+                    ECG_to_plot(tt,:)=ECG_data(ECg_t_idx);
+                end
+                
+                figure
+                filename=[unit_ID '_block_' num2str(block) '_ECG_average'];
+                lineProps={'color','b','linewidth',1};
+                shadedErrorBar(1:size(ECG_to_plot,2),mean(ECG_to_plot,1),sterr(ECG_to_plot,1),lineProps,1);
+                export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
+                close(gcf);
+                
+                figure
+                filename=[unit_ID '_block_' num2str(block) '_ECG_per5trials'];
+                plot(ECG_to_plot(1:5:end,:)');
+                export_fig([cfg.per_session_folder, filesep, filename], '-pdf','-transparent') % pdf by run
+                close(gcf);
+            end
         end
+        %% save output
+        output_folder = [cfg.per_session_folder '_' num2str(curr_analyse_states{3}) '-' num2str(curr_analyse_states{4}) 's'];
+        if ~exist(output_folder,'dir')
+            mkdir(output_folder)
+        end
+        save([output_folder, filesep, pop.unit_ID, '_', pop.target],'Output')
+        clear Output
+        toc
     end
-    %% save output
-	save([cfg.per_session_folder, filesep, pop.unit_ID, '_', pop.target],'Output')
-    clear Output
-    toc
 end
 end
 
-function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,cfg)
+function out=compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD,PSTH_time,during_trial_index,curr_analyse_states,cfg)
 RPEAK_samples=round((RPEAK_ts-PSTH_time(1))/cfg.spk.PSTH_binwidth);
-bins_before=round(cfg.analyse_states{3}/cfg.spk.PSTH_binwidth);
-bins_after=round(cfg.analyse_states{4}/cfg.spk.PSTH_binwidth);
+bins_before=round(curr_analyse_states{3}/cfg.spk.PSTH_binwidth);
+bins_after=round(curr_analyse_states{4}/cfg.spk.PSTH_binwidth);
 bins=bins_before:bins_after;
 
 %% remove samples that would land outside
@@ -187,13 +409,14 @@ RPEAK_samples(rpeaks2exclude)  = NaN;
 RPEAK_dur(rpeaks2exclude)      = NaN;
 
 %% preallocate "out" structure
-out.raster    = NaN;
-out.mean      = nan(1,numel(bins));
-out.std       = nan(1,numel(bins));
-out.SEM       = nan(1,numel(bins));
-out.n_events  = NaN;
-out.RTs       = {};
-out.RDs       = {};
+out.raster   = NaN;
+out.PSTH     = NaN;
+out.mean     = nan(1,numel(bins));
+out.std      = nan(1,numel(bins));
+out.SEM      = nan(1,numel(bins));
+out.n_events = NaN;
+out.RTs      = {};
+out.RDs      = {};
 
 %% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of reshuffled data
 for p=1:size(RPEAK_samples,1)
@@ -211,10 +434,10 @@ for p=1:size(RPEAK_samples,1)
     if size(RPEAK_samples,1) == 1
         out.raster = RAST(idx_by_trial);
     end
-    PSTH = SD(idx_by_trial); 
-    out.mean(p,:)=mean(PSTH, 1);
-    out.std(p,:) = std(PSTH, [], 1);
-    out.SEM(p,:)=sterr(PSTH);
+    out.PSTH = SD(idx_by_trial);
+    out.mean(p,:)=mean(out.PSTH, 1);
+    out.std(p,:) = std(out.PSTH, [], 1);
+    out.SEM(p,:)=sterr(out.PSTH);
     out.n_events(p)=numel(RS);
     out.RTs{p}=RT;
     out.RDs{p}=RD;
