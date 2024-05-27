@@ -113,7 +113,7 @@ if compute_unit_subsets
     targets_after_FR_exclusion_stable  = targets;
     sites_after_FR_exclusion_stable    = sites;
     % find excluded units
-    [unit_ids, ia] = setdiff(unit_ids_after_spike_exclusion_stable, unit_ids_after_FR_exclusion_stable);
+    [unit_ids, ia] = setdiff(unit_ids_after_condition_exclusion_stable, unit_ids_after_FR_exclusion_stable);
     targets  = targets_before_exclusion(ia);
     sites    = sites_before_exclusion(ia);
     filename = [cfg.unit_lists filesep 'unitInfo_excluded_by_FR_stable'];
