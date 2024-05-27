@@ -85,8 +85,8 @@ if compute_unit_subsets
     write_unit_table(targets, filename);
     % 2.3. figure out units excluded by number of spikes and save those
     unit_ids_after_condition_exclusion_stable = unit_ids;
-%     targets_after_condition_exclusion_stable  = targets;
-%     sites_after_condition_exclusion_stable    = sites;
+    targets_after_condition_exclusion_stable  = targets;
+    sites_after_condition_exclusion_stable    = sites;
     % find excluded units
     [unit_ids, ia] = setdiff(unit_ids_after_spike_exclusion_stable, unit_ids_after_condition_exclusion_stable); % 1 - before current exclusion step, 2 - after
     targets  = targets_after_spike_exclusion_stable(ia);
@@ -95,7 +95,7 @@ if compute_unit_subsets
     save(filename, 'unit_ids', 'targets', 'sites')
     % 2.4. [excluded] create and save unit count table
     write_unit_table(targets, filename);
-    clear unit_ids targets sites
+    clear unit_ids targets sites ia
     
     % 3. Exclude by FR
     keys.tt.FR            = FR;
@@ -114,8 +114,8 @@ if compute_unit_subsets
     sites_after_FR_exclusion_stable    = sites;
     % find excluded units
     [unit_ids, ia] = setdiff(unit_ids_after_condition_exclusion_stable, unit_ids_after_FR_exclusion_stable);
-    targets  = targets_before_exclusion(ia);
-    sites    = sites_before_exclusion(ia);
+    targets  = targets_after_condition_exclusion_stable(ia);
+    sites    = sites_after_condition_exclusion_stable(ia);
     filename = [cfg.unit_lists filesep 'unitInfo_excluded_by_FR_stable'];
     save(filename, 'unit_ids', 'targets', 'sites')
     % 3.4. [excluded] create and save unit count table
