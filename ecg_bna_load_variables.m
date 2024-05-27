@@ -15,7 +15,7 @@ for varNum = 1:length(var_names)
             dt.(L).(beforeDot).(afterDot) = nan(length(unit_list),1);
         end
         
-    elseif strcmp(var_names{varNum}, 'pearson_r') | strfind(var_names{varNum}, 'pearson_p')
+    elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p')
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
@@ -41,7 +41,9 @@ for fileNum = 1:length(unit_list)
     
     currFileInfo = dir([folder unit_list{fileNum} '_*.mat']);
     
-    if ~isempty(currFileInfo)
+    if isempty(currFileInfo)
+        continue
+    elseif ~isempty(currFileInfo)
         
         disp(['Reading file ' num2str(fileNum) ' out of ' num2str(length(unit_list))])
         A = load([folder filesep currFileInfo.name], data_struct);
@@ -52,15 +54,30 @@ for fileNum = 1:length(unit_list)
         % move non-condition-related fields into the main data structure
         for fn = fieldnames(B)'
             if fileNum == 1
-                if ischar(B.(fn{1}))
+                if strcmp(fn{1}, 'criteria')
+                    dt.(fn{1}).SNR_F = [];
+                    dt.(fn{1}).SNR_V = [];
+                    
+                    dt.(fn{1}).stability_F = [];
+                    dt.(fn{1}).stability_V = [];
+                    
+                    for subfield = fieldnames(B.criteria)'
+                        dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
+                    end
+                    
+                elseif ischar(B.(fn{1}))
                     dt.(fn{1}) = {B.(fn{1})};
                 else
                     dt.(fn{1}) = B.(fn{1});
                 end
             else
-                if ischar(B.(fn{1})) || isstruct(B.(fn{1}))
-                    dt.(fn{1}) = {dt.(fn{1}); B.(fn{1})};
-                else
+                if strcmp(fn{1}, 'criteria')
+                    for subfield = fieldnames(B.criteria)'
+                        dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
+                    end
+                elseif strcmp(fn{1}, 'thresholds_microV')
+                    dt.(fn{1}) = [dt.(fn{1}) B.(fn{1})];
+                elseif ischar(B.(fn{1})) || isstruct(B.(fn{1}))
                     dt.(fn{1}) = [dt.(fn{1}); B.(fn{1})];
                 end
             end
@@ -77,9 +94,9 @@ for fileNum = 1:length(unit_list)
                     afterDot  = var_names{varNum}(dotId+1:end);
                     
                     var_len = length(A.(data_struct).(L).(beforeDot).(afterDot));
-                    if strfind(var_names{varNum}, 'vonMises') & var_len > 4
+                    if strcmp(var_names{varNum}, 'vonMises') && var_len > 4
                         var_len = 4;
-                    elseif strfind(var_names{varNum}, 'cosine') & var_len > 3
+                    elseif strcmp(var_names{varNum}, 'cosine') && var_len > 3
                         var_len = 3;
                     end
                     
@@ -93,6 +110,8 @@ for fileNum = 1:length(unit_list)
                     dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})(1);
                 elseif strcmp(var_names{varNum}, 'NrEvents')
                     dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})';
+                elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p')
+                    dt.(L).(var_names{varNum})(:, fileNum) = A.(data_struct).(L).(var_names{varNum});
                 else
                     if ~isempty(A.(data_struct).(L).(var_names{varNum}))
                         dt.(L).(var_names{varNum})(fileNum,:) = A.(data_struct).(L).(var_names{varNum})';
