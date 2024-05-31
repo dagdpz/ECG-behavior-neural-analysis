@@ -37,7 +37,6 @@ for unitNum = 1:length(population)
     %% Make sure we only take overlapping blocks
     blocks_unit=unique([pop.block]);
     blocks=intersect(blocks_unit,Rblocks);
-    b=ismember(Rblocks,blocks);
     
     %% preallocate 'data' structure
     data.unitId            = pop.unit_ID;
@@ -63,6 +62,7 @@ for unitNum = 1:length(population)
         data.(L).timeRRstart                    = single(nan(1,1));
         data.(L).FRbyRR_Hz                      = single(nan(1,1));
         data.(L).cycleDurations_s               = single(nan(1,1));
+        data.(L).n_cycles                       = single(nan(1,1));
         data.(L).pearson_r                      = single(nan(length(cfg.spk.lag_list), 1));
         data.(L).pearson_p                      = single(nan(length(cfg.spk.lag_list), 1));
         data.(L).permuted_p                     = single(nan(length(cfg.spk.lag_list), 1));
@@ -111,8 +111,8 @@ for unitNum = 1:length(population)
         state2_times               = cellfun(@(x,y) x(y == 2), states_onset, states, 'Uniformoutput', false); % trial starts = state 2
         state90_times              = cellfun(@(x,y) x(y == 90), states_onset, states, 'Uniformoutput', false); % trial ends = state 90
         % compute RR-intervals
-        valid_RRinterval_ends      = single([Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
-        valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
+        valid_RRinterval_ends      = single([Rpeaks.(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
+        valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks.(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
         % 0. figure out RR-intervals lying within trials
         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
         trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
@@ -122,6 +122,24 @@ for unitNum = 1:length(population)
             RR_within_trial_idx(RRnum) = ...
                 any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
                 valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
+        end
+        
+        % % figure out how many R peaks I need to cover long intervals between R-peaks
+        % find long intervals between R-peaks
+        long_RRs = diff(valid_RRinterval_starts) > 0.6; % hard coded value for a long RR-interval
+        divMed   = floor(diff(valid_RRinterval_starts)/0.4); % 0.4 - median RR for Magnus
+        modRR    = mod(diff(valid_RRinterval_starts),0.4);
+        
+        % find intervals between R-peaks that are long enough and decide on
+        % the number of additional R-peaks for replacement
+        ids          = find(long_RRs);
+        n_add_cycles = divMed(long_RRs) + floor(modRR(long_RRs)/0.25);
+        
+        % loop through long intervals to fill them with NaNs backwards to
+        % keep index of former elements unchanged
+        for intRRnum = length(ids):-1:1
+            valid_RRinterval_starts = [valid_RRinterval_starts(1:ids(intRRnum)) nan(1, n_add_cycles(intRRnum)) valid_RRinterval_starts(ids(intRRnum)+1:end)];
+            valid_RRinterval_ends = [valid_RRinterval_ends(1:ids(intRRnum)) nan(1, n_add_cycles(intRRnum)) valid_RRinterval_ends(ids(intRRnum)+1:end)];
         end
         
         % 1. take arrival times and the corresponding waveforms
@@ -138,11 +156,9 @@ for unitNum = 1:length(population)
         if size(WF_one_stream,1) < 10
             continue
         end
-        % 5. calculate heart cycle phase where individual spikes ended up
-        [eventPhases, eventsTaken, cycleNums_withSpikes] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream); % all data
         
         % check the number of spikes left after computing phases
-        if length(eventPhases) < 3 || length(valid_RRinterval_starts) < 3
+        if length(valid_RRinterval_starts) < 3
             continue
         end
         
@@ -150,18 +166,27 @@ for unitNum = 1:length(population)
         data.(L).timeRRstart           = valid_RRinterval_starts;
         [FRbyRR_Hz, cycleDurations_s] = ...
             computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-        FRbyRR_Hz(~RR_within_trial_idx)      = NaN;
+        FRbyRR_Hz(~RR_within_trial_idx)        = NaN;
         cycleDurations_s(~RR_within_trial_idx) = NaN;
         data.(L).FRbyRR_Hz = FRbyRR_Hz;
         data.(L).cycleDurations_s = cycleDurations_s;
         % compute correlation with different lag
         for lagNum = 1:length(cfg.spk.lag_list)
+            curr_lag = cfg.spk.lag_list(lagNum);
             % create data variables
-            fr_hz = data.(L).FRbyRR_Hz;
-            rr_s  = circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum));
+            if curr_lag < 0
+                % If lag is negative, array1 is shifted to the right
+                fr_hz = FRbyRR_Hz(1:end+curr_lag);
+                rr_s  = cycleDurations_s(1-curr_lag:end);
+            else
+                % If lag is positive or zero, array2 is shifted to the right
+                fr_hz = FRbyRR_Hz(1+curr_lag:end);
+                rr_s  = cycleDurations_s(1:end-curr_lag);
+            end
             
             % compute correlation coefficient
             [temp_r, temp_p] = corrcoef(fr_hz, rr_s, 'Rows', 'pairwise');
+            data.(L).n_cycles = sum(~isnan(fr_hz) & ~isnan(rr_s));
             data.(L).pearson_r(lagNum) = temp_r(2,1);
             data.(L).pearson_p(lagNum) = temp_p(2,1);
             data.(L).permuted_p(lagNum) = mult_comp_perm_corr(fr_hz, rr_s, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
@@ -169,7 +194,7 @@ for unitNum = 1:length(population)
 %             xcorr
         end
     end
-    save([basepath_to_save filesep data.unitId '_' data.target '__correlation.mat'], 'data', '-v7.3')
+    save([basepath_to_save filesep data.unitId '_' data.target '_correlation.mat'], 'data', '-v7.3')
     clear data
 
 end
