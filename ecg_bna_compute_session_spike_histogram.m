@@ -119,7 +119,10 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.(L).vonMisesNeg.bic             = single(NaN);
             
             % median split - IBI low
-            Output.(L).IBI_median                     = single(NaN);
+            Output.(L).IBI_median                  = single(NaN);
+            
+            Output.(L).lowIBI_SD                   = single(nan(1, length(BINS)));
+            Output.(L).highIBI_SD                  = single(nan(1, length(BINS)));
             
             Output.(L).lowIBI_timeRRstart             = single(NaN);
             Output.(L).lowIBI_timeRRend               = single(NaN);
@@ -331,6 +334,10 @@ for numTiming = 1:length(cfg.analyse_states)
             if realPSTHs.n_events < 3 || sum(lowIBIids) < 3 || sum(highIBIids) < 3
                 continue
             end
+            
+            % split smoothed data
+            Output.(L).lowIBI_SD = mean(realPSTHs.PSTH(lowIBIids,:),1);
+            Output.(L).highIBI_SD   = mean(realPSTHs.PSTH(highIBIids,:),1);
             
             % low IBI
             Output.(L).lowIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'linear');
