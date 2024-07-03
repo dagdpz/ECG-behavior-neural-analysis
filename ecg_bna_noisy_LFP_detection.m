@@ -89,10 +89,24 @@ if ~isempty(z) && length(z)>1
         if (z(tmp(1))-1 > 0)
             subs_mean = mean([concat_raw(z(tmp(1))-1)  , concat_raw(z(tmp(2)-1)+1)]);
             subs_std = std([concat_raw(z(tmp(1))-1)  ,  concat_raw(z(tmp(2)-1)+1)]);
-            concat_raw(z(tmp(1):tmp(2)-1)) = subs_mean.*ones(1,lng);
+%             concat_raw(z(tmp(1):tmp(2)-1)) = subs_mean.*ones(1,lng);
+            %% Linear Interpolation:
+            x = [z(tmp(1))-1 , z(tmp(2)-1)+1];
+            v = [concat_raw(z(tmp(1))-1)  , concat_raw(z(tmp(2)-1)+1)];
+            xq = z(tmp(1))-1 : z(tmp(2)-1)+1 ;
+            vq = interp1(x, v, xq);
+            
+            concat_raw(z(tmp(1):tmp(2)-1)) = vq(2:end-1);
         else
             subs_mean = concat_raw(z(tmp(2)-1)+1);
-            concat_raw(z(tmp(1):tmp(2)-1)) = subs_mean.*ones(1,lng);
+%             concat_raw(z(tmp(1):tmp(2)-1)) = subs_mean.*ones(1,lng);
+            %% Linear Interpolation:
+            x = [z(tmp(1)) , z(tmp(2)-1)+1];
+            v = [concat_raw(z(tmp(1)))  , concat_raw(z(tmp(2)-1)+1)];
+            xq = z(tmp(1)) : z(tmp(2)-1)+1 ;
+            vq = interp1(x, v, xq);
+            
+            concat_raw(xq) = vq;
         end
     end
 end
