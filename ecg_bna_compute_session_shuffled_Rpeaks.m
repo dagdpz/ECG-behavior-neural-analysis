@@ -29,19 +29,19 @@ for b=1:numel(out)
     b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
     trial_nBlocks_type = unique([trials(b_idx).type]);
 
-    if (cfg.IBI==1)
-        if cfg.IBI_low == 1 || cfg.IBI_high == 0
-            tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))-1);
-            tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
-            out(b).idx_valid_R2R_consec = tmp2;
-%             tmp = []; tmp2 = [];
-        elseif cfg.IBI_high == 1 || cfg.IBI_low == 0
-            tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))-1);
-            tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
-            out(b).idx_valid_R2R_consec = tmp2;
-%             tmp = []; tmp2 = [];
-        end
-    end
+%     if (cfg.IBI==1)
+%         if cfg.IBI_low == 1 || cfg.IBI_high == 0
+%             tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))-1);
+%             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
+%             out(b).idx_valid_R2R_consec = tmp2;
+% %             tmp = []; tmp2 = [];
+%         elseif cfg.IBI_high == 1 || cfg.IBI_low == 0
+%             tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))-1);
+%             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
+%             out(b).idx_valid_R2R_consec = tmp2;
+% %             tmp = []; tmp2 = [];
+%         end
+%     end
     Rpeaks(b).block=out(b).nrblock_combinedFiles;
     Rpeaks(b).offset=offset_blocks_Rpeak(b);
     if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)

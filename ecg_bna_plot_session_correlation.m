@@ -41,8 +41,8 @@ for untNum = 1:length(fileList)
         RR_starts(drop_RR_ids) = [];
         RR_ends(drop_RR_ids)   = [];
         
-        RR_starts              = rmmissing(RR_starts);
-        RR_ends                = rmmissing(RR_ends);
+        RR_starts              = RR_starts(~isnan(RR_starts));
+        RR_ends                = RR_ends(~isnan(RR_ends));
         
         % select spikes per cardiac cycle
         raster = zeros(length(RR_starts),801);
@@ -56,7 +56,7 @@ for untNum = 1:length(fileList)
         % compute scatter input
         subplot(2,numel(cfg.condition),2*(c-1)+1)
         [raster_row, raster_col] = find(raster);
-        scatter(raster_col,raster_row,2,'MarkerFaceColor',col,'MarkerFaceAlpha',0.2,'MarkerEdgeColor',col,'MarkerEdgeAlpha',0.2);
+        scatter(raster_col,raster_row,2,col);
         hold on
         scatter(1000*(RR_ends-RR_starts),1:length(RR_starts), 'Marker','^')
         box on
@@ -72,7 +72,8 @@ for untNum = 1:length(fileList)
         [RRdur_sorted,ids] = sort(1000*(RR_ends-RR_starts));
         raster_sorted = raster(ids,:);
         [raster_row, raster_col] = find(raster_sorted);
-        scatter(raster_col,raster_row,2,'MarkerFaceColor',col,'MarkerFaceAlpha',0.2,'MarkerEdgeColor',col,'MarkerEdgeAlpha',0.2);
+        %scatter(raster_col,raster_row,2,'MarkerFaceColor',col,'MarkerFaceAlpha',0.2,'MarkerEdgeColor',col,'MarkerEdgeAlpha',0.2);
+        scatter(raster_col,raster_row,2,col);
         hold on
         scatter(RRdur_sorted,1:length(RR_starts), 'Marker','^')
         box on
@@ -128,6 +129,7 @@ for untNum = 1:length(fileList)
     close(gcf);
     
     %% unit FR per heart cycle as a function of time
+    if 0
 	figure;
     set(gcf, 'Position', [1 41 1920 482])
 
@@ -159,6 +161,8 @@ for untNum = 1:length(fileList)
     filename= ['Time_vs_FRperCycle_' data.unitId, '_' data.target];
     export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
+    
+    end
     
     %% unit FR by RR-cycle quintiles
     figure,
@@ -214,5 +218,4 @@ for untNum = 1:length(fileList)
     filename= ['RRquintile_vs_FRperCycle_' data.unitId, '_' data.target];
     export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
     close(gcf);
-    
 end

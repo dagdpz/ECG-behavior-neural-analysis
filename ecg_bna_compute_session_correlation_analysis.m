@@ -249,9 +249,9 @@ parfor lagNum = 1:length(cfg.correlation.lag_list)
     end
     
     % compute correlation coefficient
-    [~,fr_hz_nan] = rmmissing(fr_hz);
-    [~,rr_s_nan] = rmmissing(rr_s);
-    [temp_r, temp_p] = corrcoef(fr_hz, rr_s, 'Rows', 'pairwise');
+    fr_hz_nan = isnan(fr_hz);
+    rr_s_nan = isnan(rr_s);
+    [temp_r, temp_p] = corrcoef(fr_hz(~fr_hz_nan & ~rr_s_nan), rr_s(~fr_hz_nan & ~rr_s_nan));
     n_cycles(lagNum)  = sum(~isnan(fr_hz) & ~isnan(rr_s));
     pearson_r(lagNum) = temp_r(2,1);
     pearson_p(lagNum) = temp_p(2,1);
