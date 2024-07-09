@@ -15,12 +15,14 @@ for varNum = 1:length(var_names)
             dt.(L).(beforeDot).(afterDot) = nan(length(unit_list),1);
         end
         
-    elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p')
+    elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p') || strcmp(var_names{varNum}, 'n_cycles') || ...
+            strcmp(var_names{varNum}, 'FR_pearson_r') || strcmp(var_names{varNum}, 'FR_pearson_p') || strcmp(var_names{varNum}, 'FR_n_cycles') || ...
+            strcmp(var_names{varNum}, 'RR_pearson_r') || strcmp(var_names{varNum}, 'RR_pearson_p') || strcmp(var_names{varNum}, 'RR_n_cycles')
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
             
-            dt.(L).(var_names{varNum}) = nan(7,length(unit_list));
+            dt.(L).(var_names{varNum}) = nan(25,length(unit_list));
         end
         
     else
@@ -110,7 +112,9 @@ for fileNum = 1:length(unit_list)
                     dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})(1);
                 elseif strcmp(var_names{varNum}, 'NrEvents')
                     dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})';
-                elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p')
+                elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p') || strcmp(var_names{varNum}, 'n_cycles') || ...
+                        strcmp(var_names{varNum}, 'FR_pearson_r') || strcmp(var_names{varNum}, 'FR_pearson_p') || strcmp(var_names{varNum}, 'FR_n_cycles') || ...
+                        strcmp(var_names{varNum}, 'RR_pearson_r') || strcmp(var_names{varNum}, 'RR_pearson_p') || strcmp(var_names{varNum}, 'RR_n_cycles')
                     dt.(L).(var_names{varNum})(:, fileNum) = A.(data_struct).(L).(var_names{varNum});
                 else
                     if ~isempty(A.(data_struct).(L).(var_names{varNum}))
