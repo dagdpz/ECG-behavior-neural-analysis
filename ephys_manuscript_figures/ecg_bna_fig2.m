@@ -14,6 +14,9 @@ condition_colors = {'b', 'r'};
 area_list        = {'VPL', 'dPul', 'MD'};
 BINS             = -250:5:250;
 
+nRpeaks          = 400; % number of R-peaks for rasters
+max_Rpeaks       = 5922;
+
 %% load files
 data.VPL  = load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Bacchus_TaskRest\per_unit_-0.25-0.25s\Bac_20211222_07_VPL_R.mat','Output');
 data.dPul = load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Magnus_TaskRest\per_unit_-0.25-0.25s\Mag_20230524_29_dPul_L.mat','Output');
@@ -22,7 +25,7 @@ data.MD   = load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Magnus_Ta
 figure;
 set(gcf,'Position',[400 400 1164 568])
 
-for a = 1:3
+for a = 1:N_areas
     T = area_list{a};
     for c=1:N_conditions
         L=condition_names{c};
@@ -31,7 +34,7 @@ for a = 1:3
         %% plot raster with 1 ms resolution
         subplot(3,N_areas,3*(c-1)+a)
         % take 400 equally spaced R-peaks
-        Rpeak_ids = round(1:data.(T).Output.(L).NrEvents/400:data.(T).Output.(L).NrEvents);
+        Rpeak_ids = round(1 : data.(T).Output.(L).NrEvents/nRpeaks : data.(T).Output.(L).NrEvents);
         [raster_row, raster_col] = find(data.(T).Output.(L).raster(Rpeak_ids,:)); % row - R-peak number, col - bin number
         scatter(raster_col-250,raster_row,3,'MarkerFaceColor',col,'MarkerFaceAlpha',0.4,'MarkerEdgeColor',col,'MarkerEdgeAlpha',0.4);
         hold on
@@ -88,11 +91,40 @@ for a = 1:3
             
         end
     end
+    
+    %% plot rasters with all collected R-peaks
+    figure,
+    currMaxRpeakNum = max([data.(T).Output.Rest.NrEvents data.(T).Output.Task.NrEvents]);
+    set(gcf,'Position',[683    41   560   currMaxRpeakNum*955/max_Rpeaks])
+    for c=1:N_conditions
+        L=condition_names{c};
+        col=condition_colors{c};
+        
+        subplot(1,2,c)
+        [raster_row, raster_col] = find(data.(T).Output.(L).raster); % row - R-peak number, col - bin number
+        scatter(raster_col-250,raster_row,3,'MarkerFaceColor',col,'MarkerFaceAlpha',0.4,'MarkerEdgeColor',col,'MarkerEdgeAlpha',0.4);
+        hold on
+        line([0 0],ylim,'color','k');
+        set(gca, 'XTick', [-200 -100 0 100 200], 'XTickLabel', [-200 -100 0 100 200])
+        set(gca, 'YTick', [0 data.(T).Output.(L).NrEvents])
+        xlim([-250 250])
+        ylim([0 data.(T).Output.(L).NrEvents])
+        box on
+        
+        if c == 1
+            
+            xlabel('Time from R-peak, ms')
+            ylabel('Number of Collected R-peaks')
+        
+        end
+        
+    end
+    save_figure_as(['FigS2_' T],dir2save,1)
 end
 save_figure_as('Fig2_',dir2save,1)
 
 function save_figure_as(filename,basepath_to_save,savePlot)
-if savePlot;
+if savePlot
     export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
     close(gcf);
 end
