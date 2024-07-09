@@ -34,6 +34,18 @@ for v = 1:length(versions)
     % Read the info about sessions to analyse
     sessions_info = cfg.session_info;
     
+    %% tmp
+    
+    
+    
+    %% temporary - loading data for those and plotting 
+%     ecg_bna_modulation_indices_vs_motion_indices(cfg)
+    
+    %% apply exclusion criteria and save lists of units - we do it once
+    if cfg.spk.compute_unit_subsets
+        ecg_bna_get_unit_list(cfg,1);
+    end
+    
     %% per session processing..
     if cfg.process_per_session
         for i = 1:length(sessions_info)
@@ -45,31 +57,20 @@ for v = 1:length(versions)
             % First make seed and ecg shuffles, then use those shuffles for all subfunctions
             seed_filename=[cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
             if exist(seed_filename,'file')
-                load(seed_filename);
+                load(seed_filename, 'seed');
                 rng(seed);
             else
                 seed=rng;
                 save(seed_filename,'seed');
             end
             
-            
             if cfg.process_spikes
                 
-                
-                %% apply exclusion criteria and save lists of units - we do it once
-                if cfg.spk.compute_unit_subsets
-                    ecg_bna_get_unit_list(cfg,1);
-                end
-                
-                %% copy selected units separately - we do it once
-                if cfg.spk.move_files
-                    ecg_bna_copy_selected_units(cfg)
-                end
-                
                 %% do ECG spike analysis and computations related to cardioballistic effect
-                if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase
-                    Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.spk);
-                    %Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
+                if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase || cfg.spk.compute_correlation
+                    Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
+%                     sandbox_bb_vs_waveform(cfg, Rpeaks)
+%                     Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
                     load(sessions_info(i).Input_spikes);
                     if cfg.spk.compute_spike_histograms
@@ -79,6 +80,10 @@ for v = 1:length(versions)
                     if cfg.spk.compute_spike_phase
                         ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
                     end
+                    
+                    if cfg.spk.compute_correlation
+                        ecg_bna_compute_session_correlation_analysis(trials,population,Rpeaks,cfg)
+                    end
                 end
                 
                 if cfg.spk.plot_spike_histograms
@@ -87,7 +92,10 @@ for v = 1:length(versions)
                 if cfg.spk.plot_spike_phase
                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
                 end
-                aa=1;
+                if cfg.spk.plot_correlation
+                    ecg_bna_plot_session_correlation(sessions_info(i),cfg)
+                end
+
             end
             if cfg.process_LFP
                 
@@ -172,6 +180,209 @@ for v = 1:length(versions)
         end
     end
     
+    if cfg.process_spikes
+    %% additionaly exclude by R-peak number and (in the future) other heart-related criteria
+        if cfg.spk.ecg_exclusion_criteria
+            ecg_bna_get_unit_list_ecg_params(cfg)
+        end
+        
+        %% copy selected units separately - we do it once
+        if cfg.spk.move_files
+%             % move units for either task or rest
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.per_session_folder, cfg.per_session_selected, cfg)
+%             % move files for units with no cardioballistic effect
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.per_session_folder, ...
+%                 output_folder, cfg)
+%             
+%             % move files for units WITH the cardioballistic effect
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_withCB'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.per_session_folder, ...
+%                 output_folder, cfg)
+% 
+%             % move files for units with no significant cardioballitic
+%             % effect AND those that had huge amplitude
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.per_session_folder, ...
+%                 output_folder, cfg)
+%             
+%             % move units for both task and rest without cardioballistic
+%             % effect, high spike amplitude and non-significant cc between 
+%             % phase PSTH and AMP phase dynamic
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr_ccs'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.per_session_folder, ...
+%                 output_folder, cfg)
+%             
+%             % both task and rest - high amplitudes
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_highAmp'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_highAmp', cfg.per_session_folder, ...
+%                 output_folder, cfg)
+            
+            
+            % ><\\\'> ??? <'///><
+            
+            
+            % move units for both task and rest
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_600', [cfg.per_session_folder '_-0.25-0.25s'], cfg.per_session_stable, cfg)
+            
+            % move units for both task and rest without cardioballistic
+            % effect
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noCB'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % move units for both task and rest with cardioballistic effect
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_withCB'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_withCB', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % move units for both task and rest without cardioballistic
+            % effect and with high spike amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noCB_corr'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB_corr', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % move units for both task and rest without cardioballistic
+            % effect, high spike amplitude and non-significant cc between 
+            % phase PSTH and AMP phase dynamic
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noCB_corr_ccs'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB_corr_ccs', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % high amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_high_amplitude'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_high_amplitude', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % low amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_low_amplitude'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % [any] low amp + ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_low_amplitude_ccs_any'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude_ccs_any', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % [both] low amp + ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_low_amplitude_ccs_both'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude_ccs_both', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % [any] no low amp + ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noLow_amplitude_ccs_any'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            % [both] no low amp + ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noLow_amplitude_ccs_both'];
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_both', [cfg.per_session_folder '_-0.25-0.25s'], ...
+                output_folder, cfg)
+            
+            
+            % ><\\\'> ??? <'///><
+            
+            %% move cardioballistic files
+%             % for either task or rest
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.cardioballistic_folder, cfg.cardioballistic_selected, cfg)
+%             
+%             % for units with no cardioballistic effect
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.cardioballistic_folder, output_folder, cfg)
+%             
+%             % for units WITH cardioballistic effect
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_withCB'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.cardioballistic_folder, output_folder, cfg)
+%             
+%             % for units with no significant cardioballitic effect AND those that had huge amplitude
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.cardioballistic_folder, output_folder, cfg)
+%             
+%             % move units for both task and rest without cardioballistic
+%             % effect, high spike amplitude and non-significant cc between 
+%             % phase PSTH and AMP phase dynamic
+%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr_ccs'];
+%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % for both task and rest
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_600', cfg.cardioballistic_folder, cfg.cardioballistic_stable, cfg)
+            
+            % for units with no cardioballistic effect
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_noCB'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % for units WITH cardioballistic effect
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_withCB'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_withCB', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % for units with no significant cardioballitic effect AND those that had huge amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_noCB_corr'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB_corr', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % move units for both task and rest without cardioballistic
+            % effect, high spike amplitude and significant cc between phase
+            % PSTH and AMP phase dynamic
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_noCB_corr_ccs'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB_corr_ccs', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % high amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_high_amplitude'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_high_amplitude', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % low amplitude
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_low_amplitude'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % low amplitude + any ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_low_amplitude_ccs_any'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude_ccs_any', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % low amplitude + both ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_low_amplitude_ccs_both'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_low_amplitude_ccs_both', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            
+            % no low amplitude + any ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_noLow_amplitude_ccs_any'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            % no low amplitude + both ccs
+            output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_stable_600_noLow_amplitude_ccs_both'];
+            if ~exist(output_folder, 'dir')
+                mkdir(output_folder)
+            end
+            ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_both', cfg.cardioballistic_folder, output_folder, cfg)
+            
+            
+        end
+    end
     %% average across sessions
     if cfg.process_population
 %         
@@ -219,10 +430,156 @@ for v = 1:length(versions)
         end
         
         if cfg.process_spikes
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit','Output');
-            %ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info, cfg);
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH,cfg);
+            
+            % both task and rest - NO low spike amplitude + any ccs
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_noLowAmp_ccs_any');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noLow_amplitude_ccs_any','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            
+            
+            ecg_bna_plot_venns(cfg)
+            
+            % stable 600
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_600');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg, 'SPK_root_results_fldr', '', 'cardioballistic_stable_600', 'data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 noCB
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noCB');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noCB','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 withCB
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_withCB');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_withCB','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 noCB corr
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noCB_corr');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noCB_corr','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+
+            % stable 600 noCB corr ccs
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noCB_corr_ccs');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noCB_corr_ccs','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + high amplitude
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_high_amplitude');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_high_amplitude','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + low amplitude
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_low_amplitude');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_low_amplitude','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + low amp + any ccs
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_low_amplitude_ccs_any');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_low_amplitude_ccs_any','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + low amp + both ccs
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_low_amplitude_ccs_both');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_low_amplitude_ccs_both','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + low amp + any ccs
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noLow_amplitude_ccs_any');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noLow_amplitude_ccs_any','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            % stable 600 + low amp + both ccs
+            output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noLow_amplitude_ccs_both');
+            SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noLow_amplitude_ccs_both','data');
+            ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
+            
+            
+            % population analysis for units with at least 1 rest OR 1 task
+            % block
+%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population');
+%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600','Output');
+%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+%             
+%             % population analysis for units without cardioballistic effect
+%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_1');
+%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600_noCB','Output');
+%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+%             
+%             % population analysis for units without cardioballistic effect
+%             % or with high amplitude of spike
+%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_2');
+%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600_noCB_corr','Output');
+%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+%             
+            % population analysis for units with both task and rest
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_3');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            % population analysis for units with both task and rest without
+            % the cardioballistic effect
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_4');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+%             
+            % population analysis for units with both task and rest WITH
+            % the cardioballistic effect
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_5');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_withCB','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+
+            % population analysis for units with both task and rest without
+            % the cardioballistic effect or with high amplitude of spike
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_6');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB_corr','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            % population analysis for units for both task and rest without 
+            % cardioballistic effect, high spike amplitude and significant 
+            % cc between phase PSTH and AMP phase dynamic
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_7');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB_corr_ccs','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            % both task and rest - high spike amplitude
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_highAmp');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_high_amplitude','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            % both task and rest - low spike amplitude
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            % both task and rest - low spike amplitude + any ccs
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp_ccs_any');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude_ccs_any','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            editr
+            % both task and rest - low spike amplitude + both ccs
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp_ccs_both');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude_ccs_both','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            
+            
+            % both task and rest - NO low spike amplitude + both ccs
+            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_noLowAmp_ccs_both');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noLow_amplitude_ccs_both','Output');
+            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            
+            
+            ecg_bna_population_correlation_analysis(cfg)
+
+            ecg_bna_plot_circular_fits(cfg, 'per_unit_0-0.5s', 'Circular_population_results_0-0.5s')
+            ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.25-0.25s', 'Circular_population_results_-0.25-0.25s')
+            ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.5-0s', 'Circular_population_results_-0.5-0s')
+            
+            ecg_bna_plot_averageHR(cfg)
         end
+        
     end
 end
 end
