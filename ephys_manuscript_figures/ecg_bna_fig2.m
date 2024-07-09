@@ -58,12 +58,7 @@ for a = 1:3
         s1 = shadedErrorBar(BINS, data.(T).Output.(L).SD, data.(T).Output.(L).SD_SEM,lineProps,1);
         lineProps={'color',col,'linewidth',1,'linestyle',':'};
         s2 = shadedErrorBar(BINS, data.(T).Output.(L).SDP, [data.(T).Output.(L).SDPCu; data.(T).Output.(L).SDPCL], lineProps,1);
-        ypos=NaN;
-        if data.(T).Output.(L).sig_sign==-1
-            ypos=min(data.(T).Output.(L).SD)*-1;
-        elseif data.(T).Output.(L).sig_sign==1
-            ypos=max(data.(T).Output.(L).SD);
-        end
+        ypos = max(abs(data.(T).Output.(L).SD)) * data.(T).Output.(L).sig_sign;
         to_plot=data.(T).Output.(L).sig;
         to_plot(to_plot==0)=NaN;
         plot(BINS,to_plot*ypos,'color',col,'linewidth',5);
