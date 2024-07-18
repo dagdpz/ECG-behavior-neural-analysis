@@ -72,17 +72,7 @@ for unitNum = 1:length(population)
         data.(L).RR_permuted_p           = single(nan(length(cfg.correlation.lag_list), 1));
     end
     
-    % find the corresponding WC file and load it
-    chNum = data.channel;
-    blkNum = unique([pop.block]);
-    WCfile = ph_figure_out_waveclus_file_by_channel_and_blocks(chNum, blkNum, cfg.Input_WC);
-    WC = load(WCfile, 'thr');
-    if length(WC.thr) == 4
-        data.thresholds_microV = 10^6 * WC.thr;
-        data.thresholds_microV(3:4) = -1*data.thresholds_microV(3:4);
-    end
-    clear WC
-    
+    %%
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
         
@@ -101,7 +91,8 @@ for unitNum = 1:length(population)
         % create special trial configuration
         CT = ecg_bna_get_condition_trials(T, cfg.condition(c));
         tr=ismember([T.block],blocks) & CT;
-        if sum(tr)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation) % do calculations only if number of trials > 1
+        if sum(tr)<=1 || (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) ...
+                      || (~isfield(Rpeaks, 'RPEAK_ts_exp')  && cfg.process_Rpeaks_inhalation_exhalation) % do calculations only if number of trials > 1
             continue
         end
         popcell=pop.trial(tr);
@@ -124,7 +115,7 @@ for unitNum = 1:length(population)
         trial_ends90_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
         %         trial_ends98_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state98_times, TDT_ECG1_t0_from_rec_start, block_nums);
         
-        RR_within_trial90_idx = false(length(valid_RRinterval_starts),1);
+        RR_within_trial90_idx = false(length(valid_RRinterval_starts),1)';
         %         RR_within_trial98_idx = false(length(valid_RRinterval_starts),1);
         for RRnum = 1:length(RR_within_trial90_idx)
             % indexing for FR variable
@@ -167,20 +158,27 @@ for unitNum = 1:length(population)
         
         % % figure out how many R peaks I need to cover long intervals between R-peaks
         % find long intervals between R-peaks
-        long_RRs = diff(valid_RRinterval_starts) > 0.6; % hard coded value for a long RR-interval
-        divMed   = floor(diff(valid_RRinterval_starts)/0.4); % 0.4 - median RR for Magnus
-        modRR    = mod(diff(valid_RRinterval_starts),0.4);
+        % long_RRs = diff(valid_RRinterval_starts) > 0.6; % hard coded value for a long RR-interval
+        %divMed   = floor(diff(valid_RRinterval_starts)/0.4); % 0.4 - median RR for Magnus
+        %modRR    = mod(diff(valid_RRinterval_starts),0.4);
         
         % find intervals between R-peaks that are long enough and decide on
         % the number of additional R-peaks for replacement
-        ids          = find(long_RRs);
-        n_add_cycles = divMed(long_RRs) + floor(modRR(long_RRs)/0.25);
+        % ids          = find(long_RRs);
+        % n_add_Rpeaks = divMed(long_RRs) + floor(modRR(long_RRs)/0.25) -1;
+        
+        
+        n_add_Rpeaks = round(diff(valid_RRinterval_starts)/0.4) -1; %% these are cycle starts! so the number of cycles -1 (!)
+        ids          = find(n_add_Rpeaks);
+        n_add_Rpeaks = n_add_Rpeaks(n_add_Rpeaks~=0);
         
         % loop through long intervals to fill them with NaNs backwards to
         % keep index of former elements unchanged
         for intRRnum = length(ids):-1:1
-            valid_RRinterval_starts = [valid_RRinterval_starts(1:ids(intRRnum)) nan(1, n_add_cycles(intRRnum)) valid_RRinterval_starts(ids(intRRnum)+1:end)];
-            valid_RRinterval_ends = [valid_RRinterval_ends(1:ids(intRRnum)) nan(1, n_add_cycles(intRRnum)) valid_RRinterval_ends(ids(intRRnum)+1:end)];
+            valid_RRinterval_starts = [valid_RRinterval_starts(1:ids(intRRnum)) nan(1, n_add_Rpeaks(intRRnum)) valid_RRinterval_starts(ids(intRRnum)+1:end)];
+            valid_RRinterval_ends = [valid_RRinterval_ends(1:ids(intRRnum)) nan(1, n_add_Rpeaks(intRRnum)) valid_RRinterval_ends(ids(intRRnum)+1:end)];
+            RR_within_trial90_idx = [RR_within_trial90_idx(1:ids(intRRnum)) false(1, n_add_Rpeaks(intRRnum)) RR_within_trial90_idx(ids(intRRnum)+1:end)];
+            
         end
         
         
@@ -189,7 +187,7 @@ for unitNum = 1:length(population)
         data.(L).timeRRstart           = valid_RRinterval_starts;
         [FRbyRR_Hz, cycleDurations_s] = ...
             computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-        FRbyRR_Hz(~RR_within_trial90_idx)        = NaN;
+        FRbyRR_Hz(~RR_within_trial90_idx)        = NaN; %% NO! you added NaNs in between, so the index changed...
         % option 2
 %         FRbyRR_Hz(~RR_within_trial90_idx)        = NaN;
 %         cycleDurations_s(~RR_within_trial98_idx) = NaN;
@@ -229,34 +227,47 @@ seed_state     = cfg.correlation.seed_state;
 
 % Initialize output structure to avoid broadcasting issues
 lag_list        = cfg.correlation.lag_list;
-nLags           = length(cfg.correlation.lag_list);
+nLags           = length(lag_list);
 n_cycles   = zeros(1, nLags);
 pearson_r  = zeros(1, nLags);
 pearson_p  = zeros(1, nLags);
 permuted_p = zeros(1, nLags);
 
-parfor lagNum = 1:length(cfg.correlation.lag_list)
+parfor lagNum = 1:nLags
     curr_lag = lag_list(lagNum);
-    % create data variables
-    if curr_lag < 0
-        % If lag is negative, rr_s is shifted to the right
-        fr_hz = FRbyRR_Hz(1:end+curr_lag);
-        rr_s  = cycleDurations_s(1-curr_lag:end);
+    lag_abs=abs(curr_lag);
+    lag_sign=sign(curr_lag);
+    if lag_sign<0
+        % If lag is negative, FR follows RR
+        fr_hz = FRbyRR_Hz(1+lag_abs:end);
+        rr_s  = cycleDurations_s(1:end-lag_abs);
     else
-        % If lag is positive or zero, fr_hz is shifted to the right
-        fr_hz = FRbyRR_Hz(1+curr_lag:end);
-        rr_s  = cycleDurations_s(1:end-curr_lag);
+        % If lag is positive, RR follows FR
+        fr_hz = FRbyRR_Hz(1:end-lag_abs);
+        rr_s  = cycleDurations_s(1+lag_abs:end);
     end
     
+%     % create data variables
+%     if curr_lag < 0
+%         % If lag is negative, rr_s is shifted to the right
+%         fr_hz = FRbyRR_Hz(1:end+curr_lag);
+%         rr_s  = cycleDurations_s(1-curr_lag:end);
+%     else
+%         % If lag is positive or zero, fr_hz is shifted to the right
+%         fr_hz = FRbyRR_Hz(1+curr_lag:end);
+%         rr_s  = cycleDurations_s(1:end-curr_lag);
+%     end
+    
     % compute correlation coefficient
-    fr_hz_nan = isnan(fr_hz);
-    rr_s_nan = isnan(rr_s);
-    [temp_r, temp_p] = corrcoef(fr_hz(~fr_hz_nan & ~rr_s_nan), rr_s(~fr_hz_nan & ~rr_s_nan));
-    n_cycles(lagNum)  = sum(~isnan(fr_hz) & ~isnan(rr_s));
+    valid = ~isnan(fr_hz) & ~isnan(rr_s);
+    [temp_r, temp_p] = corrcoef(fr_hz(valid), rr_s(valid));
+    n_cycles(lagNum)  = sum(valid);
     pearson_r(lagNum) = temp_r(2,1);
     pearson_p(lagNum) = temp_p(2,1);
-    permuted_p(lagNum) = mult_comp_perm_corr(fr_hz(~fr_hz_nan & ~rr_s_nan), rr_s(~fr_hz_nan & ~rr_s_nan), ...
-        n_permutations, tail, alpha_level, stat, reports, seed_state);
+    
+    % i dont think this makes sense at all unfortunately... the
+    % multicomparison correction should be due to multiple lags, no?
+    permuted_p(lagNum) = mult_comp_perm_corr(fr_hz(valid), rr_s(valid), n_permutations, tail, alpha_level, stat, reports, seed_state);
 end
 
 end
