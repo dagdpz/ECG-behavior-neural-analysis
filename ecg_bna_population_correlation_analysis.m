@@ -1,0 +1,335 @@
+function ecg_bna_population_correlation_analysis(cfg)
+
+unqTargets = {'VPL', 'dPul', 'MD'};
+N_Areas = length(unqTargets);
+N_conditions = length(cfg.condition);
+
+var_list = {'pearson_r', 'pearson_p', 'n_cycles', ...
+    'FR_pearson_r', 'FR_pearson_p', 'FR_n_cycles', ...
+    'RR_pearson_r', 'RR_pearson_p', 'RR_n_cycles'};
+
+var_prefix = {'', 'FR_', 'RR_'};
+
+bar_colors = [244 149 173; 126 221 95; 255 255 255]/255;
+
+basepath_to_save = [cfg.SPK_root_results_fldr filesep 'Population_correlation_analysis'];
+if ~exist(basepath_to_save, 'dir')
+    mkdir(basepath_to_save)
+end
+
+%% load data
+load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
+
+for a = 1: N_Areas
+    
+    T=unqTargets{a};
+    currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
+    curr_unit_ids = unit_ids(currTargIds);
+    dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, 'correlation_analysis', 'data', var_list);
+    
+end
+
+%% correlation coefs between FR and RR
+for prefixNum = 1:length(var_prefix)
+
+    f0 = figure;
+    set(f0, 'Position', [22 441 1857 491])
+    
+    for a = 1: N_Areas
+        
+        T=unqTargets{a};
+        
+        for c=1:N_conditions
+            
+            L=cfg.condition(c).name;
+            
+            splot_num = (c-1)*N_Areas + a;
+            subplot(N_conditions, N_Areas, splot_num)
+            plot(dt.(T).cc_lag_list, dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']), 'Color', [0.5 0.5 0.5])
+            
+            xlim([-12 12])
+            ylim([-1 1])
+            
+            title([T ':' L])
+            
+        end
+        
+    end
+    
+    subplot(N_conditions, N_Areas, 1)
+    xlabel('Shift of RR sequence relative to FR, # cardiac cycles')
+    ylabel('Correlation Coefficients')
+    
+    if isempty(var_prefix{prefixNum})
+        sgttl = 'Correlation: FR vs. RR';
+    elseif contains(var_prefix{prefixNum}, 'FR_')
+        sgttl = 'Autocorrelation FR';
+    elseif contains(var_prefix{prefixNum}, 'RR_')
+        sgttl = 'Autocorrelation RR';
+    end
+    
+    figure(f0)
+    sgtitle(sgttl)
+    save_figure_as(f0, [var_prefix{prefixNum} 'CC_OverLags_AllData'], basepath_to_save, 1)
+    
+end
+
+%% normalized correlation between FR and RR
+for prefixNum = 1:length(var_prefix)
+
+    f0 = figure;
+    set(f0, 'Position', [22 441 1857 491])
+    
+    for a = 1: N_Areas
+        
+        T=unqTargets{a};
+        
+        for c=1:N_conditions
+            
+            L=cfg.condition(c).name;
+            
+            figure(f0);
+            % compute normalized ccs
+            norm_r  = dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']) ./ dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])(ceil(end/2),:);
+            pos_sig = dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])(ceil(end/2),:) > 0 & dt.(T).(L).([var_prefix{prefixNum} 'pearson_p'])(ceil(end/2),:) < 0.05;
+            neg_sig = dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])(ceil(end/2),:) < 0 & dt.(T).(L).([var_prefix{prefixNum} 'pearson_p'])(ceil(end/2),:) < 0.05;
+            
+            splot_num = (c-1)*N_Areas + a;
+            subplot(N_conditions, N_Areas, splot_num)
+            if sum(pos_sig)>0
+                plot(dt.(T).cc_lag_list, norm_r(:, pos_sig), 'Color', bar_colors(1,:))
+            end
+            hold on
+            if sum(neg_sig)>0
+                plot(dt.(T).cc_lag_list, norm_r(:, neg_sig), 'Color', bar_colors(2,:))
+            end
+            hline(0)
+            hline(1)
+            
+            ylim([-2 2])
+            title([T ': ' L])
+            xlabel('Lag, # Cardiac Cycles')
+            ylabel('cc normalized by cc(lag 0)')
+            box on
+        end
+    end
+    
+    if isempty(var_prefix{prefixNum})
+        sgttl = 'Correlation: FR vs. RR';
+    elseif contains(var_prefix{prefixNum}, 'FR_')
+        sgttl = 'Autocorrelation FR';
+    elseif contains(var_prefix{prefixNum}, 'RR_')
+        sgttl = 'Autocorrelation RR';
+    end
+    
+    figure(f0)
+    sgtitle(sgttl)
+    save_figure_as(f0, [var_prefix{prefixNum} 'CC_Lags_AllAreas'], basepath_to_save, 1)
+    
+end
+
+%% 
+for prefixNum = 1:length(var_prefix)
+
+    f1 = figure;
+    set(f1, 'Position', [22 441 1857 491])
+
+    for a = 1: N_Areas
+        
+        T=unqTargets{a};
+        
+        for c=1:N_conditions
+            
+            L=cfg.condition(c).name;
+            
+            % plot optimal correlation coefficients
+            % extract data
+            [ccs, ids]  = max(abs(dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])), [], 'linear'); % find max abs ccs; I will need 'ids' to figure out significance of corresponding ccs
+            [~,lag_ids] = max(abs(dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']))); % figure out corresponding lags
+            sig_ids     = dt.(T).(L).([var_prefix{prefixNum} 'pearson_p'])(ids) < 0.05;
+            signs_ccs   = sign(dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])(ids));
+            signed_ccs  = signs_ccs .* ccs;
+            
+            pos_sig_lagged = signed_ccs > 0;
+            neg_sig_lagged = signed_ccs < 0;
+            
+            splot_num = (c-1)*N_Areas + a;
+            subplot(N_conditions, N_Areas, splot_num)
+            plot(dt.(T).cc_lag_list(lag_ids(neg_sig_lagged & sig_ids)), signed_ccs(neg_sig_lagged & sig_ids), 'o', 'Color', bar_colors(2, :))
+            hold on
+            plot(dt.(T).cc_lag_list(lag_ids(pos_sig_lagged & sig_ids)), signed_ccs(pos_sig_lagged & sig_ids), 'o', 'Color', bar_colors(1, :))
+            xlabel('Lag, # Heart Cycles')
+            ylabel('Correlation Coefficient')
+            title([T ': ' L])
+            xlim([-13 13])
+            ylim([-0.5 0.5])
+        end
+        
+    end
+    
+    if isempty(var_prefix{prefixNum})
+        sgttl = 'Correlation: FR vs. RR';
+    elseif contains(var_prefix{prefixNum}, 'FR_')
+        sgttl = 'Autocorrelation FR';
+    elseif contains(var_prefix{prefixNum}, 'RR_')
+        sgttl = 'Autocorrelation RR';
+    end
+    
+    figure(f1)
+    sgtitle(sgttl)
+    save_figure_as(f1, [var_prefix{prefixNum} 'CC_MaxAbsLags_AllAreas'], basepath_to_save, 1)
+    
+end
+
+%% lag scatters
+for prefixNum = 1:length(var_prefix)
+    
+    for a = 1: N_Areas
+        
+        T=unqTargets{a};
+        
+        for c=1:N_conditions
+            
+            L=cfg.condition(c).name;
+            
+            [~, lag_rest] = max(abs(dt.(T).Rest.([var_prefix{prefixNum} 'pearson_r'])));
+            [~, lag_task] = max(abs(dt.(T).Task.([var_prefix{prefixNum} 'pearson_r'])));
+            
+            f2 = figure;
+            set(f2,'Position',[364   319   580   584])
+            scatterhistogram(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),...
+                'Title',T,'HistogramDisplayStyle','smooth',...
+                'ScatterPlotLocation','SouthEast','Color',cfg.area_colors{a}, 'MarkerAlpha',0.3)%,'Kernel','on','Marker','.'
+            xlabel('Rest: Lag for Abs. Max. CC')
+            ylabel('Task: Lag for Abs. Max. CC')
+            title(T)
+            save_figure_as(f2, [var_prefix{prefixNum} 'Scatterhist_Lags_Rest_vs_Task_' T], basepath_to_save, 1)
+            
+        end
+        
+    end
+    
+end
+
+%% histograms
+for a = 1: N_Areas
+    
+    figure,
+    set(gcf, 'Position', [22 441 1857 491])
+    
+    T=unqTargets{a};
+    
+    for c=1:N_conditions
+        
+        N_lags = size(dt.(T).cc_lag_list,2);
+        L=cfg.condition(c).name;
+        
+        for lag_num = 1:N_lags
+            
+            curr_cc = dt.(T).(L).pearson_r(lag_num, :);
+            curr_pp = dt.(T).(L).pearson_p(lag_num, :);
+            [~, sig_idx] = bonf_holm(curr_pp, 0.05); % correct for multiple comparisons
+            pos_idx = curr_cc > 0;
+            neg_idx = curr_cc < 0;
+            
+            % prepare data for plotting
+            counts_pos    = histc(curr_cc(sig_idx & pos_idx)', -1:0.05:1); % significant and positive
+            counts_neg    = histc(curr_cc(sig_idx & neg_idx)', -1:0.05:1); % significant and negative
+            counts_nonsig = histc(curr_cc(~sig_idx)', -1:0.05:1);
+            
+            counts_pos    = counts_pos(:);
+            counts_neg    = counts_neg(:);
+            counts_nonsig = counts_nonsig(:);
+            
+            % plot
+            splot_num = (c-1)*N_lags + lag_num;
+            plot_data = [counts_pos counts_neg counts_nonsig];
+            subplot(N_conditions, N_lags, splot_num)
+            b = bar(-1:0.05:1, plot_data, 'stacked');
+            set(b, 'FaceColor', 'Flat')
+            set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
+            xlim([-0.5 0.5])
+            title([T ': ' L ': ' num2str(dt.(T).cc_lag_list(lag_num))])
+            
+            if a == 1 && c == 1 && lag_num == 1
+                xlabel('CC between FR and RR duration')
+                legend({'Sig.Pos.', 'Sig.Neg.', 'Non-Sig.'})
+            end
+        end
+    end
+    save_figure_as(gcf, ['Histograms_CC_FR_&_RR_' T], basepath_to_save, 1)
+end
+
+%% 
+figure,
+set(gcf, 'Position', [667 519 930 477])
+for a = 1: N_Areas
+    
+    T=unqTargets{a};
+    
+    for c=1:N_conditions
+        L=cfg.condition(c).name;
+        
+        curr_cc = dt.(T).(L).pearson_r(4, :);
+        curr_pp = dt.(T).(L).pearson_p(4, :);
+        [~, sig_idx] = bonf_holm(curr_pp, 0.05); % correct for multiple comparisons
+        pos_idx = curr_cc > 0;
+        neg_idx = curr_cc < 0;
+        
+        % prepare data for plotting
+        counts_pos    = histc(curr_cc(sig_idx & pos_idx)', -1:0.05:1); % significant and positive
+        counts_neg    = histc(curr_cc(sig_idx & neg_idx)', -1:0.05:1); % significant and negative
+        counts_nonsig = histc(curr_cc(~sig_idx)', -1:0.05:1);
+        
+        counts_pos = counts_pos(:);
+        counts_neg = counts_neg(:);
+        
+        % plot
+        splot_num = (c-1)*N_Areas + a;
+        plot_data = [counts_pos counts_neg counts_nonsig];
+        subplot(N_conditions, N_Areas, splot_num)
+        b = bar(-1:0.05:1, plot_data, 'stacked');
+        set(b, 'FaceColor', 'Flat')
+        set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
+        xlim([-0.5 0.5])
+        title([T ': ' L])
+        
+        if a == 1 && c == 1
+            xlabel('CC between FR and RR duration')
+            legend({'Sig.Pos.', 'Sig.Neg.', 'Non-Sig.'})
+        end
+    end
+    
+end
+
+save_figure_as(gcf, 'Histograms_CC_FR_&_RR', basepath_to_save, 1)
+
+%% plot number of cardiac cycles used
+figure,
+set(gcf, 'Position', [667 519 930 477])
+for a = 1: N_Areas
+    
+    T=unqTargets{a};
+    
+    for c=1:N_conditions
+        L=cfg.condition(c).name;
+        
+        splot_num = (c-1)*N_Areas + a;
+        subplot(N_conditions,N_Areas,splot_num)
+        plot(cfg.spk.correlation.lag_list, 100 * dt.(T).(L).n_cycles ./ dt.(T).(L).n_cycles(ceil(end/2),:), 'o-', 'Color', [0.5 0.5 0.5])
+        title([T ': ' L])
+        
+    end
+    
+end
+
+save_figure_as(gcf, ['Percentages_RR_Counts_' T], basepath_to_save, 1)
+
+end
+
+function save_figure_as(fig_id, filename,basepath_to_save,savePlot)
+if savePlot;
+    export_fig(fig_id,[basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+    close(fig_id)
+end
+end
