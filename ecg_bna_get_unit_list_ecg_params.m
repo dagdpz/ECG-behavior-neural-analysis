@@ -1,24 +1,37 @@
 function ecg_bna_get_unit_list_ecg_params(cfg)
 
+basepath_to_save=[cfg.unit_lists '_ECG'];
+if ~exist(basepath_to_save,'dir')
+    mkdir(basepath_to_save);
+end
+
 list_of_lists = dir([cfg.unit_lists filesep '*.mat']);
 
-list_of_lists_600          = dir([cfg.unit_lists filesep '*_600.mat']); % find files after exclusion
-list_of_lists_noCB         = dir([cfg.unit_lists filesep '*noCB*.mat']);
-list_of_lists_withCB       = dir([cfg.unit_lists filesep '*withCB.mat']);
-list_of_lists_CB_corr      = dir([cfg.unit_lists filesep '*noCB_corr.mat']);
-list_of_lists_CB_corr_ccs  = dir([cfg.unit_lists filesep '*noCB_corr_ccs.mat']);
-list_of_lists_CB_excl      = dir([cfg.unit_lists filesep '*_excluded*.mat']);
-list_of_lists_before       = dir([cfg.unit_lists filesep '*_before_exclusion.mat']);
+% list_of_lists_600             = dir([cfg.unit_lists filesep '*_600.mat']); % find files after exclusion
+% list_of_lists_noCB            = dir([cfg.unit_lists filesep '*noCB*.mat']);
+% list_of_lists_withCB          = dir([cfg.unit_lists filesep '*withCB.mat']);
+% list_of_lists_CB_corr         = dir([cfg.unit_lists filesep '*noCB_corr.mat']);
+% list_of_lists_CB_corr_ccs     = dir([cfg.unit_lists filesep '*noCB_corr_ccs.mat']);
+% list_of_lists_CB_excl         = dir([cfg.unit_lists filesep '*_excluded*.mat']);
+% list_of_lists_before          = dir([cfg.unit_lists filesep '*_before_exclusion.mat']);
+% list_of_lists_highAmp         = dir([cfg.unit_lists filesep '*_high_amplitude.mat']);
+% list_of_lists_lowAmp          = dir([cfg.unit_lists filesep '*_low_amplitude.mat']);
+% list_of_lists_lowAmp_ccs_any  = dir([cfg.unit_lists filesep '*_low_amplitude_ccs_any.mat']);
+% list_of_lists_lowAmp_ccs_both = dir([cfg.unit_lists filesep '*_low_amplitude_ccs_both.mat']);
 
-lists2drop = ismember({list_of_lists.name}, {list_of_lists_600.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_noCB.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_withCB.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_CB_corr.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_CB_corr_ccs.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_CB_excl.name}) | ...
-    ismember({list_of_lists.name}, {list_of_lists_before.name});
-
-list_of_lists = list_of_lists(~lists2drop);
+% lists2drop = ismember({list_of_lists.name}, {list_of_lists_600.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_noCB.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_withCB.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_CB_corr.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_CB_corr_ccs.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_CB_excl.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_before.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_highAmp.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_lowAmp.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_lowAmp_ccs_any.name}) | ...
+%     ismember({list_of_lists.name}, {list_of_lists_lowAmp_ccs_both.name});
+% 
+% list_of_lists = list_of_lists(~lists2drop);
 
 for listNum = 1:length(list_of_lists)
     
@@ -28,7 +41,7 @@ for listNum = 1:length(list_of_lists)
     load(filename, 'unit_ids', 'targets', 'sites')
     
     % figure out number of R-peaks
-    dt = ecg_bna_load_variables(cfg,unit_ids, 'per_unit', 'Output', {'NrEvents'});
+    dt = ecg_bna_load_variables(cfg,unit_ids, 'per_unit_-0.25-0.25s', 'Output', {'NrEvents'});
     
     enoughRpeaks = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
@@ -37,10 +50,12 @@ for listNum = 1:length(list_of_lists)
         enoughRpeaks(conNum,:) = dt.(L).NrEvents > cfg.spk.unit_exclusion.nCardiacCycles;
         
     end
-    if strfind(list_of_lists(listNum).name, 'stableTaskAndRest')
+    if strfind(list_of_lists(listNum).name, 'stable')
         ids_enough_Rpeaks = all(enoughRpeaks);
-    else
+    elseif strfind(list_of_lists(listNum).name, 'selected')
         ids_enough_Rpeaks = any(enoughRpeaks);
+    else
+        continue % don't create ECG-related dataset for this unit list
     end
     
     clear dt enoughRpeaks
@@ -53,8 +68,8 @@ for listNum = 1:length(list_of_lists)
         enough_bins(conNum,:) = dt.(L).distance2thr > 1;
         
     end
-    ids_enough_bins = all(enough_bins);
-    sum(ids_enough_bins)
+%     ids_enough_bins = all(enough_bins);
+%     sum(ids_enough_bins)
     
     % Considerations of exclusion of units by fit significance and the
     % goodness-of-fit parameters:
@@ -84,8 +99,16 @@ for listNum = 1:length(list_of_lists)
     
     % p < 0.05 - significant correlation between phase PSTH and phase
     % dynamic of AMP feature
-    AMP_pp(AMP_cc >= 0) = NaN;
-    [~, h_AMP_cc] = bonf_holm(AMP_pp);
+    AMP_pp_neg = AMP_pp;
+    AMP_pp_neg(AMP_cc >= 0) = NaN;
+    [~, h_AMP_cc_neg] = bonf_holm(AMP_pp_neg);
+    
+    % p < 0.05 - significant MI according to Mosher's procedure
+    
+    % choose units with positive correlation coefficients
+    AMP_pp_pos              = AMP_pp;
+    AMP_pp_pos(AMP_cc <= 0) = NaN;
+    [~, h_AMP_cc_pos] = bonf_holm(AMP_pp_pos);
     
 %     with_CBE = any(h_AMP_MI' & high_Rsq');
     with_CBE = any(h_AMP_MI);
@@ -93,9 +116,18 @@ for listNum = 1:length(list_of_lists)
 %     no_cardioballistic_effect = ~any(h_AMP_MI' & high_Rsq'); % if a unit is affected in at least one condition we'll get rid of it
     no_cardioballistic_effect = ~any(h_AMP_MI);
     
-    no_cardioballistic_effect_corrected = no_cardioballistic_effect | ids_enough_bins;
+    no_cardioballistic_effect_corrected = all(~h_AMP_MI | enough_bins);
     
-    no_cardioballistic_effect_corrected_ccs = no_cardioballistic_effect | ids_enough_bins | (all(h_AMP_cc) & all(AMP_cc < 0));
+    no_cardioballistic_effect_corrected_ccs = all(~h_AMP_MI | enough_bins | (h_AMP_cc_neg & AMP_cc < 0));
+    
+    high_amplitude_only = all(enough_bins);
+    
+    low_amplitude_only  = ~any(enough_bins);
+    
+    low_amplitude_ccs_any   = ~any(enough_bins) & any(h_AMP_cc_pos);
+    
+    low_amplitude_ccs_both   = ~any(enough_bins) & all(h_AMP_cc_pos);
+    
     % find unit ids and targets with enough R-peak counts
     unit_ids_600 = unit_ids(ids_enough_Rpeaks);
     targets_600  = targets(ids_enough_Rpeaks);
@@ -119,58 +151,134 @@ for listNum = 1:length(list_of_lists)
     unit_ids_noCB_corr_ccs = unit_ids(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
     targets_noCB_corr_ccs  = targets(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
     sites_noCB_corr_ccs    = sites(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
+    % don't use CBE analysis, choose units with high spike amplitude
+    unit_ids_high_amplitude = unit_ids(ids_enough_Rpeaks & high_amplitude_only);
+    targets_high_amplitude  = targets(ids_enough_Rpeaks & high_amplitude_only);
+    sites_high_amplitude    = sites(ids_enough_Rpeaks & high_amplitude_only);
+    % choose units with amplitude next to the threshold
+    unit_ids_low_amplitude = unit_ids(ids_enough_Rpeaks & low_amplitude_only);
+    targets_low_amplitude  = targets(ids_enough_Rpeaks & low_amplitude_only);
+    sites_low_amplitude    = sites(ids_enough_Rpeaks & low_amplitude_only);
+    % [any] low amplitude and significant cc between phase dynamics
+    unit_ids_low_amplitude_ccs_any = unit_ids(ids_enough_Rpeaks & low_amplitude_ccs_any);
+    targets_low_amplitude_ccs_any  = targets(ids_enough_Rpeaks & low_amplitude_ccs_any);
+    sites_low_amplitude_ccs_any    = sites(ids_enough_Rpeaks & low_amplitude_ccs_any);
+    % [both] low amplitude and significant cc between phase dynamics
+    unit_ids_low_amplitude_ccs_both = unit_ids(ids_enough_Rpeaks & low_amplitude_ccs_both);
+    targets_low_amplitude_ccs_both  = targets(ids_enough_Rpeaks & low_amplitude_ccs_both);
+    sites_low_amplitude_ccs_both    = sites(ids_enough_Rpeaks & low_amplitude_ccs_both);
+    
+    % selected units - without low amplitude and pos. ccs (any)
+    unit_ids_noLow_amplitude_ccs_any = unit_ids(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
+    targets_noLow_amplitude_ccs_any  = targets(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
+    sites_noLow_amplitude_ccs_any    = sites(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
+    
+    % selected units - without low amplitude and pos. ccs (both)
+    unit_ids_noLow_amplitude_ccs_both = unit_ids(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
+    targets_noLow_amplitude_ccs_both  = targets(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
+    sites_noLow_amplitude_ccs_both    = sites(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
+    
     
     % save unit list for 600
     unit_ids = unit_ids_600;
     targets  = targets_600;
     sites    = sites_600;
-    save([filename(1:end-4) '_600.mat'], 'unit_ids', 'targets', 'sites')
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_600.mat'], 'unit_ids', 'targets', 'sites')
     % noCB
     unit_ids = unit_ids_noCB;
     targets  = targets_noCB;
     sites    = sites_noCB;
-    save([filename(1:end-4) '_noCB.mat'], 'unit_ids', 'targets', 'sites')
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB.mat'], 'unit_ids', 'targets', 'sites')
     % withCB
     unit_ids = unit_ids_withCB;
     targets  = targets_withCB;
     sites    = sites_withCB;
-    save([filename(1:end-4) '_withCB.mat'], 'unit_ids', 'targets', 'sites')
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_withCB.mat'], 'unit_ids', 'targets', 'sites')
     % noCB + amp criterion
     unit_ids = unit_ids_noCB_corr;
     targets  = targets_noCB_corr;
     sites    = sites_noCB_corr;
-    save([filename(1:end-4) '_noCB_corr.mat'], 'unit_ids', 'targets', 'sites')
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr.mat'], 'unit_ids', 'targets', 'sites')
     % noCB + amp corterion + phase PSTH vs. feature dynamic correlation
     unit_ids = unit_ids_noCB_corr_ccs;
     targets  = targets_noCB_corr_ccs;
     sites    = sites_noCB_corr_ccs;
-    save([filename(1:end-4) '_noCB_corr_ccs.mat'], 'unit_ids', 'targets', 'sites')
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr_ccs.mat'], 'unit_ids', 'targets', 'sites')
+    % only high amplitude
+    unit_ids = unit_ids_high_amplitude;
+    targets  = targets_high_amplitude;
+    sites    = sites_high_amplitude;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_high_amplitude.mat'], 'unit_ids', 'targets', 'sites')
+    % only low amplitude
+    unit_ids = unit_ids_low_amplitude;
+    targets  = targets_low_amplitude;
+    sites    = sites_low_amplitude;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude.mat'], 'unit_ids', 'targets', 'sites')
+    % [any] low amplitude and significant cc between phase dynamics
+    unit_ids = unit_ids_low_amplitude_ccs_any;
+    targets  = targets_low_amplitude_ccs_any;
+    sites    = sites_low_amplitude_ccs_any;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites')
+    % [both] low amplitude and significant cc between phase dynamics
+    unit_ids = unit_ids_low_amplitude_ccs_both;
+    targets  = targets_low_amplitude_ccs_both;
+    sites    = sites_low_amplitude_ccs_both;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites')
+    % [any] no low amplitude and no pos. significant cc between phase dynamics
+    unit_ids = unit_ids_noLow_amplitude_ccs_any;
+    targets  = targets_noLow_amplitude_ccs_any;
+    sites    = sites_noLow_amplitude_ccs_any;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites')
+    % [both] no low amplitude and no pos. significant cc between phase dynamics
+    unit_ids = unit_ids_noLow_amplitude_ccs_both;
+    targets  = targets_noLow_amplitude_ccs_both;
+    sites    = sites_noLow_amplitude_ccs_both;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites')
     
     % 4. save the table with unit counts
     % 600
-    [unique_areas, ~, ic_600] = unique(targets_600);
-    unit_counts = accumarray(ic_600,1);
+    unique_areas = unique(targets_600);
+    unit_counts = count_units_by_target(targets_600, unique_areas);
     % noCB
-    [~, ~, ic_noCB] = unique(targets_noCB);
-    unit_counts_noCB = accumarray(ic_noCB,1);
+    unit_counts_noCB = count_units_by_target(targets_noCB, unique_areas);
     % withCB
-    [unqTargets_withCB, ~, ic_withCB] = unique(targets_withCB);
-    unit_counts_withCB = accumarray(ic_withCB,1);
-    [Lia, Locb] = ismember(unique_areas, unqTargets_withCB);
-    unit_counts_withCB_tmp = double(Lia);
-    unit_counts_withCB_tmp(Lia) = unit_counts_withCB;
-    unit_counts_withCB = unit_counts_withCB_tmp;
+    unit_counts_withCB = count_units_by_target(targets_withCB, unique_areas);
     % noCB + amp
-    [~, ~, ic_noCB_corr] = unique(targets_noCB_corr);
-    unit_counts_noCB_corr = accumarray(ic_noCB_corr,1);
+    unit_counts_noCB_corr = count_units_by_target(targets_noCB_corr, unique_areas);
     % noCB + amp + high/low cc PSTH vs. feature dynamic
-    [~, ~, ic_noCB_corr_ccs] = unique(targets_noCB_corr_ccs);
-    unit_counts_noCB_corr_ccs = accumarray(ic_noCB_corr_ccs,1);
+    unit_counts_noCB_corr_ccs = count_units_by_target(targets_noCB_corr_ccs, unique_areas);
+    % only high amplitude
+    unit_counts_highAMP = count_units_by_target(targets_high_amplitude, unique_areas);
+    % only low amplitude
+    unit_counts_low_amplitude = count_units_by_target(targets_low_amplitude, unique_areas);
+    % [any] low amplitude + sig amp
+    unit_counts_low_amplitude_ccs_any = count_units_by_target(targets_low_amplitude_ccs_any, unique_areas);
+    % [both] low amplitude + sig amp
+    unit_counts_low_amplitude_ccs_both = count_units_by_target(targets_low_amplitude_ccs_both, unique_areas);
+    % [any] no low amplitude and no pos. significant cc between phase dynamics
+    unit_counts_noLow_amplitude_ccs_any = count_units_by_target(targets_noLow_amplitude_ccs_any, unique_areas);
+    % [both] no low amplitude and no pos. significant cc between phase dynamics
+    unit_counts_noLow_amplitude_ccs_both = count_units_by_target(targets_noLow_amplitude_ccs_both, unique_areas);
     
-    T = table(unique_areas, unit_counts, unit_counts_noCB, unit_counts_withCB, unit_counts_noCB_corr, unit_counts_noCB_corr_ccs);
-    writetable(T, [filename(1:end-4) '_600.xls'])
+    T = ...
+        table(unique_areas, unit_counts, unit_counts_noCB, ...
+        unit_counts_withCB, unit_counts_noCB_corr, ...
+        unit_counts_noCB_corr_ccs, unit_counts_highAMP, ...
+        unit_counts_low_amplitude, unit_counts_low_amplitude_ccs_any, ...
+        unit_counts_low_amplitude_ccs_both, ...
+        unit_counts_noLow_amplitude_ccs_any, unit_counts_noLow_amplitude_ccs_both);
+    writetable(T, [basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_600.xls'])
     %     clear T unique_areas ic unit_counts filename unit_ids_after_exclusion targets_after_exclusion
     
 end
 
+end
+
+function unit_counts = count_units_by_target(targets, unique_areas)
+[unqTargets, ~, ic] = unique(targets);
+unit_counts = accumarray(ic,1);
+Lia = ismember(unique_areas, unqTargets);
+unit_counts_tmp = double(Lia);
+unit_counts_tmp(Lia) = unit_counts;
+unit_counts = unit_counts_tmp;
 end
