@@ -109,6 +109,10 @@ for unitNum = 1:length(population)
 %         state98_times              = cellfun(@(x,y) x(y == 98), states_onset, states, 'Uniformoutput', false); % trial ends = state 98
         % 0.2. Compute RR-intervals
         valid_RRinterval_ends      = single([Rpeaks.(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
+        if any(isnan([Rpeaks.(['RPEAK_ts' cfg.condition(c).Rpeak_field])]))
+            thisisinteresing=1;
+        end
+        %valid_RRinterval_ends      = valid_RRinterval_ends(~isnan(valid_RRinterval_ends)); %% somehow, many of those can be NaN ?????
         valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks.(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
         % 1. Figure out RR-intervals lying within trials
         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
@@ -178,16 +182,13 @@ for unitNum = 1:length(population)
             valid_RRinterval_starts = [valid_RRinterval_starts(1:ids(intRRnum)) nan(1, n_add_Rpeaks(intRRnum)) valid_RRinterval_starts(ids(intRRnum)+1:end)];
             valid_RRinterval_ends = [valid_RRinterval_ends(1:ids(intRRnum)) nan(1, n_add_Rpeaks(intRRnum)) valid_RRinterval_ends(ids(intRRnum)+1:end)];
             RR_within_trial90_idx = [RR_within_trial90_idx(1:ids(intRRnum)) false(1, n_add_Rpeaks(intRRnum)) RR_within_trial90_idx(ids(intRRnum)+1:end)];
-            
         end
-        
-        
         
         % II. Compute unit firing rate per RR-interval
         data.(L).timeRRstart           = valid_RRinterval_starts;
         [FRbyRR_Hz, cycleDurations_s] = ...
             computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-        FRbyRR_Hz(~RR_within_trial90_idx)        = NaN; %% NO! you added NaNs in between, so the index changed...
+        FRbyRR_Hz(~RR_within_trial90_idx)        = NaN; 
         % option 2
 %         FRbyRR_Hz(~RR_within_trial90_idx)        = NaN;
 %         cycleDurations_s(~RR_within_trial98_idx) = NaN;
@@ -196,11 +197,11 @@ for unitNum = 1:length(population)
 %         cycleDurations_s(~RR_within_trial90_idx) = NaN;
         data.(L).FRbyRR_Hz = FRbyRR_Hz;
         data.(L).cycleDurations_s = cycleDurations_s;
-        % compute correlation with different lag
+        
         tic
+        % compute correlation with different lag        
         [data.(L).n_cycles, data.(L).pearson_r, data.(L).pearson_p, data.(L).permuted_p] = ...
             compute_correlation_by_lag(cfg,FRbyRR_Hz,cycleDurations_s);
-        toc
         
         % autocorrelation FRbyRR_Hz
         [data.(L).FR_n_cycles, data.(L).FR_pearson_r, data.(L).FR_pearson_p, data.(L).FR_permuted_p] = ...
@@ -209,7 +210,7 @@ for unitNum = 1:length(population)
         % autocorrelation cycleDurations_s
         [data.(L).RR_n_cycles, data.(L).RR_pearson_r, data.(L).RR_pearson_p, data.(L).RR_permuted_p] = ...
             compute_correlation_by_lag(cfg,cycleDurations_s,cycleDurations_s);
-        
+        toc
     end
     save([basepath_to_save filesep data.unitId '_' data.target '_correlation.mat'], 'data', '-v7.3')
     clear data
@@ -247,27 +248,23 @@ parfor lagNum = 1:nLags
         rr_s  = cycleDurations_s(1+lag_abs:end);
     end
     
-%     % create data variables
-%     if curr_lag < 0
-%         % If lag is negative, rr_s is shifted to the right
-%         fr_hz = FRbyRR_Hz(1:end+curr_lag);
-%         rr_s  = cycleDurations_s(1-curr_lag:end);
-%     else
-%         % If lag is positive or zero, fr_hz is shifted to the right
-%         fr_hz = FRbyRR_Hz(1+curr_lag:end);
-%         rr_s  = cycleDurations_s(1:end-curr_lag);
-%     end
-    
     % compute correlation coefficient
     valid = ~isnan(fr_hz) & ~isnan(rr_s);
     [temp_r, temp_p] = corrcoef(fr_hz(valid), rr_s(valid));
     n_cycles(lagNum)  = sum(valid);
-    pearson_r(lagNum) = temp_r(2,1);
-    pearson_p(lagNum) = temp_p(2,1);
-    
-    % i dont think this makes sense at all unfortunately... the
-    % multicomparison correction should be due to multiple lags, no?
-    permuted_p(lagNum) = mult_comp_perm_corr(fr_hz(valid), rr_s(valid), n_permutations, tail, alpha_level, stat, reports, seed_state);
+    if sum(valid)>1
+        pearson_r(lagNum) = temp_r(2,1);
+        pearson_p(lagNum) = temp_p(2,1);
+        
+        % i dont think this makes sense at all unfortunately... the
+        % multicomparison correction should be due to multiple lags, no?
+        permuted_p(lagNum) = mult_comp_perm_corr(fr_hz(valid), rr_s(valid), n_permutations, tail, alpha_level, stat, reports, seed_state);
+    else
+        
+        pearson_r(lagNum) = 0;
+        pearson_p(lagNum) = 1;
+        permuted_p(lagNum) =1;
+    end
 end
 
 end

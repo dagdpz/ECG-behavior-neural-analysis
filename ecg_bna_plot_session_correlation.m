@@ -125,7 +125,11 @@ for untNum = 1:length(fileList)
     legend({cfg.condition.name})
     
     filename= ['FR_RR_Correlations__' data.unitId, '_' data.target];
+    try
     export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+    catch eeee
+       eeee; 
+    end
     close(gcf);
     
     %% unit FR per heart cycle as a function of time

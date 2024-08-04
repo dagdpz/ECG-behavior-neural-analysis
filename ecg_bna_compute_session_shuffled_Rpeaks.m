@@ -25,6 +25,16 @@ N=cfg.n_permutations;
 
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
+    
+    if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec)
+        Rpeaks(b).block=NaN;
+        Rpeaks(b).RPEAK_ts=[];
+        Rpeaks(b).RR_durations = [];
+        Rpeaks(b).shuffled_ts=[];
+        offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
+        continue
+    end
+    
     % To get IBI high/low in Task/Rest blocks Separately:
     b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
     trial_nBlocks_type = unique([trials(b_idx).type]);
@@ -44,23 +54,6 @@ for b=1:numel(out)
 %     end
     Rpeaks(b).block=out(b).nrblock_combinedFiles;
     Rpeaks(b).offset=offset_blocks_Rpeak(b);
-    if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t)
-        Rpeaks(b).block=NaN;
-        Rpeaks(b).RPEAK_ts=[];
-        Rpeaks(b).RR_durations = [];
-        Rpeaks(b).shuffled_ts=[];
-        offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
-        continue
-    end
-    % new condition for checking if idx_R2R_valid_cons is empty or not
-    if isempty(out(b).idx_valid_R2R_consec)
-        Rpeaks(b).block=NaN;
-        Rpeaks(b).RPEAK_ts=[];
-        Rpeaks(b).RR_durations = [];
-        Rpeaks(b).shuffled_ts=[];
-        offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
-        continue
-    end
     
     [RPEAK_ts, RPEAK_dur, RPEAK_ts_p, RPEAK_dur_p, allowed_jitter_range] = jittering_core_function(out(b).Rpeak_t, out(b).R2R_valid, out(b).R2R_t, out(b).idx_valid_R2R_consec);
     
