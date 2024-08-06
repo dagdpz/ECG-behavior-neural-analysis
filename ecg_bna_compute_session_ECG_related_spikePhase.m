@@ -43,7 +43,6 @@ for unitNum = 1:length(population)
     data.stability_rating  = pop.avg_stability;
     data.thresholds_microV = single([NaN; NaN; NaN; NaN]);
     data.FR                = single(mean(pop.FR_average));
-    data.cc_lag_list       = cfg.spk.lag_list;
     data.criteria          = pop.criteria;
     for c=1:numel(cfg.condition)
         L=cfg.condition(c).name;
@@ -52,113 +51,167 @@ for unitNum = 1:length(population)
         data.(L).stdHR_bpm                      = single(NaN);
         data.(L).SDNN_ms                        = single(NaN);
         data.(L).spike_phases_radians           = single(NaN);
-        data.(L).spike_phases_histogram         = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).spike_phases_histogram2        = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).spike_phases_histogram_smoothed= single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).spike_phases_histogram         = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).spike_phases_histogram2        = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).spike_phases_histogram_smoothed= single(nan(1,cfg.phase.N_phase_bins));
         data.(L).histogram_MI                   = single(NaN);
         data.(L).histogram_p                    = single(NaN);
         data.(L).histogram_phase                = single(NaN);
         data.(L).rsquared                       = single(NaN);
         
-        data.(L).linear.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).linear.coefs                   = single([NaN NaN]);
-        data.(L).linear.rsquared                = single(NaN);
-        data.(L).linear.adjrsquared             = single(NaN);
-        data.(L).linear.sse                     = single(NaN);
-        data.(L).linear.dfe                     = single(NaN);
-        data.(L).linear.rmse                    = single(NaN);
-        data.(L).linear.pvalue                  = single([NaN; NaN]);
-        data.(L).linear.aic                     = single(NaN);
-        data.(L).linear.bic                     = single(NaN);
+        data.(L).lowIBI_spike_phases_histogram_smoothed  = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_spike_phases_histogram_smoothed = single(nan(1,cfg.phase.N_phase_bins));
         
-        data.(L).linear_smoothed.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).linear_smoothed.coefs                   = single([NaN NaN]);
-        data.(L).linear_smoothed.rsquared                = single(NaN);
-        data.(L).linear_smoothed.adjrsquared             = single(NaN);
-        data.(L).linear_smoothed.sse                     = single(NaN);
-        data.(L).linear_smoothed.dfe                     = single(NaN);
-        data.(L).linear_smoothed.rmse                    = single(NaN);
-        data.(L).linear_smoothed.pvalue                  = single([NaN; NaN]);
-        data.(L).linear_smoothed.aic                     = single(NaN);
-        data.(L).linear_smoothed.bic                     = single(NaN);
+        data.(L).SD                = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SD_STD            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SD_SEM            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SDP               = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SDPCL             = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SDPCu             = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).sig_all           = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).sig               = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).sig_FR_diff       = single(nan(1));
+        data.(L).sig_time          = single(nan(1));
+        data.(L).sig_n_bins        = single(zeros(1));
+        data.(L).sig_sign          = single(zeros(1));
+        data.(L).SDsubstractedSDP            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).SDsubstractedSDP_normalized = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).FR_ModIndex_SubtrSDP        = single(nan(1));
+        data.(L).FR_ModIndex_PcS             = single(nan(1));
         
-        data.(L).cosine.average                 = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).cosine.startPoint              = single([NaN NaN NaN]);
-        data.(L).cosine.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).cosine.coefs                   = single([NaN NaN NaN]);
-        data.(L).cosine.rsquared                = single(NaN);
-        data.(L).cosine.adjrsquared             = single(NaN);
-        data.(L).cosine.sse                     = single(NaN);
-        data.(L).cosine.dfe                     = single(NaN);
-        data.(L).cosine.rmse                    = single(NaN);
-        data.(L).cosine.pvalue                  = single(NaN);
-        data.(L).cosine.aic                     = single(NaN);
-        data.(L).cosine.bic                     = single(NaN);
+        data.(L).lowIBI_SD          = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SD_STD      = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SD_SEM      = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SDP         = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SDPCL       = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SDPCu       = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_sig_all     = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_sig         = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_sig_FR_diff = single(nan(1));
+        data.(L).lowIBI_sig_time    = single(nan(1));
+        data.(L).lowIBI_sig_n_bins  = single(zeros(1));
+        data.(L).lowIBI_sig_sign    = single(zeros(1));
+        data.(L).lowIBI_SDsubstractedSDP            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_SDsubstractedSDP_normalized = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).lowIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
+        data.(L).lowIBI_FR_ModIndex_PcS             = single(nan(1));
         
-        data.(L).cosine_smoothed.average                 = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).cosine_smoothed.startPoint              = single([NaN NaN NaN]);
-        data.(L).cosine_smoothed.yfit                    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).cosine_smoothed.coefs                   = single([NaN NaN NaN]);
-        data.(L).cosine_smoothed.rsquared                = single(NaN);
-        data.(L).cosine_smoothed.adjrsquared             = single(NaN);
-        data.(L).cosine_smoothed.sse                     = single(NaN);
-        data.(L).cosine_smoothed.dfe                     = single(NaN);
-        data.(L).cosine_smoothed.rmse                    = single(NaN);
-        data.(L).cosine_smoothed.pvalue                  = single(NaN);
-        data.(L).cosine_smoothed.aic                     = single(NaN);
-        data.(L).cosine_smoothed.bic                     = single(NaN);
+        data.(L).highIBI_SD          = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SD_STD      = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SD_SEM      = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SDP         = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SDPCL       = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SDPCu       = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_sig_all     = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_sig         = single(zeros(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_sig_FR_diff = single(nan(1));
+        data.(L).highIBI_sig_time    = single(nan(1));
+        data.(L).highIBI_sig_n_bins  = single(zeros(1));
+        data.(L).highIBI_sig_sign    = single(zeros(1));
+        data.(L).highIBI_SDsubstractedSDP            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_SDsubstractedSDP_normalized = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).highIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
+        data.(L).highIBI_FR_ModIndex_PcS             = single(nan(1));
         
-        data.(L).vonMisesPos.average            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesPos.startPoint         = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesPos.yfit               = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesPos.coefs              = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesPos.rsquared           = single(NaN);
-        data.(L).vonMisesPos.adjrsquared        = single(NaN);
-        data.(L).vonMisesPos.sse                = single(NaN);
-        data.(L).vonMisesPos.dfe                = single(NaN);
-        data.(L).vonMisesPos.rmse               = single(NaN);
-        data.(L).vonMisesPos.pvalue             = single(NaN);
-        data.(L).vonMisesPos.aic                = single(NaN);
-        data.(L).vonMisesPos.bic                = single(NaN);
+%         data.(L).linear.yfit                    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).linear.coefs                   = single([NaN NaN]);
+%         data.(L).linear.rsquared                = single(NaN);
+%         data.(L).linear.adjrsquared             = single(NaN);
+%         data.(L).linear.sse                     = single(NaN);
+%         data.(L).linear.dfe                     = single(NaN);
+%         data.(L).linear.rmse                    = single(NaN);
+%         data.(L).linear.pvalue                  = single([NaN; NaN]);
+%         data.(L).linear.aic                     = single(NaN);
+%         data.(L).linear.bic                     = single(NaN);
         
-        data.(L).vonMisesPos_smoothed.average            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesPos_smoothed.startPoint         = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesPos_smoothed.yfit               = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesPos_smoothed.coefs              = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesPos_smoothed.rsquared           = single(NaN);
-        data.(L).vonMisesPos_smoothed.adjrsquared        = single(NaN);
-        data.(L).vonMisesPos_smoothed.sse                = single(NaN);
-        data.(L).vonMisesPos_smoothed.dfe                = single(NaN);
-        data.(L).vonMisesPos_smoothed.rmse               = single(NaN);
-        data.(L).vonMisesPos_smoothed.pvalue             = single(NaN);
-        data.(L).vonMisesPos_smoothed.aic                = single(NaN);
-        data.(L).vonMisesPos_smoothed.bic                = single(NaN);
+%         data.(L).linear_smoothed.yfit                    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).linear_smoothed.coefs                   = single([NaN NaN]);
+%         data.(L).linear_smoothed.rsquared                = single(NaN);
+%         data.(L).linear_smoothed.adjrsquared             = single(NaN);
+%         data.(L).linear_smoothed.sse                     = single(NaN);
+%         data.(L).linear_smoothed.dfe                     = single(NaN);
+%         data.(L).linear_smoothed.rmse                    = single(NaN);
+%         data.(L).linear_smoothed.pvalue                  = single([NaN; NaN]);
+%         data.(L).linear_smoothed.aic                     = single(NaN);
+%         data.(L).linear_smoothed.bic                     = single(NaN);
         
-        data.(L).vonMisesNeg.average            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesNeg.startPoint         = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesNeg.yfit               = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesNeg.coefs              = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesNeg.rsquared           = single(NaN);
-        data.(L).vonMisesNeg.adjrsquared        = single(NaN);
-        data.(L).vonMisesNeg.sse                = single(NaN);
-        data.(L).vonMisesNeg.dfe                = single(NaN);
-        data.(L).vonMisesNeg.rmse               = single(NaN);
-        data.(L).vonMisesNeg.pvalue             = single(NaN);
-        data.(L).vonMisesNeg.aic                = single(NaN);
-        data.(L).vonMisesNeg.bic                = single(NaN);
+%         data.(L).cosine.average                 = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).cosine.startPoint              = single([NaN NaN NaN]);
+%         data.(L).cosine.yfit                    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).cosine.coefs                   = single([NaN NaN NaN]);
+%         data.(L).cosine.rsquared                = single(NaN);
+%         data.(L).cosine.adjrsquared             = single(NaN);
+%         data.(L).cosine.sse                     = single(NaN);
+%         data.(L).cosine.dfe                     = single(NaN);
+%         data.(L).cosine.rmse                    = single(NaN);
+%         data.(L).cosine.pvalue                  = single(NaN);
+%         data.(L).cosine.aic                     = single(NaN);
+%         data.(L).cosine.bic                     = single(NaN);
         
-        data.(L).vonMisesNeg_smoothed.average            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesNeg_smoothed.startPoint         = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesNeg_smoothed.yfit               = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).vonMisesNeg_smoothed.coefs              = single([NaN NaN NaN NaN]);
-        data.(L).vonMisesNeg_smoothed.rsquared           = single(NaN);
-        data.(L).vonMisesNeg_smoothed.adjrsquared        = single(NaN);
-        data.(L).vonMisesNeg_smoothed.sse                = single(NaN);
-        data.(L).vonMisesNeg_smoothed.dfe                = single(NaN);
-        data.(L).vonMisesNeg_smoothed.rmse               = single(NaN);
-        data.(L).vonMisesNeg_smoothed.pvalue             = single(NaN);
-        data.(L).vonMisesNeg_smoothed.aic                = single(NaN);
-        data.(L).vonMisesNeg_smoothed.bic                = single(NaN);
+%         data.(L).cosine_smoothed.average                 = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).cosine_smoothed.startPoint              = single([NaN NaN NaN]);
+%         data.(L).cosine_smoothed.yfit                    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).cosine_smoothed.coefs                   = single([NaN NaN NaN]);
+%         data.(L).cosine_smoothed.rsquared                = single(NaN);
+%         data.(L).cosine_smoothed.adjrsquared             = single(NaN);
+%         data.(L).cosine_smoothed.sse                     = single(NaN);
+%         data.(L).cosine_smoothed.dfe                     = single(NaN);
+%         data.(L).cosine_smoothed.rmse                    = single(NaN);
+%         data.(L).cosine_smoothed.pvalue                  = single(NaN);
+%         data.(L).cosine_smoothed.aic                     = single(NaN);
+%         data.(L).cosine_smoothed.bic                     = single(NaN);
+        
+%         data.(L).vonMisesPos.average            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesPos.startPoint         = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesPos.yfit               = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesPos.coefs              = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesPos.rsquared           = single(NaN);
+%         data.(L).vonMisesPos.adjrsquared        = single(NaN);
+%         data.(L).vonMisesPos.sse                = single(NaN);
+%         data.(L).vonMisesPos.dfe                = single(NaN);
+%         data.(L).vonMisesPos.rmse               = single(NaN);
+%         data.(L).vonMisesPos.pvalue             = single(NaN);
+%         data.(L).vonMisesPos.aic                = single(NaN);
+%         data.(L).vonMisesPos.bic                = single(NaN);
+        
+%         data.(L).vonMisesPos_smoothed.average            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesPos_smoothed.startPoint         = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesPos_smoothed.yfit               = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesPos_smoothed.coefs              = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesPos_smoothed.rsquared           = single(NaN);
+%         data.(L).vonMisesPos_smoothed.adjrsquared        = single(NaN);
+%         data.(L).vonMisesPos_smoothed.sse                = single(NaN);
+%         data.(L).vonMisesPos_smoothed.dfe                = single(NaN);
+%         data.(L).vonMisesPos_smoothed.rmse               = single(NaN);
+%         data.(L).vonMisesPos_smoothed.pvalue             = single(NaN);
+%         data.(L).vonMisesPos_smoothed.aic                = single(NaN);
+%         data.(L).vonMisesPos_smoothed.bic                = single(NaN);
+        
+%         data.(L).vonMisesNeg.average            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesNeg.startPoint         = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesNeg.yfit               = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesNeg.coefs              = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesNeg.rsquared           = single(NaN);
+%         data.(L).vonMisesNeg.adjrsquared        = single(NaN);
+%         data.(L).vonMisesNeg.sse                = single(NaN);
+%         data.(L).vonMisesNeg.dfe                = single(NaN);
+%         data.(L).vonMisesNeg.rmse               = single(NaN);
+%         data.(L).vonMisesNeg.pvalue             = single(NaN);
+%         data.(L).vonMisesNeg.aic                = single(NaN);
+%         data.(L).vonMisesNeg.bic                = single(NaN);
+        
+%         data.(L).vonMisesNeg_smoothed.average            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesNeg_smoothed.startPoint         = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesNeg_smoothed.yfit               = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).vonMisesNeg_smoothed.coefs              = single([NaN NaN NaN NaN]);
+%         data.(L).vonMisesNeg_smoothed.rsquared           = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.adjrsquared        = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.sse                = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.dfe                = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.rmse               = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.pvalue             = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.aic                = single(NaN);
+%         data.(L).vonMisesNeg_smoothed.bic                = single(NaN);
         
         % median split - IBI low
         data.(L).IBI_median                     = single(NaN);
@@ -171,105 +224,105 @@ for unitNum = 1:length(population)
         data.(L).lowIBI_stdHR_bpm               = single(NaN);
         data.(L).lowIBI_SDNN_ms                 = single(NaN);
         
-        data.(L).lowIBI_linear.yfit             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_linear.coefs            = single([NaN NaN]);
-        data.(L).lowIBI_linear.rsquared         = single(NaN);
-        data.(L).lowIBI_linear.adjrsquared      = single(NaN);
-        data.(L).lowIBI_linear.sse              = single(NaN);
-        data.(L).lowIBI_linear.dfe              = single(NaN);
-        data.(L).lowIBI_linear.rmse             = single(NaN);
-        data.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
-        data.(L).lowIBI_linear.aic              = single(NaN);
-        data.(L).lowIBI_linear.bic              = single(NaN);
+%         data.(L).lowIBI_linear.yfit             = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_linear.coefs            = single([NaN NaN]);
+%         data.(L).lowIBI_linear.rsquared         = single(NaN);
+%         data.(L).lowIBI_linear.adjrsquared      = single(NaN);
+%         data.(L).lowIBI_linear.sse              = single(NaN);
+%         data.(L).lowIBI_linear.dfe              = single(NaN);
+%         data.(L).lowIBI_linear.rmse             = single(NaN);
+%         data.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
+%         data.(L).lowIBI_linear.aic              = single(NaN);
+%         data.(L).lowIBI_linear.bic              = single(NaN);
         
-        data.(L).lowIBI_linear_smoothed.yfit             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_linear_smoothed.coefs            = single([NaN NaN]);
-        data.(L).lowIBI_linear_smoothed.rsquared         = single(NaN);
-        data.(L).lowIBI_linear_smoothed.adjrsquared      = single(NaN);
-        data.(L).lowIBI_linear_smoothed.sse              = single(NaN);
-        data.(L).lowIBI_linear_smoothed.dfe              = single(NaN);
-        data.(L).lowIBI_linear_smoothed.rmse             = single(NaN);
-        data.(L).lowIBI_linear_smoothed.pvalue           = single([NaN; NaN]);
-        data.(L).lowIBI_linear_smoothed.aic              = single(NaN);
-        data.(L).lowIBI_linear_smoothed.bic              = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.yfit             = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_linear_smoothed.coefs            = single([NaN NaN]);
+%         data.(L).lowIBI_linear_smoothed.rsquared         = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.adjrsquared      = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.sse              = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.dfe              = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.rmse             = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.pvalue           = single([NaN; NaN]);
+%         data.(L).lowIBI_linear_smoothed.aic              = single(NaN);
+%         data.(L).lowIBI_linear_smoothed.bic              = single(NaN);
         
-        data.(L).lowIBI_cosine.average          = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
-        data.(L).lowIBI_cosine.yfit             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_cosine.coefs            = single([NaN NaN NaN]);
-        data.(L).lowIBI_cosine.rsquared         = single(NaN);
-        data.(L).lowIBI_cosine.adjrsquared      = single(NaN);
-        data.(L).lowIBI_cosine.sse              = single(NaN);
-        data.(L).lowIBI_cosine.dfe              = single(NaN);
-        data.(L).lowIBI_cosine.rmse             = single(NaN);
-        data.(L).lowIBI_cosine.pvalue           = single(NaN);
-        data.(L).lowIBI_cosine.aic              = single(NaN);
-        data.(L).lowIBI_cosine.bic              = single(NaN);
+%         data.(L).lowIBI_cosine.average          = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
+%         data.(L).lowIBI_cosine.yfit             = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_cosine.coefs            = single([NaN NaN NaN]);
+%         data.(L).lowIBI_cosine.rsquared         = single(NaN);
+%         data.(L).lowIBI_cosine.adjrsquared      = single(NaN);
+%         data.(L).lowIBI_cosine.sse              = single(NaN);
+%         data.(L).lowIBI_cosine.dfe              = single(NaN);
+%         data.(L).lowIBI_cosine.rmse             = single(NaN);
+%         data.(L).lowIBI_cosine.pvalue           = single(NaN);
+%         data.(L).lowIBI_cosine.aic              = single(NaN);
+%         data.(L).lowIBI_cosine.bic              = single(NaN);
         
-        data.(L).lowIBI_cosine_smoothed.average          = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_cosine_smoothed.startPoint       = single([NaN NaN NaN]);
-        data.(L).lowIBI_cosine_smoothed.yfit             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_cosine_smoothed.coefs            = single([NaN NaN NaN]);
-        data.(L).lowIBI_cosine_smoothed.rsquared         = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.adjrsquared      = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.sse              = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.dfe              = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.rmse             = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.pvalue           = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.aic              = single(NaN);
-        data.(L).lowIBI_cosine_smoothed.bic              = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.average          = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_cosine_smoothed.startPoint       = single([NaN NaN NaN]);
+%         data.(L).lowIBI_cosine_smoothed.yfit             = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_cosine_smoothed.coefs            = single([NaN NaN NaN]);
+%         data.(L).lowIBI_cosine_smoothed.rsquared         = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.adjrsquared      = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.sse              = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.dfe              = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.rmse             = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.pvalue           = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.aic              = single(NaN);
+%         data.(L).lowIBI_cosine_smoothed.bic              = single(NaN);
         
-        data.(L).lowIBI_vonMisesPos.average     = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesPos.coefs       = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesPos.rsquared    = single(NaN);
-        data.(L).lowIBI_vonMisesPos.adjrsquared = single(NaN);
-        data.(L).lowIBI_vonMisesPos.sse         = single(NaN);
-        data.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
-        data.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
-        data.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
-        data.(L).lowIBI_vonMisesPos.aic         = single(NaN);
-        data.(L).lowIBI_vonMisesPos.bic         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.average     = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesPos.coefs       = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesPos.rsquared    = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.adjrsquared = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.sse         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.aic         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos.bic         = single(NaN);
         
-        data.(L).lowIBI_vonMisesPos_smoothed.average     = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesPos_smoothed.startPoint  = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesPos_smoothed.yfit        = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesPos_smoothed.coefs       = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesPos_smoothed.rsquared    = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.adjrsquared = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.sse         = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.dfe         = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.rmse        = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.pvalue      = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.aic         = single(NaN);
-        data.(L).lowIBI_vonMisesPos_smoothed.bic         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.average     = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesPos_smoothed.startPoint  = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesPos_smoothed.yfit        = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesPos_smoothed.coefs       = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesPos_smoothed.rsquared    = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.adjrsquared = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.sse         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.dfe         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.rmse        = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.pvalue      = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.aic         = single(NaN);
+%         data.(L).lowIBI_vonMisesPos_smoothed.bic         = single(NaN);
         
-        data.(L).lowIBI_vonMisesNeg.average     = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesNeg.coefs       = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesNeg.rsquared    = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.adjrsquared = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.sse         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.average     = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesNeg.coefs       = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesNeg.rsquared    = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.adjrsquared = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.sse         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
         
-        data.(L).lowIBI_vonMisesNeg_smoothed.average     = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesNeg_smoothed.startPoint  = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesNeg_smoothed.yfit        = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).lowIBI_vonMisesNeg_smoothed.coefs       = single([NaN NaN NaN NaN]);
-        data.(L).lowIBI_vonMisesNeg_smoothed.rsquared    = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.adjrsquared = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.sse         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.dfe         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.rmse        = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.pvalue      = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.aic         = single(NaN);
-        data.(L).lowIBI_vonMisesNeg_smoothed.bic         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.average     = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesNeg_smoothed.startPoint  = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.yfit        = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).lowIBI_vonMisesNeg_smoothed.coefs       = single([NaN NaN NaN NaN]);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.rsquared    = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.adjrsquared = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.sse         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.dfe         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.rmse        = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.pvalue      = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.aic         = single(NaN);
+%         data.(L).lowIBI_vonMisesNeg_smoothed.bic         = single(NaN);
         
         % median split - IBI high
         data.(L).highIBI_timeRRstart            = single(NaN);
@@ -280,131 +333,131 @@ for unitNum = 1:length(population)
         data.(L).highIBI_stdHR_bpm              = single(NaN);
         data.(L).highIBI_SDNN_ms                = single(NaN);
         
-        data.(L).highIBI_linear.yfit            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_linear.coefs           = single([NaN NaN]);
-        data.(L).highIBI_linear.rsquared        = single(NaN);
-        data.(L).highIBI_linear.adjrsquared     = single(NaN);
-        data.(L).highIBI_linear.sse             = single(NaN);
-        data.(L).highIBI_linear.dfe             = single(NaN);
-        data.(L).highIBI_linear.rmse            = single(NaN);
-        data.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
-        data.(L).highIBI_linear.aic             = single(NaN);
-        data.(L).highIBI_linear.bic             = single(NaN);
+%         data.(L).highIBI_linear.yfit            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_linear.coefs           = single([NaN NaN]);
+%         data.(L).highIBI_linear.rsquared        = single(NaN);
+%         data.(L).highIBI_linear.adjrsquared     = single(NaN);
+%         data.(L).highIBI_linear.sse             = single(NaN);
+%         data.(L).highIBI_linear.dfe             = single(NaN);
+%         data.(L).highIBI_linear.rmse            = single(NaN);
+%         data.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
+%         data.(L).highIBI_linear.aic             = single(NaN);
+%         data.(L).highIBI_linear.bic             = single(NaN);
         
-        data.(L).highIBI_linear_smoothed.yfit            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_linear_smoothed.coefs           = single([NaN NaN]);
-        data.(L).highIBI_linear_smoothed.rsquared        = single(NaN);
-        data.(L).highIBI_linear_smoothed.adjrsquared     = single(NaN);
-        data.(L).highIBI_linear_smoothed.sse             = single(NaN);
-        data.(L).highIBI_linear_smoothed.dfe             = single(NaN);
-        data.(L).highIBI_linear_smoothed.rmse            = single(NaN);
-        data.(L).highIBI_linear_smoothed.pvalue          = single([NaN; NaN]);
-        data.(L).highIBI_linear_smoothed.aic             = single(NaN);
-        data.(L).highIBI_linear_smoothed.bic             = single(NaN);
+%         data.(L).highIBI_linear_smoothed.yfit            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_linear_smoothed.coefs           = single([NaN NaN]);
+%         data.(L).highIBI_linear_smoothed.rsquared        = single(NaN);
+%         data.(L).highIBI_linear_smoothed.adjrsquared     = single(NaN);
+%         data.(L).highIBI_linear_smoothed.sse             = single(NaN);
+%         data.(L).highIBI_linear_smoothed.dfe             = single(NaN);
+%         data.(L).highIBI_linear_smoothed.rmse            = single(NaN);
+%         data.(L).highIBI_linear_smoothed.pvalue          = single([NaN; NaN]);
+%         data.(L).highIBI_linear_smoothed.aic             = single(NaN);
+%         data.(L).highIBI_linear_smoothed.bic             = single(NaN);
         
-        data.(L).highIBI_cosine.average         = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
-        data.(L).highIBI_cosine.yfit            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_cosine.coefs           = single([NaN NaN NaN]);
-        data.(L).highIBI_cosine.rsquared        = single(NaN);
-        data.(L).highIBI_cosine.adjrsquared     = single(NaN);
-        data.(L).highIBI_cosine.sse             = single(NaN);
-        data.(L).highIBI_cosine.dfe             = single(NaN);
-        data.(L).highIBI_cosine.rmse            = single(NaN);
-        data.(L).highIBI_cosine.pvalue          = single(NaN);
-        data.(L).highIBI_cosine.aic             = single(NaN);
-        data.(L).highIBI_cosine.bic             = single(NaN);
+%         data.(L).highIBI_cosine.average         = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
+%         data.(L).highIBI_cosine.yfit            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_cosine.coefs           = single([NaN NaN NaN]);
+%         data.(L).highIBI_cosine.rsquared        = single(NaN);
+%         data.(L).highIBI_cosine.adjrsquared     = single(NaN);
+%         data.(L).highIBI_cosine.sse             = single(NaN);
+%         data.(L).highIBI_cosine.dfe             = single(NaN);
+%         data.(L).highIBI_cosine.rmse            = single(NaN);
+%         data.(L).highIBI_cosine.pvalue          = single(NaN);
+%         data.(L).highIBI_cosine.aic             = single(NaN);
+%         data.(L).highIBI_cosine.bic             = single(NaN);
         
-        data.(L).highIBI_cosine_smoothed.average         = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_cosine_smoothed.startPoint      = single([NaN NaN NaN]);
-        data.(L).highIBI_cosine_smoothed.yfit            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_cosine_smoothed.coefs           = single([NaN NaN NaN]);
-        data.(L).highIBI_cosine_smoothed.rsquared        = single(NaN);
-        data.(L).highIBI_cosine_smoothed.adjrsquared     = single(NaN);
-        data.(L).highIBI_cosine_smoothed.sse             = single(NaN);
-        data.(L).highIBI_cosine_smoothed.dfe             = single(NaN);
-        data.(L).highIBI_cosine_smoothed.rmse            = single(NaN);
-        data.(L).highIBI_cosine_smoothed.pvalue          = single(NaN);
-        data.(L).highIBI_cosine_smoothed.aic             = single(NaN);
-        data.(L).highIBI_cosine_smoothed.bic             = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.average         = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_cosine_smoothed.startPoint      = single([NaN NaN NaN]);
+%         data.(L).highIBI_cosine_smoothed.yfit            = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_cosine_smoothed.coefs           = single([NaN NaN NaN]);
+%         data.(L).highIBI_cosine_smoothed.rsquared        = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.adjrsquared     = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.sse             = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.dfe             = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.rmse            = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.pvalue          = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.aic             = single(NaN);
+%         data.(L).highIBI_cosine_smoothed.bic             = single(NaN);
         
-        data.(L).highIBI_vonMisesPos.average    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesPos.yfit       = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesPos.coefs      = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesPos.rsquared   = single(NaN);
-        data.(L).highIBI_vonMisesPos.adjrsquared= single(NaN);
-        data.(L).highIBI_vonMisesPos.sse        = single(NaN);
-        data.(L).highIBI_vonMisesPos.dfe        = single(NaN);
-        data.(L).highIBI_vonMisesPos.rmse       = single(NaN);
-        data.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
-        data.(L).highIBI_vonMisesPos.aic        = single(NaN);
-        data.(L).highIBI_vonMisesPos.bic        = single(NaN);
+%         data.(L).highIBI_vonMisesPos.average    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesPos.yfit       = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesPos.coefs      = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesPos.rsquared   = single(NaN);
+%         data.(L).highIBI_vonMisesPos.adjrsquared= single(NaN);
+%         data.(L).highIBI_vonMisesPos.sse        = single(NaN);
+%         data.(L).highIBI_vonMisesPos.dfe        = single(NaN);
+%         data.(L).highIBI_vonMisesPos.rmse       = single(NaN);
+%         data.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
+%         data.(L).highIBI_vonMisesPos.aic        = single(NaN);
+%         data.(L).highIBI_vonMisesPos.bic        = single(NaN);
         
-        data.(L).highIBI_vonMisesPos_smoothed.average    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesPos_smoothed.startPoint = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesPos_smoothed.yfit       = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesPos_smoothed.coefs      = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesPos_smoothed.rsquared   = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.adjrsquared= single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.sse        = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.dfe        = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.rmse       = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.pvalue     = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.aic        = single(NaN);
-        data.(L).highIBI_vonMisesPos_smoothed.bic        = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.average    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesPos_smoothed.startPoint = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesPos_smoothed.yfit       = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesPos_smoothed.coefs      = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesPos_smoothed.rsquared   = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.adjrsquared= single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.sse        = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.dfe        = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.rmse       = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.pvalue     = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.aic        = single(NaN);
+%         data.(L).highIBI_vonMisesPos_smoothed.bic        = single(NaN);
         
-        data.(L).highIBI_vonMisesNeg.average    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesNeg.coefs      = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesNeg.rsquared   = single(NaN);
-        data.(L).highIBI_vonMisesNeg.adjrsquared= single(NaN);
-        data.(L).highIBI_vonMisesNeg.sse        = single(NaN);
-        data.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
-        data.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
-        data.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
-        data.(L).highIBI_vonMisesNeg.aic        = single(NaN);
-        data.(L).highIBI_vonMisesNeg.bic        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.average    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesNeg.coefs      = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesNeg.rsquared   = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.adjrsquared= single(NaN);
+%         data.(L).highIBI_vonMisesNeg.sse        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.aic        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg.bic        = single(NaN);
         
-        data.(L).highIBI_vonMisesNeg_smoothed.average    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesNeg_smoothed.startPoint = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesNeg_smoothed.yfit       = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).highIBI_vonMisesNeg_smoothed.coefs      = single([NaN NaN NaN NaN]);
-        data.(L).highIBI_vonMisesNeg_smoothed.rsquared   = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.adjrsquared= single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.sse        = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.dfe        = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.rmse       = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.pvalue     = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.aic        = single(NaN);
-        data.(L).highIBI_vonMisesNeg_smoothed.bic        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.average    = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesNeg_smoothed.startPoint = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesNeg_smoothed.yfit       = single(nan(1,cfg.phase.N_phase_bins));
+%         data.(L).highIBI_vonMisesNeg_smoothed.coefs      = single([NaN NaN NaN NaN]);
+%         data.(L).highIBI_vonMisesNeg_smoothed.rsquared   = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.adjrsquared= single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.sse        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.dfe        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.rmse       = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.pvalue     = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.aic        = single(NaN);
+%         data.(L).highIBI_vonMisesNeg_smoothed.bic        = single(NaN);
         
         data.(L).waveforms_microvolts           = single(nan(1,32)); % 32 - number of points per spike
         data.(L).waveforms_upsampled_microvolts = single(nan(1,128)); % 128 - number of points per upsampled spike 4*32
-        data.(L).waveforms_byBin_microvolts     = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).waveforms_byBin_microvolts     = single(nan(1,cfg.phase.N_phase_bins));
         data.(L).AMP_microV                     = single(NaN);
         data.(L).AMP_voltageBinned              = single(nan(1,500));
         data.(L).AMP_voltageBins                = single(nan(1,500));
         data.(L).HW_ms                          = single(NaN);
         data.(L).TPW_ms                         = single(NaN);
         data.(L).REP_ms                         = single(NaN);
-        data.(L).AMP_microV_byBin               = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).HW_ms_byBin                    = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).TPW_ms_byBin                   = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).REP_ms_byBin                   = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).AMP_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).AMP_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).AMP_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).HW_reshuffled_avg              = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).HW_lowerPrctile_2_5            = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).HW_upperPrctile_97_5           = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).TPW_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).TPW_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).TPW_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).REP_reshuffled_avg             = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).REP_lowerPrctile_2_5           = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).REP_upperPrctile_97_5          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_microV_byBin               = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).HW_ms_byBin                    = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).TPW_ms_byBin                   = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).REP_ms_byBin                   = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).AMP_reshuffled_avg             = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).AMP_lowerPrctile_2_5           = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).AMP_upperPrctile_97_5          = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).HW_reshuffled_avg              = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).HW_lowerPrctile_2_5            = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).HW_upperPrctile_97_5           = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).TPW_reshuffled_avg             = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).TPW_lowerPrctile_2_5           = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).TPW_upperPrctile_97_5          = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).REP_reshuffled_avg             = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).REP_lowerPrctile_2_5           = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).REP_upperPrctile_97_5          = single(nan(1,cfg.phase.N_phase_bins));
         data.(L).AMP_MI                         = single(nan(1,5));
         data.(L).HW_MI                          = single(nan(1,5));
         data.(L).TPW_MI                         = single(nan(1,5));
@@ -413,10 +466,10 @@ for unitNum = 1:length(population)
         data.(L).HW_MI_binned                   = single(nan(1,5));
         data.(L).TPW_MI_binned                  = single(nan(1,5));
         data.(L).REP_MI_binned                  = single(nan(1,5));
-        data.(L).AMP_microV_byBin_smoothed      = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).HW_ms_byBin_smoothed           = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).TPW_ms_byBin_smoothed          = single(nan(1,cfg.spk.N_phase_bins));
-        data.(L).REP_ms_byBin_smoothed          = single(nan(1,cfg.spk.N_phase_bins));
+        data.(L).AMP_microV_byBin_smoothed      = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).HW_ms_byBin_smoothed           = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).TPW_ms_byBin_smoothed          = single(nan(1,cfg.phase.N_phase_bins));
+        data.(L).REP_ms_byBin_smoothed          = single(nan(1,cfg.phase.N_phase_bins));
         %         data.(L).allCorr                        = single(nan(1,6));
         %         data.(L).allLinMod                      = single(nan(6,2));
         data.(L).AMP_max_consec_bins            = single(nan(1,1));
@@ -432,11 +485,6 @@ for unitNum = 1:length(population)
         data.(L).pp_PSTH_feature                = single(nan(1,4));
         data.(L).pperm_PSTH_feature             = single(nan(1,4)); % permuted p for the correlation between each feature and phase PSTH
         data.(L).timeRRstart                    = single(nan(1,1));
-        data.(L).FRbyRR_Hz                      = single(nan(1,1));
-        data.(L).cycleDurations_s               = single(nan(1,1));
-        data.(L).pearson_r                      = single(nan(length(cfg.spk.lag_list), 1));
-        data.(L).pearson_p                      = single(nan(length(cfg.spk.lag_list), 1));
-        data.(L).permuted_p                     = single(nan(length(cfg.spk.lag_list), 1));
     end
     
     % find the corresponding WC file and load it
@@ -472,18 +520,34 @@ for unitNum = 1:length(population)
         % compute RR-intervals
         valid_RRinterval_ends      = single([Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
         valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
+        % compute shuffled RR-intervals
+        shuffled_RRinterval_ends   = single([Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])]);
+        shuffled_RRinterval_starts = single(shuffled_RRinterval_ends - [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])]);
+        
+        shuffled_RRinterval_ends   = mat2cell(shuffled_RRinterval_ends, ones(size(shuffled_RRinterval_ends,1),1), size(shuffled_RRinterval_ends,2));
+        shuffled_RRinterval_starts = mat2cell(shuffled_RRinterval_starts, ones(size(shuffled_RRinterval_starts,1),1), size(shuffled_RRinterval_starts,2));
+        
         % 0. figure out RR-intervals lying within trials
         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
         trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks([Rpeaks.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
         
-        RR_within_trial_idx = false(length(valid_RRinterval_starts),1);
-        for RRnum = 1:length(RR_within_trial_idx)
-            RR_within_trial_idx(RRnum) = ...
-                any(valid_RRinterval_starts(RRnum)>trial_starts_one_stream & ...
-                valid_RRinterval_ends(RRnum)<trial_ends_one_stream);
+        % Create a logical array by vectorized comparison
+        RR_within_trial_idx = any(valid_RRinterval_starts' > trial_starts_one_stream & ...
+            valid_RRinterval_ends' < trial_ends_one_stream, 2);
+        
+        % Use logical indexing to filter valid RR intervals
+        valid_RRinterval_starts = valid_RRinterval_starts(RR_within_trial_idx);
+        valid_RRinterval_ends = valid_RRinterval_ends(RR_within_trial_idx);
+        
+        % reshuffled - get rid of RRs beyond the current set of trials
+        for shuffNum = 1:length(shuffled_RRinterval_starts)
+            shuffledRR_within_trial_idx = any(shuffled_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
+                shuffled_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
+            
+            shuffled_RRinterval_ends{shuffNum}   = shuffled_RRinterval_ends{shuffNum}(shuffledRR_within_trial_idx); 
+            shuffled_RRinterval_starts{shuffNum} = shuffled_RRinterval_starts{shuffNum}(shuffledRR_within_trial_idx);
+            
         end
-        valid_RRinterval_ends      = valid_RRinterval_ends(RR_within_trial_idx); % get rid of RRs beyond the current set of trials
-        valid_RRinterval_starts    = valid_RRinterval_starts(RR_within_trial_idx);
         
         % compute parameters of heart activity
         data.(L).meanHR_bpm   = mean(60 ./ (valid_RRinterval_ends - valid_RRinterval_starts));
@@ -529,32 +593,149 @@ for unitNum = 1:length(population)
             continue
         end
         % 5. calculate heart cycle phase where individual spikes ended up
-        [eventPhases, eventsTaken, cycleNums_withSpikes] = DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream); % all data
-        [lowIBI_eventPhases, lowIBI_eventsTaken, lowIBI_cycleNums_withSpikes] = DAG_eventPhase(data.(L).lowIBI_timeRRstart, data.(L).lowIBI_timeRRend, AT_one_stream);
-        [highIBI_eventPhases, highIBI_eventsTaken, highIBI_cycleNums_withSpikes] = DAG_eventPhase(data.(L).highIBI_timeRRstart, data.(L).highIBI_timeRRend, AT_one_stream);
+        [eventPhases, eventsTaken, cycleNums_withSpikes] = ...
+            DAG_eventPhase(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream); % all data
+        
+        [lowIBI_eventPhases, ~, lowIBI_cycleNums_withSpikes] = ...
+            DAG_eventPhase(data.(L).lowIBI_timeRRstart, data.(L).lowIBI_timeRRend, AT_one_stream);
+        
+        [highIBI_eventPhases, ~, highIBI_cycleNums_withSpikes] = ...
+            DAG_eventPhase(data.(L).highIBI_timeRRstart, data.(L).highIBI_timeRRend, AT_one_stream);
         
         % check the number of spikes left after computing phases
         if length(eventPhases) < 3 || length(lowIBI_eventPhases) < 3 || length(highIBI_eventPhases) < 3 || ...
-                length(valid_RRinterval_starts) < 3 || length(data.(L).lowIBI_timeRRstart) < 3 || length(data.(L).highIBI_timeRRstart) < 3
+                length(valid_RRinterval_starts) < 100 || length(data.(L).lowIBI_timeRRstart) < 3 || length(data.(L).highIBI_timeRRstart) < 3
             continue
         end
         
+        % for reshuffled data - calculate heart cycle phase where individual spikes ended up
+        shuffled_SDF         = nan(cfg.time.n_permutations,cfg.phase.N_phase_bins);
+        shuffled_SDF_lowIBI  = nan(cfg.time.n_permutations,cfg.phase.N_phase_bins);
+        shuffled_SDF_highIBI = nan(cfg.time.n_permutations,cfg.phase.N_phase_bins);
+        
+        tic
+        medianIBI = data.(L).IBI_median;
+        phase_bin_centers = cfg.phase.phase_bin_centers;
+        parfor shuffNum = 1:length(shuffled_RRinterval_starts)
+            % all data
+            [shuffled_eventPhases, ~, shuffled_cycleNums_withSpikes] = ...
+                DAG_eventPhase(shuffled_RRinterval_starts{shuffNum}, shuffled_RRinterval_ends{shuffNum}, AT_one_stream);
+            
+            % all data
+            shuffled_histogram = ...
+                hist3([shuffled_eventPhases, shuffled_cycleNums_withSpikes], ...
+                'ctrs', {phase_bin_centers 1:length(shuffled_RRinterval_starts{shuffNum})});
+            
+            shuffled_SDF(shuffNum,:) = mean(average_smooth_data(shuffled_histogram,cfg));
+            
+            % compute median IBI
+            currRRids  = unique(shuffled_cycleNums_withSpikes);
+            currRRdurs = shuffled_RRinterval_ends{shuffNum}(currRRids) - shuffled_RRinterval_starts{shuffNum}(currRRids);
+            
+            % low IBI
+            lowIBI_ids = currRRdurs < medianIBI;
+            [lowIBI_shuffled_eventPhases, ~, lowIBI_shuffled_cycleNums_withSpikes] = ...
+                DAG_eventPhase(shuffled_RRinterval_starts{shuffNum}(lowIBI_ids), shuffled_RRinterval_ends{shuffNum}(lowIBI_ids), AT_one_stream);
+            
+            % high IBI
+            highIBI_ids = currRRdurs > medianIBI;
+            [highIBI_shuffled_eventPhases, ~, highIBI_shuffled_cycleNums_withSpikes] = ...
+                DAG_eventPhase(shuffled_RRinterval_starts{shuffNum}(highIBI_ids), shuffled_RRinterval_ends{shuffNum}(highIBI_ids), AT_one_stream);
+            
+            % low IBI
+            shuffled_histogram_lowIBI = ...
+                hist3([lowIBI_shuffled_eventPhases, lowIBI_shuffled_cycleNums_withSpikes], ...
+                'ctrs', {phase_bin_centers 1:sum(lowIBI_ids)});
+            
+            shuffled_SDF_lowIBI(shuffNum,:) = mean(average_smooth_data(shuffled_histogram_lowIBI,cfg));
+            
+            % high IBI
+            shuffled_histogram_highIBI = ...
+                hist3([highIBI_shuffled_eventPhases, highIBI_shuffled_cycleNums_withSpikes], ...
+                'ctrs', {phase_bin_centers 1:sum(highIBI_ids)});
+            
+            shuffled_SDF_highIBI(shuffNum,:) = mean(average_smooth_data(shuffled_histogram_highIBI,cfg));
+            
+        end
+        toc
+        
         % 6. Put results for real data together
-        data.(L).spike_phases_radians                 = eventPhases;
-        data.(L).spike_phases_histogram               = hist(data.(L).spike_phases_radians, cfg.spk.phase_bin_centers); % compute overal phase histogram
-        data.(L).spike_phases_histogram2              = hist3([eventPhases, cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(valid_RRinterval_starts)});
+        data.(L).spike_phases_radians    = eventPhases;
+        data.(L).spike_phases_histogram  = hist(data.(L).spike_phases_radians, cfg.phase.phase_bin_centers) / length(valid_RRinterval_starts) / length(cfg.phase.phase_bin_centers); % compute overal phase histogram
+        data.(L).spike_phases_histogram2 = hist3([eventPhases, cycleNums_withSpikes], 'ctrs', {cfg.phase.phase_bin_centers 1:length(valid_RRinterval_starts)});
         
         data.(L).lowIBI_spike_phases_radians          = lowIBI_eventPhases;
-        data.(L).lowIBI_spike_phases_histogram        = hist(data.(L).lowIBI_spike_phases_radians, cfg.spk.phase_bin_centers);
-        data.(L).lowIBI_spike_phases_histogram2       = hist3([lowIBI_eventPhases, lowIBI_cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).lowIBI_timeRRstart)});
+        data.(L).lowIBI_spike_phases_histogram        = hist(data.(L).lowIBI_spike_phases_radians, cfg.phase.phase_bin_centers);
+        data.(L).lowIBI_spike_phases_histogram2       = hist3([lowIBI_eventPhases, lowIBI_cycleNums_withSpikes], 'ctrs', {cfg.phase.phase_bin_centers 1:length(data.(L).lowIBI_timeRRstart)});
         
         data.(L).highIBI_spike_phases_radians         = highIBI_eventPhases;
-        data.(L).highIBI_spike_phases_histogram       = hist(data.(L).highIBI_spike_phases_radians, cfg.spk.phase_bin_centers);
-        data.(L).highIBI_spike_phases_histogram2      = hist3([highIBI_eventPhases, highIBI_cycleNums_withSpikes], 'ctrs', {cfg.spk.phase_bin_centers 1:length(data.(L).highIBI_timeRRstart)});
+        data.(L).highIBI_spike_phases_histogram       = hist(data.(L).highIBI_spike_phases_radians, cfg.phase.phase_bin_centers);
+        data.(L).highIBI_spike_phases_histogram2      = hist3([highIBI_eventPhases, highIBI_cycleNums_withSpikes], 'ctrs', {cfg.phase.phase_bin_centers 1:length(data.(L).highIBI_timeRRstart)});
+        
+        % all data
+        real_data = average_smooth_data(data.(L).spike_phases_histogram2,cfg);
+        SD        = ecg_bna_do_statistics(real_data,shuffled_SDF,1:cfg.phase.N_phase_bins);
+        
+        data.(L).SD          = SD.SD_mean;
+        data.(L).SD_STD      = SD.SD_STD;
+        data.(L).SD_SEM      = SD.SD_SEM ;
+        data.(L).SDP         = SD.SDPmean ;
+        data.(L).SDPCL       = SD.SDPconf(1,:) ;
+        data.(L).SDPCu       = SD.SDPconf(2,:) ;
+        data.(L).sig_all     = SD.sig_all;
+        data.(L).sig         = SD.sig;
+        data.(L).sig_FR_diff = SD.sig_FR_diff;
+        data.(L).sig_time    = SD.sig_time;
+        data.(L).sig_n_bins  = SD.sig_n_bins;
+        data.(L).sig_sign    = SD.sig_sign;
+        data.(L).SDsubstractedSDP            = data.(L).SD - data.(L).SDP; % spikes/s, difference between mean and jittered data
+        data.(L).SDsubstractedSDP_normalized = data.(L).SDsubstractedSDP ./ data.(L).SDP *100; % percent signal change
+        data.(L).FR_ModIndex_SubtrSDP        = max(data.(L).SDsubstractedSDP) - min(data.(L).SDsubstractedSDP); % difference between max and min FR
+        data.(L).FR_ModIndex_PcS             = max(data.(L).SDsubstractedSDP_normalized) - min(data.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
+        
+        real_data_lowIBI = average_smooth_data(data.(L).lowIBI_spike_phases_histogram2,cfg);
+        SD_lowIBI        = ecg_bna_do_statistics(real_data_lowIBI,shuffled_SDF_lowIBI,1:cfg.phase.N_phase_bins);
+        
+        data.(L).lowIBI_SD          = SD_lowIBI.SD_mean;
+        data.(L).lowIBI_SD_STD      = SD_lowIBI.SD_STD;
+        data.(L).lowIBI_SD_SEM      = SD_lowIBI.SD_SEM ;
+        data.(L).lowIBI_SDP         = SD_lowIBI.SDPmean ;
+        data.(L).lowIBI_SDPCL       = SD_lowIBI.SDPconf(1,:) ;
+        data.(L).lowIBI_SDPCu       = SD_lowIBI.SDPconf(2,:) ;
+        data.(L).lowIBI_sig_all     = SD_lowIBI.sig_all;
+        data.(L).lowIBI_sig         = SD_lowIBI.sig;
+        data.(L).lowIBI_sig_FR_diff = SD_lowIBI.sig_FR_diff;
+        data.(L).lowIBI_sig_time    = SD_lowIBI.sig_time;
+        data.(L).lowIBI_sig_n_bins  = SD_lowIBI.sig_n_bins;
+        data.(L).lowIBI_sig_sign    = SD_lowIBI.sig_sign;
+        data.(L).lowIBI_SDsubstractedSDP            = data.(L).lowIBI_SD - data.(L).lowIBI_SDP; % spikes/s, difference between mean and jittered data
+        data.(L).lowIBI_SDsubstractedSDP_normalized = data.(L).lowIBI_SDsubstractedSDP ./ data.(L).lowIBI_SDP *100; % percent signal change
+        data.(L).lowIBI_FR_ModIndex_SubtrSDP        = max(data.(L).lowIBI_SDsubstractedSDP) - min(data.(L).lowIBI_SDsubstractedSDP); % difference between max and min FR
+        data.(L).lowIBI_FR_ModIndex_PcS             = max(data.(L).lowIBI_SDsubstractedSDP_normalized) - min(data.(L).lowIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
+        
+        real_data_highIBI = average_smooth_data(data.(L).highIBI_spike_phases_histogram2,cfg);
+        SD_highIBI        = ecg_bna_do_statistics(real_data_highIBI,shuffled_SDF_highIBI,1:cfg.phase.N_phase_bins);
+        
+        data.(L).highIBI_SD          = SD_highIBI.SD_mean;
+        data.(L).highIBI_SD_STD      = SD_highIBI.SD_STD;
+        data.(L).highIBI_SD_SEM      = SD_highIBI.SD_SEM ;
+        data.(L).highIBI_SDP         = SD_highIBI.SDPmean ;
+        data.(L).highIBI_SDPCL       = SD_highIBI.SDPconf(1,:) ;
+        data.(L).highIBI_SDPCu       = SD_highIBI.SDPconf(2,:) ;
+        data.(L).highIBI_sig_all     = SD_highIBI.sig_all;
+        data.(L).highIBI_sig         = SD_highIBI.sig;
+        data.(L).highIBI_sig_FR_diff = SD_highIBI.sig_FR_diff;
+        data.(L).highIBI_sig_time    = SD_highIBI.sig_time;
+        data.(L).highIBI_sig_n_bins  = SD_highIBI.sig_n_bins;
+        data.(L).highIBI_sig_sign    = SD_highIBI.sig_sign;
+        data.(L).highIBI_SDsubstractedSDP            = data.(L).highIBI_SD - data.(L).highIBI_SDP; % spikes/s, difference between mean and jittered data
+        data.(L).highIBI_SDsubstractedSDP_normalized = data.(L).highIBI_SDsubstractedSDP ./ data.(L).highIBI_SDP *100; % percent signal change
+        data.(L).highIBI_FR_ModIndex_SubtrSDP        = max(data.(L).highIBI_SDsubstractedSDP) - min(data.(L).highIBI_SDsubstractedSDP); % difference between max and min FR
+        data.(L).highIBI_FR_ModIndex_PcS             = max(data.(L).highIBI_SDsubstractedSDP_normalized) - min(data.(L).highIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
         
         % Mosher's cosine fit the smoothed phase histogram
         [modIndex_phase_hist,phase_hist] = ...
-            fitCardiacModulation(cfg.spk.phase_bin_centers, ...
+            fitCardiacModulation(cfg.phase.phase_bin_centers, ...
             data.(L).spike_phases_histogram, {'PSTH'}, 0, [221]);
         
         data.(L).spike_phases_histogram_smoothed = phase_hist;
@@ -563,65 +744,100 @@ for unitNum = 1:length(population)
         data.(L).histogram_phase                 = modIndex_phase_hist(3);
         data.(L).rsquared                        = modIndex_phase_hist(4);
         
+%         % lowIBI
+%         [~,lowIBI_phase_hist] = ...
+%             fitCardiacModulation(cfg.phase.phase_bin_centers, ...
+%             data.(L).lowIBI_spike_phases_histogram, {'PSTH'}, 0, [221]);
+%         data.(L).lowIBI_spike_phases_histogram_smoothed = lowIBI_phase_hist;
+        
+%         % highIBI
+%         [~,highIBI_phase_hist] = ...
+%             fitCardiacModulation(cfg.phase.phase_bin_centers, ...
+%             data.(L).highIBI_spike_phases_histogram, {'PSTH'}, 0, [221]);
+%         data.(L).highIBI_spike_phases_histogram_smoothed = highIBI_phase_hist;
+        
         %% LINEAR FITS
         % linear fit with 'fitlm' for all the data
-        data.(L).linear              = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'linear');
+%         data.(L).linear                 = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'linear');
         
         % linear fit with 'fitlm' for smoothed data
-        data.(L).linear_smoothed     = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'linear');
+%         data.(L).linear_smoothed        = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'linear');
         
         % linear fit for the lower IBI
-        data.(L).lowIBI_linear       = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'linear');
+%         data.(L).lowIBI_linear          = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'linear');
+        
+        % linear fit for smoothed data
+%         data.(L).lowIBI_linear_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'linear');
         
         % linear fit for the higher IBI
-        data.(L).highIBI_linear      = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'linear');
+%         data.(L).highIBI_linear         = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'linear');
+        
+        % % linear fit for smoothed data
+%         data.(L).highIBI_linear_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram, length(data.(L).highIBI_timeRRstart), 'linear');
         
         %% COSINE FITS
         % cosine fit with 'fit' on all data points instead of smoothed mean
-        data.(L).cosine              = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'cosine');
+%         data.(L).cosine              = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'cosine');
         
         % cosine fit with 'fit' for smoothed data
-        data.(L).cosine_smoothed     = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'cosine');
+%         data.(L).cosine_smoothed     = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'cosine');
         
         % cosine fit for the lower IBI
-        data.(L).lowIBI_cosine       = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'cosine');
+%         data.(L).lowIBI_cosine       = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'cosine');
+        
+        % fit for smoothed data
+%         data.(L).lowIBI_cosine_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'cosine');
         
         % cosine fit for the higher IBI
-        data.(L).highIBI_cosine      = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'cosine');
+%         data.(L).highIBI_cosine      = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'cosine');
+        
+        % fit for smoothed data
+%         data.(L).highIBI_cosine_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'cosine');
         
         %% POSITIVE VON MISES FITS
         % fit all the data
-        data.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', 1);
+%         data.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', 1);
         
         % fit all the data - smoothed
-        data.(L).vonMisesPos_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'vonMises', 1);
+%         data.(L).vonMisesPos_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'vonMises', 1);
         
         % pos. von Mises fits - low IBI
-        data.(L).lowIBI_vonMisesPos   = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', 1);
+%         data.(L).lowIBI_vonMisesPos   = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', 1);
+        
+        % fit for smoothed data
+%         data.(L).lowIBI_vonMisesPos_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'vonMises', 1);
         
         % pos. von Mises fits - high IBI
-        data.(L).highIBI_vonMisesPos  = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', 1);
+%         data.(L).highIBI_vonMisesPos  = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', 1);
+        
+        % fit for smoothed data
+%         data.(L).highIBI_vonMisesPos_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'vonMises', 1);
         
         %% NEGATIVE VON MISES FITS
         % fit all the data
-        data.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', -1);
+%         data.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', -1);
         
         % fit all the data - smoothed
-        data.(L).vonMisesNeg_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'vonMises', -1);
+%         data.(L).vonMisesNeg_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram_smoothed, length(valid_RRinterval_starts), 'vonMises', -1);
         
         % neg. von Mises fits - low IBI
-        data.(L).lowIBI_vonMisesNeg   = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', -1);
+%         data.(L).lowIBI_vonMisesNeg   = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram2, length(data.(L).lowIBI_timeRRstart), 'vonMises', -1);
+        
+        % fit for smoothed data
+%         data.(L).lowIBI_vonMisesNeg_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).lowIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'vonMises', -1);
         
         % neg. von Mises fits - high IBI
-        data.(L).highIBI_vonMisesNeg  = ecg_bna_fit_neuronal_data(cfg, cfg.spk.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', -1);
+%         data.(L).highIBI_vonMisesNeg  = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram2, length(data.(L).highIBI_timeRRstart), 'vonMises', -1);
         
+        % fit for smoothed data
+%         data.(L).highIBI_vonMisesNeg_smoothed = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).highIBI_spike_phases_histogram, length(data.(L).lowIBI_timeRRstart), 'vonMises', -1);
         
-        [~, ~, bin] = histcounts(data.(L).spike_phases_radians, cfg.spk.phase_bins);
+        [~, ~, bin] = histcounts(data.(L).spike_phases_radians, cfg.phase.phase_bins);
         
         data.(L).waveforms_microvolts                 = 10^6 * WF_one_stream(eventsTaken,:);
         waveforms_upsampled                           = interpft(data.(L).waveforms_microvolts, 32*4, 2);
-        data.(L).waveforms_upsampled_microvolts       = shift2peak(cfg.spk.wf_times_interp_ms, waveforms_upsampled);
-        data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.spk.N_phase_bins, 'UniformOutput', false);
+        data.(L).waveforms_upsampled_microvolts       = shift2peak(cfg.phase.wf_times_interp_ms, waveforms_upsampled);
+        data.(L).waveforms_byBin_microvolts           = arrayfun(@(x) mean(data.(L).waveforms_upsampled_microvolts(bin == x,:),1), 1:cfg.phase.N_phase_bins, 'UniformOutput', false);
         data.(L).waveforms_byBin_microvolts           = cat(1,data.(L).waveforms_byBin_microvolts{:});
         % 7. Calculate spike features with Mosher's procedure
         tic
@@ -631,7 +847,7 @@ for unitNum = 1:length(population)
             'widthTP', cell(length(data.(L).spike_phases_radians),1), ...
             'repolTime', cell(length(data.(L).spike_phases_radians),1));
         parfor wfNum = 1:length(data.(L).spike_phases_radians)
-            sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, cfg.spk.Fs*4, 0, [1 0 0 0]); % 37 - index of th peak for updsampled data
+            sMetric(wfNum)=spikeWaveMetrics(double(data.(L).waveforms_upsampled_microvolts(wfNum,:)), 37, cfg.phase.Fs*4, 0, [1 0 0 0]); % 37 - index of th peak for updsampled data
         end
         toc
         % 8. put the resulting data together
@@ -640,20 +856,20 @@ for unitNum = 1:length(population)
         data.(L).TPW_ms                   = 10^3 * [sMetric.widthTP];
         data.(L).REP_ms                   = 10^3 * [sMetric.repolTime];
         
-        data.(L).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(L).AMP_microV(bin == x)), 1:cfg.spk.N_phase_bins); % mean by phase
-        data.(L).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(L).HW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
-        data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.spk.N_phase_bins);
-        data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.spk.N_phase_bins);
+        data.(L).AMP_microV_byBin         = arrayfun(@(x) nanmean(data.(L).AMP_microV(bin == x)), 1:cfg.phase.N_phase_bins); % mean by phase
+        data.(L).HW_ms_byBin              = arrayfun(@(x) nanmean(data.(L).HW_ms(bin == x)), 1:cfg.phase.N_phase_bins);
+        data.(L).TPW_ms_byBin             = arrayfun(@(x) nanmean(data.(L).TPW_ms(bin == x)), 1:cfg.phase.N_phase_bins);
+        data.(L).REP_ms_byBin             = arrayfun(@(x) nanmean(data.(L).REP_ms(bin == x)), 1:cfg.phase.N_phase_bins);
         
         % 9. estimate significance with bootstrapping
         [data.(L).AMP_lowerPrctile_2_5, data.(L).AMP_upperPrctile_97_5, data.(L).AMP_reshuffled_avg] = ...
-            compute_reshuffles(data.(L).AMP_microV, bin, cfg);
+            compute_reshuffles(data.(L).AMP_microV, bin, cfg.phase);
         [data.(L).HW_lowerPrctile_2_5, data.(L).HW_upperPrctile_97_5, data.(L).HW_reshuffled_avg] = ...
-            compute_reshuffles(data.(L).HW_ms, bin, cfg);
+            compute_reshuffles(data.(L).HW_ms, bin, cfg.phase);
         [data.(L).TPW_lowerPrctile_2_5, data.(L).TPW_upperPrctile_97_5, data.(L).TPW_reshuffled_avg] = ...
-            compute_reshuffles(data.(L).TPW_ms, bin, cfg);
+            compute_reshuffles(data.(L).TPW_ms, bin, cfg.phase);
         [data.(L).REP_lowerPrctile_2_5, data.(L).REP_upperPrctile_97_5, data.(L).REP_reshuffled_avg] = ...
-            compute_reshuffles(data.(L).REP_ms, bin, cfg);
+            compute_reshuffles(data.(L).REP_ms, bin, cfg.phase);
         
         % 10. compute cosine fits and put those into the resulting
         % structure
@@ -704,7 +920,7 @@ for unitNum = 1:length(population)
         end
         
         % use Mosher's cosine fitting procedure with binned data
-        modIndex        = fitCardiacModulation(cfg.spk.phase_bin_centers, featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, 0);
+        modIndex        = fitCardiacModulation(cfg.phase.phase_bin_centers, featureMatrix, {'AMP', 'HW', 'TPW', 'REP'}, 0, 0);
         data.(L).AMP_MI_binned = modIndex(1,:);
         data.(L).HW_MI_binned  = modIndex(2,:);
         data.(L).TPW_MI_binned = modIndex(3,:);
@@ -712,22 +928,22 @@ for unitNum = 1:length(population)
         
         % store smoothed data for each measure
         if sum(isnan(data.(L).AMP_microV_byBin)) == length(data.(L).AMP_microV_byBin)
-            data.(L).AMP_microV_byBin_smoothed    = nan(1,cfg.spk.N_phase_bins);
+            data.(L).AMP_microV_byBin_smoothed    = nan(1,cfg.phase.N_phase_bins);
         else
             data.(L).AMP_microV_byBin_smoothed    = circ_smooth(data.(L).AMP_microV_byBin);
         end
         if sum(isnan(data.(L).HW_ms_byBin)) == length(data.(L).HW_ms_byBin)
-            data.(L).HW_ms_byBin_smoothed         = nan(1,cfg.spk.N_phase_bins);
+            data.(L).HW_ms_byBin_smoothed         = nan(1,cfg.phase.N_phase_bins);
         else
             data.(L).HW_ms_byBin_smoothed         = circ_smooth(data.(L).HW_ms_byBin);
         end
         if sum(isnan(data.(L).TPW_ms_byBin)) == length(data.(L).TPW_ms_byBin)
-            data.(L).TPW_ms_byBin_smoothed        = nan(1,cfg.spk.N_phase_bins);
+            data.(L).TPW_ms_byBin_smoothed        = nan(1,cfg.phase.N_phase_bins);
         else
             data.(L).TPW_ms_byBin_smoothed        = circ_smooth(data.(L).TPW_ms_byBin);
         end
         if sum(isnan(data.(L).REP_ms_byBin)) == length(data.(L).REP_ms_byBin)
-            data.(L).REP_ms_byBin_smoothed        = nan(1,cfg.spk.N_phase_bins);
+            data.(L).REP_ms_byBin_smoothed        = nan(1,cfg.phase.N_phase_bins);
         else
             data.(L).REP_ms_byBin_smoothed        = circ_smooth(data.(L).REP_ms_byBin);
         end
@@ -771,49 +987,43 @@ for unitNum = 1:length(population)
         
         % 12. compute correlation between features phase dynamics and
         % spike dynamics
-        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
+        [cc, pp]                       = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed);
         data.(L).cc_PSTH_feature(1)    = cc(2,1); % for spike AMP
         data.(L).pp_PSTH_feature(1)    = pp(2,1);
-        %         data.(L).pperm_PSTH_feature(1) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).AMP_microV_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+        data.(L).pperm_PSTH_feature(1) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed', data.(L).AMP_microV_byBin_smoothed, cfg.phase.n_shuffles, cfg.phase.tail, cfg.phase.alpha_level, cfg.phase.stat, cfg.phase.reports, cfg.phase.seed_state);
+%         [c,p] = corrcoef(data.(L).spike_phases_radians, data.(L).AMP_microV);
         
-        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
+        [cc, pp]                       = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed);
         data.(L).cc_PSTH_feature(2)    = cc(2,1); % for HW
         data.(L).pp_PSTH_feature(2)    = pp(2,1);
-        %         data.(L).pperm_PSTH_feature(2) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).HW_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+%         data.(L).pperm_PSTH_feature(2) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed', data.(L).HW_ms_byBin_smoothed, cfg.phase.correlation.n_permutations, 0, 0.05, 'linear', 0);
         
-        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
+        [cc, pp]                       = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed);
         data.(L).cc_PSTH_feature(3)    = cc(2,1); % for spike TPW
         data.(L).pp_PSTH_feature(3)    = pp(2,1);
-        %         data.(L).pperm_PSTH_feature(3) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).TPW_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+%         data.(L).pperm_PSTH_feature(3) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed', data.(L).TPW_ms_byBin_smoothed, cfg.phase.correlation.n_permutations, 0, 0.05, 'linear', 0);
         
-        [cc, pp] = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
+        [cc, pp]                       = corrcoef(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed);
         data.(L).cc_PSTH_feature(4)    = cc(2,1); % for spike REP
         data.(L).pp_PSTH_feature(4)    = pp(2,1);
-        %         data.(L).pperm_PSTH_feature(4) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed, data.(L).REP_ms_byBin_smoothed, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
+%         data.(L).pperm_PSTH_feature(4) = mult_comp_perm_corr(data.(L).spike_phases_histogram_smoothed', data.(L).REP_ms_byBin_smoothed, cfg.phase.correlation.n_permutations, 0, 0.05, 'linear', 0);
         
-        % II. Compute unit firing rate per RR-interval
-        data.(L).timeRRstart           = valid_RRinterval_starts;
-        [data.(L).FRbyRR_Hz, ...
-            data.(L).cycleDurations_s] = ...
-            computeFRperCycle(valid_RRinterval_starts, valid_RRinterval_ends, AT_one_stream);
-        % compute correlation with different lag
-        for lagNum = 1:length(cfg.spk.lag_list)
-            % create data variables
-            fr_hz = data.(L).FRbyRR_Hz;
-            rr_s  = circshift(data.(L).cycleDurations_s, cfg.spk.lag_list(lagNum));
-            
-            % compute correlation coefficient
-            [temp_r, temp_p] = corrcoef(fr_hz, rr_s);
-            data.(L).pearson_r(lagNum) = temp_r(2,1);
-            data.(L).pearson_p(lagNum) = temp_p(2,1);
-            data.(L).permuted_p(lagNum) = mult_comp_perm_corr(fr_hz, rr_s, cfg.spk.n_permutations, 0, 0.05, 'linear', 0);
-            clear temp_r temp_p
-            
-        end
     end
     save([cfg.cardioballistic_folder filesep data.unitId '_' data.target '__spikes_ECGphase.mat'], 'data', '-v7.3')
     clear data
 end
+end
+
+function real_data = average_smooth_data(input, cfg)
+Kernel = normpdf(-5*cfg.time.gaussian_kernel:cfg.time.PSTH_binwidth:5*cfg.time.gaussian_kernel,0,cfg.time.gaussian_kernel); % build kernel
+tmp = [ [zeros(1,80); input(:,1:end-1)'] ...
+    input' ...
+    [input(:,2:end)'; zeros(1,80)] ];
+conv_data = conv2(tmp,Kernel,'same');
+real_data = conv_data(:,cfg.phase.N_phase_bins+1:end-cfg.phase.N_phase_bins);
+% average_data = mean(conv_data);
+% std_data = std(conv_data);
+% ste_data = sterr(conv_data);
 end
 
 function output = cardioballistic_fit(feature_data, eventPhases, cfg)
@@ -890,7 +1100,7 @@ coefs = coeffvalues(fittedmdl); % get model coefficients
 coefs(2) = mod(coefs(2),2*pi);
 
 yfit_all = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), x);
-yfit     = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), cfg.spk.phase_bin_centers);
+yfit     = cfg.fit.cos_mod(coefs(1), coefs(2), coefs(3), cfg.phase.phase_bin_centers);
 
 % employ a linear fit to get a p-value vs. fitting with a
 % constant model
@@ -906,77 +1116,60 @@ spikes_realigned_microV = bsxfun(@(x,y) circshift(x,y,1), waveforms_upsampled', 
 spikes_realigned_microV = spikes_realigned_microV';
 end
 
-function [FRbyRR_Hz, cycleDurations] = computeFRperCycle(interval_starts, interval_ends, eventTimes)
-% make inputs vertical vectors
-interval_starts = interval_starts(:);
-interval_ends = interval_ends(:);
-eventTimes = eventTimes(:);
-
-% Calculate ECG cycle durations
-cycleDurations = interval_ends - interval_starts;
-
-% cycleNums = arrayfun(@(x) sum(x > interval_starts & x < interval_ends), eventTimes, 'UniformOutput', false);
-spikeCounts = arrayfun(@(x,y) sum(eventTimes > x & eventTimes < y), interval_starts, interval_ends);
-FRbyRR_Hz = spikeCounts ./ cycleDurations;
-
-% figure,
-% scatter(cycleDurations, FRbyRR_Hz)
-end
-
 function [lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled] = compute_reshuffles(data, bin, cfg)
 %% compute reshuffles
 rng(0)
-[~, reshuffled_spike_order] = sort(rand(cfg.spk.n_permutations, length(data)), 2); % get random order of elements
+[~, reshuffled_spike_order] = sort(rand(cfg.n_permutations, length(data)), 2); % get random order of elements
 data_reshuffled      = data(reshuffled_spike_order);
-data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:cfg.spk.N_phase_bins, 'UniformOutput', false); % mean by phase
+data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:cfg.N_phase_bins, 'UniformOutput', false); % mean by phase
 data_reshuffled      = cat(2, data_reshuffled{:});
 average_reshuffled = mean(data_reshuffled, 1, 'omitnan');
 lowerPercentile_2_5    = prctile(data_reshuffled, 2.5, 1);
 upperPercentile_97_5  = prctile(data_reshuffled, 97.5, 1);
 end
 
-function Y_microV = upsample_spikes(waveforms, wf_times, wf_times_interp)
-%% Luba's interpolation
-y = waveforms;
-y2 = interp1(wf_times, y', wf_times_interp, 'cubic');
-peak_idx = discretize(wf_times_interp, [0.32 0.48]) == 1;
-[~, idx] = max(abs(y2(peak_idx,:))); % search for max only around the trough
-idx = idx+find(peak_idx, 1, 'first')-1; % return to indices of the interpolated data
+% function Y_microV = upsample_spikes(waveforms, wf_times, wf_times_interp)
+% %% Luba's interpolation
+% y = waveforms;
+% y2 = interp1(wf_times, y', wf_times_interp, 'cubic');
+% peak_idx = discretize(wf_times_interp, [0.32 0.48]) == 1;
+% [~, idx] = max(abs(y2(peak_idx,:))); % search for max only around the trough
+% idx = idx+find(peak_idx, 1, 'first')-1; % return to indices of the interpolated data
+% 
+% Y_microV = bsxfun(@(x,y) 10^6 * circshift(x,y), y2, 37 - idx); % shift to peak (idx 37 for the interpolated data), in microvolts
+% end
 
-Y_microV = bsxfun(@(x,y) 10^6 * circshift(x,y), y2, 37 - idx); % shift to peak (idx 37 for the interpolated data), in microvolts
-end
-
-function AMP = compute_AMP(waveforms, spike_phases, wf_times, wf_times_interp, phase_bins, nReshuffles)
-%% phase bins
-[AMP.counts,~,AMP.bin] = histcounts(spike_phases, phase_bins);
-AMP.bin = single(AMP.bin);
-
-%% Luba's interpolation
-y = waveforms;
-y2 = interp1(wf_times, y', wf_times_interp, 'cubic');
-peak_idx = discretize(wf_times_interp, [0.32 0.48]) == 1;
-[~, idx] = max(abs(y2(peak_idx,:))); % search for max only around the trough
-idx = idx+find(peak_idx, 1, 'first')-1; % return to indices of the interpolated data
-
-AMP.waveforms_microV = bsxfun(@(x,y) 10^6 * circshift(x,y), y2, 37 - idx); % shift to peak (idx 37 for the interpolated data), in microvolts
-
-AMP.real_microV                   = AMP.waveforms_microV(37,:); % real peak amplitude
-AMP.abs_microV                    = abs(AMP.real_microV); % absolute peak amplitude
-AMP.sign_peak                     = sign(mean(AMP.real_microV)); % signum at the peak
-AMP.mean_by_phase                 = arrayfun(@(x) mean(AMP.abs_microV(AMP.bin == x)), unique(AMP.bin)); % mean by phase
-AMP.mean_by_phase_smoothed        = circ_smooth(AMP.mean_by_phase, 16); % pi/128 * 16 --> pi/8
-AMP.std_by_phase                  = arrayfun(@(x) std(AMP.abs_microV(AMP.bin == x)), unique(AMP.bin)); % standard deviation by phase
-
-%% compute reshuffles
-[~, reshuffled_spike_order] = sort(rand(nReshuffles, size(waveforms,1)), 2); % get random order of elements
-AMP_reshuffled = AMP.abs_microV(reshuffled_spike_order);
-AMP_reshuffled      = arrayfun(@(x) mean(AMP_reshuffled(:, AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false); % mean by phase
-AMP_reshuffled      = cat(2, AMP_reshuffled{:});
-AMP.lowerPrctile_2_5    = prctile(AMP_reshuffled, 2.5, 1);
-AMP.uppperPrctile_97_5  = prctile(AMP_reshuffled, 97.5, 1);
-
-% average waveforms by phase and then figure out spike parameters
-AMP.WF_by_phase = arrayfun(@(x) mean(AMP.waveforms_microV(:,AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false);
-AMP.WF_by_phase = cat(2, AMP.WF_by_phase{:});
-AMP.mean_by_bin = AMP.WF_by_phase(37,:)';
-end
+% function AMP = compute_AMP(waveforms, spike_phases, wf_times, wf_times_interp, phase_bins, nReshuffles)
+% %% phase bins
+% [AMP.counts,~,AMP.bin] = histcounts(spike_phases, phase_bins);
+% AMP.bin = single(AMP.bin);
+% 
+% %% Luba's interpolation
+% y = waveforms;
+% y2 = interp1(wf_times, y', wf_times_interp, 'cubic');
+% peak_idx = discretize(wf_times_interp, [0.32 0.48]) == 1;
+% [~, idx] = max(abs(y2(peak_idx,:))); % search for max only around the trough
+% idx = idx+find(peak_idx, 1, 'first')-1; % return to indices of the interpolated data
+% 
+% AMP.waveforms_microV = bsxfun(@(x,y) 10^6 * circshift(x,y), y2, 37 - idx); % shift to peak (idx 37 for the interpolated data), in microvolts
+% 
+% AMP.real_microV                   = AMP.waveforms_microV(37,:); % real peak amplitude
+% AMP.abs_microV                    = abs(AMP.real_microV); % absolute peak amplitude
+% AMP.sign_peak                     = sign(mean(AMP.real_microV)); % signum at the peak
+% AMP.mean_by_phase                 = arrayfun(@(x) mean(AMP.abs_microV(AMP.bin == x)), unique(AMP.bin)); % mean by phase
+% AMP.mean_by_phase_smoothed        = circ_smooth(AMP.mean_by_phase, 16); % pi/128 * 16 --> pi/8
+% AMP.std_by_phase                  = arrayfun(@(x) std(AMP.abs_microV(AMP.bin == x)), unique(AMP.bin)); % standard deviation by phase
+% 
+% %% compute reshuffles
+% [~, reshuffled_spike_order] = sort(rand(nReshuffles, size(waveforms,1)), 2); % get random order of elements
+% AMP_reshuffled = AMP.abs_microV(reshuffled_spike_order);
+% AMP_reshuffled      = arrayfun(@(x) mean(AMP_reshuffled(:, AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false); % mean by phase
+% AMP_reshuffled      = cat(2, AMP_reshuffled{:});
+% AMP.lowerPrctile_2_5    = prctile(AMP_reshuffled, 2.5, 1);
+% AMP.uppperPrctile_97_5  = prctile(AMP_reshuffled, 97.5, 1);
+% 
+% % average waveforms by phase and then figure out spike parameters
+% AMP.WF_by_phase = arrayfun(@(x) mean(AMP.waveforms_microV(:,AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false);
+% AMP.WF_by_phase = cat(2, AMP.WF_by_phase{:});
+% AMP.mean_by_bin = AMP.WF_by_phase(37,:)';
+% end
