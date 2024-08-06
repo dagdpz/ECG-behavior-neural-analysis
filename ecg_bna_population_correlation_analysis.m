@@ -18,7 +18,7 @@ if ~exist(basepath_to_save, 'dir')
 end
 
 %% load data
-load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
+load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
 
 for a = 1: N_Areas
     
