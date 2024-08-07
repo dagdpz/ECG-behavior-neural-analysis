@@ -105,10 +105,11 @@ for listNum = 1:length(list_of_lists)
     
     % p < 0.05 - significant MI according to Mosher's procedure
     
-    % choose units with positive correlation coefficients
+    % choose units with positive and significant correlation coefficients
     AMP_pp_pos              = AMP_pp;
     AMP_pp_pos(AMP_cc <= 0) = NaN;
-    [~, h_AMP_cc_pos] = bonf_holm(AMP_pp_pos);
+    h_AMP_cc_pos            = AMP_pp_pos < 0.05;
+%     [~, h_AMP_cc_pos] = bonf_holm(AMP_pp_pos);
     
 %     with_CBE = any(h_AMP_MI' & high_Rsq');
     with_CBE = any(h_AMP_MI);
