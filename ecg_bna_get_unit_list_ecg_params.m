@@ -50,10 +50,13 @@ for listNum = 1:length(list_of_lists)
         enoughRpeaks(conNum,:) = dt.(L).NrEvents > cfg.spk.unit_exclusion.nCardiacCycles;
         
     end
-    if strfind(list_of_lists(listNum).name, 'stable')
+    
+    if strfind(list_of_lists(listNum).name, 'stable') & isempty(strfind(list_of_lists(listNum).name, 'excluded'))
         ids_enough_Rpeaks = all(enoughRpeaks);
-    elseif strfind(list_of_lists(listNum).name, 'selected')
+        ids_both = 3*ones(length(unit_ids),1);
+    elseif strfind(list_of_lists(listNum).name, 'selected') & isempty(strfind(list_of_lists(listNum).name, 'excluded'))
         ids_enough_Rpeaks = any(enoughRpeaks);
+        load(filename, 'ids_both')
     else
         continue % don't create ECG-related dataset for this unit list
     end
@@ -135,12 +138,14 @@ for listNum = 1:length(list_of_lists)
     sites_600       = sites(ids_enough_Rpeaks);
     depths_600      = depths(ids_enough_Rpeaks);
     hemispheres_600 = hemispheres(ids_enough_Rpeaks);
+    ids_both_600    = ids_both(ids_enough_Rpeaks);
     % without cardioballistic effect
     unit_ids_noCB    = unit_ids(ids_enough_Rpeaks & no_cardioballistic_effect);
     targets_noCB     = targets(ids_enough_Rpeaks & no_cardioballistic_effect);
     sites_noCB       = sites(ids_enough_Rpeaks & no_cardioballistic_effect);
     depths_noCB      = depths(ids_enough_Rpeaks & no_cardioballistic_effect);
     hemispheres_noCB = hemispheres(ids_enough_Rpeaks & no_cardioballistic_effect);
+    ids_both_noCB    = ids_both(ids_enough_Rpeaks & no_cardioballistic_effect);
     % with cardioballistic effect but still having enough R-peaks for the
     % analysis
     unit_ids_withCB    = unit_ids(ids_enough_Rpeaks & ~no_cardioballistic_effect);
@@ -148,12 +153,14 @@ for listNum = 1:length(list_of_lists)
     sites_withCB       = sites(ids_enough_Rpeaks & ~no_cardioballistic_effect);
     depths_withCB      = depths(ids_enough_Rpeaks & ~no_cardioballistic_effect);
     hemispheres_withCB = hemispheres(ids_enough_Rpeaks & ~no_cardioballistic_effect);
+    ids_both_withCB    = ids_both(ids_enough_Rpeaks & ~no_cardioballistic_effect);
     % without cardioballistic effect and high spike amplitude
     unit_ids_noCB_corr    = unit_ids(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
     targets_noCB_corr     = targets(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
     sites_noCB_corr       = sites(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
     depths_noCB_corr      = depths(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
     hemispheres_noCB_corr = hemispheres(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
+    ids_both_noCB_corr    = ids_both(ids_enough_Rpeaks & no_cardioballistic_effect_corrected);
     % without cardioballistic effect, high spike amplitude, and with
     % non-significant correlation coefficient between phase PSTH and AMP 
     % phase dynamic
@@ -162,42 +169,49 @@ for listNum = 1:length(list_of_lists)
     sites_noCB_corr_ccs       = sites(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
     depths_noCB_corr_ccs      = depths(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
     hemispheres_noCB_corr_ccs = hemispheres(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
+    ids_both_noCB_corr_ccs    = ids_both(ids_enough_Rpeaks & no_cardioballistic_effect_corrected_ccs);
     % don't use CBE analysis, choose units with high spike amplitude
     unit_ids_high_amplitude    = unit_ids(ids_enough_Rpeaks & high_amplitude_only);
     targets_high_amplitude     = targets(ids_enough_Rpeaks & high_amplitude_only);
     sites_high_amplitude       = sites(ids_enough_Rpeaks & high_amplitude_only);
     depths_high_amplitude      = depths(ids_enough_Rpeaks & high_amplitude_only);
     hemispheres_high_amplitude = hemispheres(ids_enough_Rpeaks & high_amplitude_only);
+    ids_both_high_amplitude    = ids_both(ids_enough_Rpeaks & high_amplitude_only);
     % choose units with amplitude next to the threshold
     unit_ids_low_amplitude    = unit_ids(ids_enough_Rpeaks & low_amplitude_only);
     targets_low_amplitude     = targets(ids_enough_Rpeaks & low_amplitude_only);
     sites_low_amplitude       = sites(ids_enough_Rpeaks & low_amplitude_only);
     depths_low_amplitude      = depths(ids_enough_Rpeaks & low_amplitude_only);
     hemispheres_low_amplitude = hemispheres(ids_enough_Rpeaks & low_amplitude_only);
+    ids_both_low_amplitude    = ids_both(ids_enough_Rpeaks & low_amplitude_only);
     % [any] low amplitude and significant cc between phase dynamics
     unit_ids_low_amplitude_ccs_any    = unit_ids(ids_enough_Rpeaks & low_amplitude_ccs_any);
     targets_low_amplitude_ccs_any     = targets(ids_enough_Rpeaks & low_amplitude_ccs_any);
     sites_low_amplitude_ccs_any       = sites(ids_enough_Rpeaks & low_amplitude_ccs_any);
     depths_low_amplitude_ccs_any      = depths(ids_enough_Rpeaks & low_amplitude_ccs_any);
     hemispheres_low_amplitude_ccs_any = hemispheres(ids_enough_Rpeaks & low_amplitude_ccs_any);
+    ids_both_low_amplitude_ccs_any    = ids_both(ids_enough_Rpeaks & low_amplitude_ccs_any);
     % [both] low amplitude and significant cc between phase dynamics
     unit_ids_low_amplitude_ccs_both    = unit_ids(ids_enough_Rpeaks & low_amplitude_ccs_both);
     targets_low_amplitude_ccs_both     = targets(ids_enough_Rpeaks & low_amplitude_ccs_both);
     sites_low_amplitude_ccs_both       = sites(ids_enough_Rpeaks & low_amplitude_ccs_both);
     depths_low_amplitude_ccs_both      = depths(ids_enough_Rpeaks & low_amplitude_ccs_both);
     hemispheres_low_amplitude_ccs_both = hemispheres(ids_enough_Rpeaks & low_amplitude_ccs_both);
+    ids_both_low_amplitude_ccs_both    = ids_both(ids_enough_Rpeaks & low_amplitude_ccs_both);
     % selected units - without low amplitude and pos. ccs (any)
     unit_ids_noLow_amplitude_ccs_any    = unit_ids(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
     targets_noLow_amplitude_ccs_any     = targets(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
     sites_noLow_amplitude_ccs_any       = sites(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
     depths_noLow_amplitude_ccs_any      = depths(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
     hemispheres_noLow_amplitude_ccs_any = hemispheres(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
+    ids_both_noLow_amplitude_ccs_any    = ids_both(ids_enough_Rpeaks & ~low_amplitude_ccs_any);
     % selected units - without low amplitude and pos. ccs (both)
     unit_ids_noLow_amplitude_ccs_both    = unit_ids(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
     targets_noLow_amplitude_ccs_both     = targets(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
     sites_noLow_amplitude_ccs_both       = sites(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
     depths_noLow_amplitude_ccs_both      = depths(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
     hemispheres_noLow_amplitude_ccs_both = hemispheres(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
+    ids_both_noLow_amplitude_ccs_both    = ids_both(ids_enough_Rpeaks & ~low_amplitude_ccs_both);
     
     % save unit list for 600
     unit_ids    = unit_ids_600;
@@ -205,77 +219,88 @@ for listNum = 1:length(list_of_lists)
     sites       = sites_600;
     depths      = depths_600;
     hemispheres = hemispheres_600;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_600.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_600;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_600.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % noCB
     unit_ids    = unit_ids_noCB;
     targets     = targets_noCB;
     sites       = sites_noCB;
     depths      = depths_noCB;
     hemispheres = hemispheres_noCB;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_noCB;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % withCB
     unit_ids    = unit_ids_withCB;
     targets     = targets_withCB;
     sites       = sites_withCB;
     depths      = depths_withCB;
     hemispheres = hemispheres_withCB;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_withCB.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_withCB;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_withCB.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % noCB + amp criterion
     unit_ids    = unit_ids_noCB_corr;
     targets     = targets_noCB_corr;
     sites       = sites_noCB_corr;
     depths      = depths_noCB_corr;
     hemispheres = hemispheres_noCB_corr;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_noCB_corr;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % noCB + amp corterion + phase PSTH vs. feature dynamic correlation
     unit_ids    = unit_ids_noCB_corr_ccs;
     targets     = targets_noCB_corr_ccs;
     sites       = sites_noCB_corr_ccs;
     depths      = depths_noCB_corr_ccs;
     hemispheres = hemispheres_noCB_corr_ccs;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr_ccs.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_noCB_corr_ccs;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noCB_corr_ccs.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % only high amplitude
     unit_ids    = unit_ids_high_amplitude;
     targets     = targets_high_amplitude;
     sites       = sites_high_amplitude;
     depths      = depths_high_amplitude;
     hemispheres = hemispheres_high_amplitude;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_high_amplitude.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_high_amplitude;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_high_amplitude.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % only low amplitude
     unit_ids    = unit_ids_low_amplitude;
     targets     = targets_low_amplitude;
     sites       = sites_low_amplitude;
     depths      = depths_low_amplitude;
     hemispheres = hemispheres_low_amplitude;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_low_amplitude;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % [any] low amplitude and significant cc between phase dynamics
     unit_ids    = unit_ids_low_amplitude_ccs_any;
     targets     = targets_low_amplitude_ccs_any;
     sites       = sites_low_amplitude_ccs_any;
     depths      = depths_low_amplitude_ccs_any;
     hemispheres = hemispheres_low_amplitude_ccs_any;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_low_amplitude_ccs_any;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % [both] low amplitude and significant cc between phase dynamics
     unit_ids    = unit_ids_low_amplitude_ccs_both;
     targets     = targets_low_amplitude_ccs_both;
     sites       = sites_low_amplitude_ccs_both;
     depths      = depths_low_amplitude_ccs_both;
     hemispheres = hemispheres_low_amplitude_ccs_both;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_low_amplitude_ccs_both;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_low_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % [any] no low amplitude and no pos. significant cc between phase dynamics
     unit_ids    = unit_ids_noLow_amplitude_ccs_any;
     targets     = targets_noLow_amplitude_ccs_any;
     sites       = sites_noLow_amplitude_ccs_any;
     depths      = depths_noLow_amplitude_ccs_any;
     hemispheres = hemispheres_noLow_amplitude_ccs_any;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_noLow_amplitude_ccs_any;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     % [both] no low amplitude and no pos. significant cc between phase dynamics
     unit_ids    = unit_ids_noLow_amplitude_ccs_both;
     targets     = targets_noLow_amplitude_ccs_both;
     sites       = sites_noLow_amplitude_ccs_both;
     depths      = depths_noLow_amplitude_ccs_both;
     hemispheres = hemispheres_noLow_amplitude_ccs_both;
-    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    ids_both    = ids_both_noLow_amplitude_ccs_both;
+    save([basepath_to_save filesep list_of_lists(listNum).name(1:end-4) '_noLow_amplitude_ccs_both.mat'], 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
     
     % 4. save the table with unit counts
     % 600
