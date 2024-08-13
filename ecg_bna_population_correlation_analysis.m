@@ -18,18 +18,17 @@ if ~exist(basepath_to_save, 'dir')
 end
 
 %% load data
+%load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
 load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
 
 for a = 1: N_Areas
-    
     T=unqTargets{a};
     currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
     curr_unit_ids = unit_ids(currTargIds);
     dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, 'correlation_analysis', 'data', var_list);
-    
 end
 
-%% correlation coefs between FR and RR
+%% autocorrelation & correlation coefs between FR and RR
 for prefixNum = 1:length(var_prefix)
     
     f0 = figure;
@@ -70,137 +69,166 @@ for prefixNum = 1:length(var_prefix)
     
     figure(f0)
     mtit(sgttl) %% sgtitle not working in matlab 2015
-    save_figure_as(f0, [var_prefix{prefixNum} 'CC_OverLags_AllData'], basepath_to_save, 1)
-    
-end
-
-%% normalized correlation between FR and RR
-for prefixNum = 1:length(var_prefix)
-    
-    f0 = figure;
-    set(f0, 'Position', [22 441 1857 491])
-    
-    for a = 1: N_Areas
-        
-        T=unqTargets{a};
-        
-        for c=1:N_conditions
-            
-            L=cfg.condition(c).name;
-            
-            figure(f0);
-            % compute normalized ccs
-            R=dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']);
-            P=dt.(T).(L).([var_prefix{prefixNum} 'pearson_p']);
-            
-            norm_r  = R ./ repmat(R(ceil(end/2),:),size(R,1),1);
-            pos_sig = R(ceil(end/2),:) > 0 & P(ceil(end/2),:) < 0.05;
-            neg_sig = R(ceil(end/2),:) < 0 & P(ceil(end/2),:) < 0.05;
-            non_sig = ~(pos_sig|neg_sig);
-            
-            splot_num = (c-1)*N_Areas + a;
-            subplot(N_conditions, N_Areas, splot_num)
-            hold on
-            if sum(non_sig)>0
-                plot(dt.(T).cc_lag_list, norm_r(:, non_sig), 'Color', bar_colors(3,:))
-            end
-            if sum(pos_sig)>0
-                plot(dt.(T).cc_lag_list, norm_r(:, pos_sig), 'Color', bar_colors(1,:))
-            end
-            if sum(neg_sig)>0
-                plot(dt.(T).cc_lag_list, norm_r(:, neg_sig), 'Color', bar_colors(2,:))
-            end
-            hline(0)
-            hline(1)
-            
-            ylim([-2 2])
-            title([T ': ' L])
-            xlabel('Lag, # Cardiac Cycles')
-            ylabel('cc normalized by cc(lag 0)')
-            box on
-        end
-    end
-    
-    if isempty(var_prefix{prefixNum})
-        sgttl = 'Correlation: FR vs. RR';
-    elseif contains(var_prefix{prefixNum}, 'FR_')
-        sgttl = 'Autocorrelation FR';
-    elseif contains(var_prefix{prefixNum}, 'RR_')
-        sgttl = 'Autocorrelation RR';
-    end
-    
-    figure(f0)
-    mtit(sgttl)
     save_figure_as(f0, [var_prefix{prefixNum} 'CC_Lags_AllAreas'], basepath_to_save, 1)
     
 end
 
-%%
-for prefixNum = 1:length(var_prefix)
+%% normalized correlation between FR and RR
+f0 = figure;
+set(f0, 'Position', [22 441 1857 491])
+
+for a = 1: N_Areas
     
-    f1 = figure;
-    set(f1, 'Position', [22 441 1857 491])
+    T=unqTargets{a};
     
-    for a = 1: N_Areas
+    for c=1:N_conditions
         
-        T=unqTargets{a};
+        L=cfg.condition(c).name;
         
-        for c=1:N_conditions
-            
-            L=cfg.condition(c).name;
-            
-            % plot optimal correlation coefficients
-            % extract data
-            R=dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']);
-            P=dt.(T).(L).([var_prefix{prefixNum} 'pearson_p']);
-            [~, ids]  = max(abs(R), [], 1); % find max abs ccs; I will need 'ids' to figure out significance of corresponding ccs
-            ccs=R(sub2ind(size(R),ids,1:numel(ids)));
-            invalid=isnan(ccs);
-            P=P(:,~invalid);R=R(:,~invalid);ccs=ccs(~invalid);ids=ids(~invalid);
-            P=P(ceil(end/2),:);
-            R=R(ceil(end/2),:);
-            sig=sign(R).*(P<0.05);
-            
-            %
-            %             %[~,lag_ids] = max(abs(dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']))); % figure out corresponding lags
-            %             sig_ids     = dt.(T).(L).([var_prefix{prefixNum} 'pearson_p'])(ids) < 0.05;
-            %             signs_ccs   = sign(dt.(T).(L).([var_prefix{prefixNum} 'pearson_r'])(ids));
-            %             signed_ccs  = signs_ccs .* ccs;
-            %
-            %             pos_sig_lagged = signed_ccs > 0;
-            %             neg_sig_lagged = signed_ccs < 0;
-            
-            splot_num = (c-1)*N_Areas + a;
-            subplot(N_conditions, N_Areas, splot_num)
-            hold on
-            
-            plot(dt.(T).cc_lag_list(ids(sig==0)),  ccs(sig==0),  'o', 'Color', bar_colors(3, :))
-            plot(dt.(T).cc_lag_list(ids(sig==-1)), ccs(sig==-1), 'o', 'Color', bar_colors(2, :))
-            plot(dt.(T).cc_lag_list(ids(sig==1)),  ccs(sig==1),  'o', 'Color', bar_colors(1, :))
-            xlabel('Lag, # Heart Cycles')
-            ylabel('Correlation Coefficient')
-            title([T ': ' L])
-            xlim([-13 13])
-            ylim([-0.5 0.5])
+        figure(f0);
+        % compute normalized ccs
+        R=dt.(T).(L).('pearson_r');
+        P=dt.(T).(L).('pearson_p');
+        
+        norm_r  = R ./ repmat(R(ceil(end/2),:),size(R,1),1);
+        pos_sig = R(ceil(end/2),:) > 0 & P(ceil(end/2),:) < 0.05;
+        neg_sig = R(ceil(end/2),:) < 0 & P(ceil(end/2),:) < 0.05;
+        non_sig = ~(pos_sig|neg_sig);
+        
+        splot_num = (c-1)*N_Areas + a;
+        subplot(N_conditions, N_Areas, splot_num)
+        hold on
+        if sum(non_sig)>0
+            plot(dt.(T).cc_lag_list, norm_r(:, non_sig), 'Color', bar_colors(3,:))
         end
+        if sum(pos_sig)>0
+            plot(dt.(T).cc_lag_list, norm_r(:, pos_sig), 'Color', bar_colors(1,:))
+        end
+        if sum(neg_sig)>0
+            plot(dt.(T).cc_lag_list, norm_r(:, neg_sig), 'Color', bar_colors(2,:))
+        end
+        hline(0)
+        hline(1)
         
+        ylim([-2 2])
+        title([T ': ' L])
+        xlabel('Lag, # Cardiac Cycles')
+        ylabel('cc normalized by cc(lag 0)')
+        box on
     end
+end
+
+sgttl = 'Correlation: FR vs. RR';
+
+figure(f0)
+mtit(sgttl)
+save_figure_as(f0, [var_prefix{prefixNum} 'CC_Lags_normalized_AllAreas'], basepath_to_save, 1)
+
+
+%% lag scatters 
+f1 = figure;
+set(f1, 'Position', [22 441 1857 491])
+
+for a = 1: N_Areas
+    T=unqTargets{a};
     
-    if isempty(var_prefix{prefixNum})
-        sgttl = 'Correlation: FR vs. RR';
-    elseif contains(var_prefix{prefixNum}, 'FR_')
-        sgttl = 'Autocorrelation FR';
-    elseif contains(var_prefix{prefixNum}, 'RR_')
-        sgttl = 'Autocorrelation RR';
+    for c=1:N_conditions
+        
+        L=cfg.condition(c).name;
+        
+        % plot optimal correlation coefficients
+        % extract data
+        R=dt.(T).(L).('pearson_r');
+        P=dt.(T).(L).('pearson_p');
+        [~, ids]  = max(abs(R), [], 1); % find max abs ccs; I will need 'ids' to figure out significance of corresponding ccs
+        ccs=R(sub2ind(size(R),ids,1:numel(ids)));
+        invalid=isnan(ccs);
+        P=P(:,~invalid);R=R(:,~invalid);ccs=ccs(~invalid);ids=ids(~invalid);
+        P=P(ceil(end/2),:);
+        R=R(ceil(end/2),:);
+        sig=sign(R).*(P<0.05);
+        
+        splot_num = (c-1)*N_Areas + a;
+        subplot(N_conditions, N_Areas, splot_num)
+        hold on
+        
+        plot(dt.(T).cc_lag_list(ids(sig==0)),  ccs(sig==0),  'o', 'Color', bar_colors(3, :))
+        plot(dt.(T).cc_lag_list(ids(sig==-1)), ccs(sig==-1), 'o', 'Color', bar_colors(2, :))
+        plot(dt.(T).cc_lag_list(ids(sig==1)),  ccs(sig==1),  'o', 'Color', bar_colors(1, :))
+        xlabel('Lag, # Heart Cycles')
+        ylabel('Correlation Coefficient')
+        title([T ': ' L])
+        xlim([-13 13])
+        ylim([-0.5 0.5])
     end
-    
-    figure(f1)
-    mtit(sgttl)
-    save_figure_as(f1, [var_prefix{prefixNum} 'CC_MaxAbsLags_AllAreas'], basepath_to_save, 1)
     
 end
 
-%% lag scatters
+figure(f1)
+save_figure_as(f1, 'CC_MaxAbsLags_AllAreas', basepath_to_save, 1)
+
+
+%% histograms of lag of max cc
+f10 = figure;
+set(f10, 'Position', [22 441 1857 491])
+
+for a = 1: N_Areas
+    T=unqTargets{a};
+    
+    for c=1:N_conditions
+        
+        L=cfg.condition(c).name;
+        
+        % plot optimal correlation coefficients
+        % extract data
+        R=dt.(T).(L).('pearson_r');
+        P=dt.(T).(L).('pearson_p');
+        [~, ids]  = max(abs(R), [], 1); % find max abs ccs; I will need 'ids' to figure out significance of corresponding ccs
+        ccs=R(sub2ind(size(R),ids,1:numel(ids)));
+        invalid=isnan(ccs);
+        P=P(:,~invalid);R=R(:,~invalid);ccs=ccs(~invalid);ids=ids(~invalid);
+        P=P(ceil(end/2),:);
+        R=R(ceil(end/2),:);
+        sig=sign(R).*(P<0.05);
+        
+        splot_num = (c-1)*N_Areas + a;
+        subplot(N_conditions, N_Areas, splot_num)
+        hold on
+        
+        laglist=dt.(T).cc_lag_list;
+        N=numel(ids);
+        
+        
+        h0=hist(laglist(ids(sig==0)),laglist);
+        h1=hist(laglist(ids(sig==-1)),laglist);
+        h2=hist(laglist(ids(sig==1)),laglist);
+        
+        m0=median(laglist(ids(sig==0)));
+        m1=median(laglist(ids(sig==-1)));
+        m2=median(laglist(ids(sig==1)));
+        
+        
+        plot(laglist,  h0, 'Color', bar_colors(3, :))
+        plot(laglist,  h1, 'Color', bar_colors(2, :))
+        plot(laglist,  h2, 'Color', bar_colors(1, :))
+        plot([m0 m0],  [0 max(h0)], 'Color', bar_colors(3, :))
+        plot([m1 m1],  [0 max(h1)], 'Color', bar_colors(2, :))
+        plot([m2 m2],  [0 max(h2)], 'Color', bar_colors(1, :))
+        
+        
+        xlabel('Lag, # Heart Cycles')
+        ylabel('N units')
+        title([T ': ' L])
+        xlim([-13 13])
+    end
+    
+end
+
+figure(f10)
+save_figure_as(f10, 'Histograms_MaxAbsLags_AllAreas', basepath_to_save, 1)
+
+
+%% lag scatters task versus rest
 for a = 1: N_Areas
     
     T=unqTargets{a};
@@ -215,7 +243,9 @@ for a = 1: N_Areas
     
     f2 = figure;
     set(f2,'Position',[364   319   580   584])
-    scatter(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task));
+    
+    
+    aa=plot(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),'linestyle','none','MarkerFaceColor',[0.5 0.5 0.5]);
     %
     %         scatterhistogram(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),...
     %             'Title',T,'HistogramDisplayStyle','smooth',...
@@ -341,6 +371,27 @@ for a = 1: N_Areas
     
 end
 save_figure_as(gcf, ['Histograms_CC_FR_&_RR_at_lag_' num2str(lag_to_plot)], basepath_to_save, 1)
+
+%% plot number of cardiac cycles used
+figure,
+set(gcf, 'Position', [667 519 930 477])
+for a = 1: N_Areas
+    T=unqTargets{a};
+    for c=1:N_conditions
+        L=cfg.condition(c).name;
+        N_cycles=dt.(T).(L).n_cycles;        
+        laglist=dt.(T).cc_lag_list;
+        zero_lag_idx=find(laglist==0);
+        N_cycles=N_cycles(zero_lag_idx,:);   
+        N_cycles(isnan(N_cycles))=[];
+        splot_num = (c-1)*N_Areas + a;
+        subplot(N_conditions,N_Areas,splot_num)        
+        hist(N_cycles, 20,'o-', 'Color', [0.5 0.5 0.5])
+        title([T ': ' L ', min: ' num2str(min(N_cycles))])
+    end
+end
+save_figure_as(gcf, ['Percentages_RR_Counts_' T], basepath_to_save, 1)
+
 
 %% plot number of cardiac cycles used
 figure,
