@@ -68,55 +68,89 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.bin_centers                     = BINS(bin_ids);
             Output.phase_bin_centers               = 2 * pi * BINS(bin_ids) / range(BINS(bin_ids));
                                                      
-            Output.(L).linear.yfit                 = single(nan(1,length(bin_ids)));
-            Output.(L).linear.coefs                = single([NaN NaN]);
-            Output.(L).linear.rsquared             = single(NaN);
-            Output.(L).linear.adjrsquared          = single(NaN);
-            Output.(L).linear.sse                  = single(NaN);
-            Output.(L).linear.dfe                  = single(NaN);
-            Output.(L).linear.rmse                 = single(NaN);
-            Output.(L).linear.pvalue               = single([NaN; NaN]);
-            Output.(L).linear.aic                  = single(NaN);
-            Output.(L).linear.bic                  = single(NaN);
+            Output.(L).lowIBI_SD          = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SD_STD      = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SD_SEM      = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SDP         = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SDPCL       = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SDPCu       = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_sig_all     = single(zeros(1,length(BINS)));
+            Output.(L).lowIBI_sig         = single(zeros(1,length(BINS)));
+            Output.(L).lowIBI_sig_FR_diff = single(nan(1));
+            Output.(L).lowIBI_sig_time    = single(nan(1));
+            Output.(L).lowIBI_sig_n_bins  = single(zeros(1));
+            Output.(L).lowIBI_sig_sign    = single(zeros(1));
+            Output.(L).lowIBI_SDsubstractedSDP            = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
+            Output.(L).lowIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
+            Output.(L).lowIBI_FR_ModIndex_PcS             = single(nan(1));
             
-            Output.(L).cosine.average              = single(nan(1,length(bin_ids)));
-            Output.(L).cosine.startPoint           = single([NaN NaN NaN]);
-            Output.(L).cosine.yfit                 = single(nan(1,length(bin_ids)));
-            Output.(L).cosine.coefs                = single([NaN NaN NaN]);
-            Output.(L).cosine.rsquared             = single(NaN);
-            Output.(L).cosine.adjrsquared          = single(NaN);
-            Output.(L).cosine.sse                  = single(NaN);
-            Output.(L).cosine.dfe                  = single(NaN);
-            Output.(L).cosine.rmse                 = single(NaN);
-            Output.(L).cosine.pvalue               = single(NaN);
-            Output.(L).cosine.aic                  = single(NaN);
-            Output.(L).cosine.bic                  = single(NaN);
+            Output.(L).highIBI_SD          = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SD_STD      = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SD_SEM      = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SDP         = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SDPCL       = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SDPCu       = single(nan(1,length(BINS)));
+            Output.(L).highIBI_sig_all     = single(zeros(1,length(BINS)));
+            Output.(L).highIBI_sig         = single(zeros(1,length(BINS)));
+            Output.(L).highIBI_sig_FR_diff = single(nan(1));
+            Output.(L).highIBI_sig_time    = single(nan(1));
+            Output.(L).highIBI_sig_n_bins  = single(zeros(1));
+            Output.(L).highIBI_sig_sign    = single(zeros(1));
+            Output.(L).highIBI_SDsubstractedSDP            = single(nan(1,length(BINS)));
+            Output.(L).highIBI_SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
+            Output.(L).highIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
+            Output.(L).highIBI_FR_ModIndex_PcS             = single(nan(1));
             
-            Output.(L).vonMisesPos.average         = single(nan(1,length(bin_ids)));
-            Output.(L).vonMisesPos.startPoint      = single([NaN NaN NaN NaN]);
-            Output.(L).vonMisesPos.yfit            = single(nan(1,length(bin_ids)));
-            Output.(L).vonMisesPos.coefs           = single([NaN NaN NaN NaN]);
-            Output.(L).vonMisesPos.rsquared        = single(NaN);
-            Output.(L).vonMisesPos.adjrsquared     = single(NaN);
-            Output.(L).vonMisesPos.sse             = single(NaN);
-            Output.(L).vonMisesPos.dfe             = single(NaN);
-            Output.(L).vonMisesPos.rmse            = single(NaN);
-            Output.(L).vonMisesPos.pvalue          = single(NaN);
-            Output.(L).vonMisesPos.aic             = single(NaN);
-            Output.(L).vonMisesPos.bic             = single(NaN);
-            
-            Output.(L).vonMisesNeg.average         = single(nan(1,length(bin_ids)));
-            Output.(L).vonMisesNeg.startPoint      = single([NaN NaN NaN NaN]);
-            Output.(L).vonMisesNeg.yfit            = single(nan(1,length(bin_ids)));
-            Output.(L).vonMisesNeg.coefs           = single([NaN NaN NaN NaN]);
-            Output.(L).vonMisesNeg.rsquared        = single(NaN);
-            Output.(L).vonMisesNeg.adjrsquared     = single(NaN);
-            Output.(L).vonMisesNeg.sse             = single(NaN);
-            Output.(L).vonMisesNeg.dfe             = single(NaN);
-            Output.(L).vonMisesNeg.rmse            = single(NaN);
-            Output.(L).vonMisesNeg.pvalue          = single(NaN);
-            Output.(L).vonMisesNeg.aic             = single(NaN);
-            Output.(L).vonMisesNeg.bic             = single(NaN);
+%             Output.(L).linear.yfit                 = single(nan(1,length(bin_ids)));
+%             Output.(L).linear.coefs                = single([NaN NaN]);
+%             Output.(L).linear.rsquared             = single(NaN);
+%             Output.(L).linear.adjrsquared          = single(NaN);
+%             Output.(L).linear.sse                  = single(NaN);
+%             Output.(L).linear.dfe                  = single(NaN);
+%             Output.(L).linear.rmse                 = single(NaN);
+%             Output.(L).linear.pvalue               = single([NaN; NaN]);
+%             Output.(L).linear.aic                  = single(NaN);
+%             Output.(L).linear.bic                  = single(NaN);
+%             
+%             Output.(L).cosine.average              = single(nan(1,length(bin_ids)));
+%             Output.(L).cosine.startPoint           = single([NaN NaN NaN]);
+%             Output.(L).cosine.yfit                 = single(nan(1,length(bin_ids)));
+%             Output.(L).cosine.coefs                = single([NaN NaN NaN]);
+%             Output.(L).cosine.rsquared             = single(NaN);
+%             Output.(L).cosine.adjrsquared          = single(NaN);
+%             Output.(L).cosine.sse                  = single(NaN);
+%             Output.(L).cosine.dfe                  = single(NaN);
+%             Output.(L).cosine.rmse                 = single(NaN);
+%             Output.(L).cosine.pvalue               = single(NaN);
+%             Output.(L).cosine.aic                  = single(NaN);
+%             Output.(L).cosine.bic                  = single(NaN);
+%             
+%             Output.(L).vonMisesPos.average         = single(nan(1,length(bin_ids)));
+%             Output.(L).vonMisesPos.startPoint      = single([NaN NaN NaN NaN]);
+%             Output.(L).vonMisesPos.yfit            = single(nan(1,length(bin_ids)));
+%             Output.(L).vonMisesPos.coefs           = single([NaN NaN NaN NaN]);
+%             Output.(L).vonMisesPos.rsquared        = single(NaN);
+%             Output.(L).vonMisesPos.adjrsquared     = single(NaN);
+%             Output.(L).vonMisesPos.sse             = single(NaN);
+%             Output.(L).vonMisesPos.dfe             = single(NaN);
+%             Output.(L).vonMisesPos.rmse            = single(NaN);
+%             Output.(L).vonMisesPos.pvalue          = single(NaN);
+%             Output.(L).vonMisesPos.aic             = single(NaN);
+%             Output.(L).vonMisesPos.bic             = single(NaN);
+%             
+%             Output.(L).vonMisesNeg.average         = single(nan(1,length(bin_ids)));
+%             Output.(L).vonMisesNeg.startPoint      = single([NaN NaN NaN NaN]);
+%             Output.(L).vonMisesNeg.yfit            = single(nan(1,length(bin_ids)));
+%             Output.(L).vonMisesNeg.coefs           = single([NaN NaN NaN NaN]);
+%             Output.(L).vonMisesNeg.rsquared        = single(NaN);
+%             Output.(L).vonMisesNeg.adjrsquared     = single(NaN);
+%             Output.(L).vonMisesNeg.sse             = single(NaN);
+%             Output.(L).vonMisesNeg.dfe             = single(NaN);
+%             Output.(L).vonMisesNeg.rmse            = single(NaN);
+%             Output.(L).vonMisesNeg.pvalue          = single(NaN);
+%             Output.(L).vonMisesNeg.aic             = single(NaN);
+%             Output.(L).vonMisesNeg.bic             = single(NaN);
             
             % median split - IBI low
             Output.(L).IBI_median                  = single(NaN);
@@ -141,105 +175,105 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.(L).highIBI_stdHR_bpm              = single(NaN);
             Output.(L).highIBI_SDNN_ms                = single(NaN);
             
-            Output.(L).lowIBI_linear.yfit             = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_linear.coefs            = single([NaN NaN]);
-            Output.(L).lowIBI_linear.rsquared         = single(NaN);
-            Output.(L).lowIBI_linear.adjrsquared      = single(NaN);
-            Output.(L).lowIBI_linear.sse              = single(NaN);
-            Output.(L).lowIBI_linear.dfe              = single(NaN);
-            Output.(L).lowIBI_linear.rmse             = single(NaN);
-            Output.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
-            Output.(L).lowIBI_linear.aic                = single(NaN);
-            Output.(L).lowIBI_linear.bic                = single(NaN);
-            
-            Output.(L).lowIBI_cosine.average          = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
-            Output.(L).lowIBI_cosine.yfit             = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_cosine.coefs            = single([NaN NaN NaN]);
-            Output.(L).lowIBI_cosine.rsquared         = single(NaN);
-            Output.(L).lowIBI_cosine.adjrsquared      = single(NaN);
-            Output.(L).lowIBI_cosine.sse              = single(NaN);
-            Output.(L).lowIBI_cosine.dfe              = single(NaN);
-            Output.(L).lowIBI_cosine.rmse             = single(NaN);
-            Output.(L).lowIBI_cosine.pvalue           = single(NaN);
-            Output.(L).lowIBI_cosine.aic                = single(NaN);
-            Output.(L).lowIBI_cosine.bic                = single(NaN);
-            
-            Output.(L).lowIBI_vonMisesPos.average     = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
-            Output.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_vonMisesPos.coefs       = single([NaN NaN NaN NaN]);
-            Output.(L).lowIBI_vonMisesPos.rsquared    = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.adjrsquared = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.sse         = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.aic                = single(NaN);
-            Output.(L).lowIBI_vonMisesPos.bic                = single(NaN);
-            
-            Output.(L).lowIBI_vonMisesNeg.average     = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
-            Output.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,length(bin_ids)));
-            Output.(L).lowIBI_vonMisesNeg.coefs       = single([NaN NaN NaN NaN]);
-            Output.(L).lowIBI_vonMisesNeg.rsquared    = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.adjrsquared = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.sse         = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
-            Output.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
-            
-            Output.(L).highIBI_linear.yfit            = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_linear.coefs           = single([NaN NaN]);
-            Output.(L).highIBI_linear.rsquared        = single(NaN);
-            Output.(L).highIBI_linear.adjrsquared     = single(NaN);
-            Output.(L).highIBI_linear.sse             = single(NaN);
-            Output.(L).highIBI_linear.dfe             = single(NaN);
-            Output.(L).highIBI_linear.rmse            = single(NaN);
-            Output.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
-            Output.(L).highIBI_linear.aic             = single(NaN);
-            Output.(L).highIBI_linear.bic             = single(NaN);
-            
-            Output.(L).highIBI_cosine.average         = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
-            Output.(L).highIBI_cosine.yfit            = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_cosine.coefs           = single([NaN NaN NaN]);
-            Output.(L).highIBI_cosine.rsquared        = single(NaN);
-            Output.(L).highIBI_cosine.adjrsquared     = single(NaN);
-            Output.(L).highIBI_cosine.sse             = single(NaN);
-            Output.(L).highIBI_cosine.dfe             = single(NaN);
-            Output.(L).highIBI_cosine.rmse            = single(NaN);
-            Output.(L).highIBI_cosine.pvalue          = single(NaN);
-            Output.(L).highIBI_cosine.aic             = single(NaN);
-            Output.(L).highIBI_cosine.bic             = single(NaN);
-            
-            Output.(L).highIBI_vonMisesPos.average    = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
-            Output.(L).highIBI_vonMisesPos.yfit       = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_vonMisesPos.coefs      = single([NaN NaN NaN NaN]);
-            Output.(L).highIBI_vonMisesPos.rsquared   = single(NaN);
-            Output.(L).highIBI_vonMisesPos.adjrsquared= single(NaN);
-            Output.(L).highIBI_vonMisesPos.sse        = single(NaN);
-            Output.(L).highIBI_vonMisesPos.dfe        = single(NaN);
-            Output.(L).highIBI_vonMisesPos.rmse       = single(NaN);
-            Output.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
-            Output.(L).highIBI_vonMisesPos.aic        = single(NaN);
-            Output.(L).highIBI_vonMisesPos.bic        = single(NaN);
-            
-            Output.(L).highIBI_vonMisesNeg.average    = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
-            Output.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,length(bin_ids)));
-            Output.(L).highIBI_vonMisesNeg.coefs      = single([NaN NaN NaN NaN]);
-            Output.(L).highIBI_vonMisesNeg.rsquared   = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.adjrsquared= single(NaN);
-            Output.(L).highIBI_vonMisesNeg.sse        = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.aic        = single(NaN);
-            Output.(L).highIBI_vonMisesNeg.bic        = single(NaN);
+%             Output.(L).lowIBI_linear.yfit             = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_linear.coefs            = single([NaN NaN]);
+%             Output.(L).lowIBI_linear.rsquared         = single(NaN);
+%             Output.(L).lowIBI_linear.adjrsquared      = single(NaN);
+%             Output.(L).lowIBI_linear.sse              = single(NaN);
+%             Output.(L).lowIBI_linear.dfe              = single(NaN);
+%             Output.(L).lowIBI_linear.rmse             = single(NaN);
+%             Output.(L).lowIBI_linear.pvalue           = single([NaN; NaN]);
+%             Output.(L).lowIBI_linear.aic                = single(NaN);
+%             Output.(L).lowIBI_linear.bic                = single(NaN);
+%             
+%             Output.(L).lowIBI_cosine.average          = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_cosine.startPoint       = single([NaN NaN NaN]);
+%             Output.(L).lowIBI_cosine.yfit             = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_cosine.coefs            = single([NaN NaN NaN]);
+%             Output.(L).lowIBI_cosine.rsquared         = single(NaN);
+%             Output.(L).lowIBI_cosine.adjrsquared      = single(NaN);
+%             Output.(L).lowIBI_cosine.sse              = single(NaN);
+%             Output.(L).lowIBI_cosine.dfe              = single(NaN);
+%             Output.(L).lowIBI_cosine.rmse             = single(NaN);
+%             Output.(L).lowIBI_cosine.pvalue           = single(NaN);
+%             Output.(L).lowIBI_cosine.aic                = single(NaN);
+%             Output.(L).lowIBI_cosine.bic                = single(NaN);
+%             
+%             Output.(L).lowIBI_vonMisesPos.average     = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_vonMisesPos.startPoint  = single([NaN NaN NaN NaN]);
+%             Output.(L).lowIBI_vonMisesPos.yfit        = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_vonMisesPos.coefs       = single([NaN NaN NaN NaN]);
+%             Output.(L).lowIBI_vonMisesPos.rsquared    = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.adjrsquared = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.sse         = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.dfe         = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.rmse        = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.pvalue      = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.aic                = single(NaN);
+%             Output.(L).lowIBI_vonMisesPos.bic                = single(NaN);
+%             
+%             Output.(L).lowIBI_vonMisesNeg.average     = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_vonMisesNeg.startPoint  = single([NaN NaN NaN NaN]);
+%             Output.(L).lowIBI_vonMisesNeg.yfit        = single(nan(1,length(bin_ids)));
+%             Output.(L).lowIBI_vonMisesNeg.coefs       = single([NaN NaN NaN NaN]);
+%             Output.(L).lowIBI_vonMisesNeg.rsquared    = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.adjrsquared = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.sse         = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.dfe         = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.rmse        = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.pvalue      = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.aic         = single(NaN);
+%             Output.(L).lowIBI_vonMisesNeg.bic         = single(NaN);
+%             
+%             Output.(L).highIBI_linear.yfit            = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_linear.coefs           = single([NaN NaN]);
+%             Output.(L).highIBI_linear.rsquared        = single(NaN);
+%             Output.(L).highIBI_linear.adjrsquared     = single(NaN);
+%             Output.(L).highIBI_linear.sse             = single(NaN);
+%             Output.(L).highIBI_linear.dfe             = single(NaN);
+%             Output.(L).highIBI_linear.rmse            = single(NaN);
+%             Output.(L).highIBI_linear.pvalue          = single([NaN; NaN]);
+%             Output.(L).highIBI_linear.aic             = single(NaN);
+%             Output.(L).highIBI_linear.bic             = single(NaN);
+%             
+%             Output.(L).highIBI_cosine.average         = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_cosine.startPoint      = single([NaN NaN NaN]);
+%             Output.(L).highIBI_cosine.yfit            = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_cosine.coefs           = single([NaN NaN NaN]);
+%             Output.(L).highIBI_cosine.rsquared        = single(NaN);
+%             Output.(L).highIBI_cosine.adjrsquared     = single(NaN);
+%             Output.(L).highIBI_cosine.sse             = single(NaN);
+%             Output.(L).highIBI_cosine.dfe             = single(NaN);
+%             Output.(L).highIBI_cosine.rmse            = single(NaN);
+%             Output.(L).highIBI_cosine.pvalue          = single(NaN);
+%             Output.(L).highIBI_cosine.aic             = single(NaN);
+%             Output.(L).highIBI_cosine.bic             = single(NaN);
+%             
+%             Output.(L).highIBI_vonMisesPos.average    = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_vonMisesPos.startPoint = single([NaN NaN NaN NaN]);
+%             Output.(L).highIBI_vonMisesPos.yfit       = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_vonMisesPos.coefs      = single([NaN NaN NaN NaN]);
+%             Output.(L).highIBI_vonMisesPos.rsquared   = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.adjrsquared= single(NaN);
+%             Output.(L).highIBI_vonMisesPos.sse        = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.dfe        = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.rmse       = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.pvalue     = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.aic        = single(NaN);
+%             Output.(L).highIBI_vonMisesPos.bic        = single(NaN);
+%             
+%             Output.(L).highIBI_vonMisesNeg.average    = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_vonMisesNeg.startPoint = single([NaN NaN NaN NaN]);
+%             Output.(L).highIBI_vonMisesNeg.yfit       = single(nan(1,length(bin_ids)));
+%             Output.(L).highIBI_vonMisesNeg.coefs      = single([NaN NaN NaN NaN]);
+%             Output.(L).highIBI_vonMisesNeg.rsquared   = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.adjrsquared= single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.sse        = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.dfe        = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.rmse       = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.pvalue     = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.aic        = single(NaN);
+%             Output.(L).highIBI_vonMisesNeg.bic        = single(NaN);
             
         end
         
@@ -278,15 +312,16 @@ for numTiming = 1:length(cfg.analyse_states)
                 RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
                 RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
             end
+            
             %% define which parts of the continous PSTH are during a trial
             
             during_trial_index     = ecg_bna_define_during_trial_index(trial_onsets, trial_ends, PSTH_time, curr_analyse_states, cfg.time.PSTH_binwidth);
             during_trial_index_1ms = ecg_bna_define_during_trial_index(trial_onsets, trial_ends, PSTH_time_1ms, curr_analyse_states, 0.001); % for rasters with 1-ms bins
             
-            realPSTHs         = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
-            realPSTHs_1ms     = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
-            shuffledPSTH      = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
-            SD                = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.time);
+            realPSTHs     = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            realPSTHs_1ms = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
+            shuffledPSTH  = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            SD            = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.time.significance_window{numTiming});
             
             Output.(L).SD                           = SD.SD_mean ;
             Output.(L).SD_STD                       = SD.SD_STD;
@@ -312,46 +347,114 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
             Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
             
-            Output.(L).linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'linear');
-            Output.(L).cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'cosine');
-            Output.(L).cosine.coefs(2)      = Output.(L).cosine.coefs(2)+min(Output.phase_bin_centers);
-            Output.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', 1);
-            Output.(L).vonMisesPos.coefs(4) = Output.(L).vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
-            Output.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', -1);
-            Output.(L).vonMisesNeg.coefs(4) = Output.(L).vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
-            
             % implement median split to heart-cycle durations
             Output.(L).IBI_median           = median(realPSTHs.RDs{1});
             
             lowIBIids  = realPSTHs.RDs{1} < Output.(L).IBI_median;
             highIBIids = realPSTHs.RDs{1} > Output.(L).IBI_median;
             
-            % check the number of spikes left after computing phases
-            if realPSTHs.n_events < 3 || sum(lowIBIids) < 3 || sum(highIBIids) < 3
+                        % check the number of spikes left after computing phases
+            if realPSTHs.n_events < 100 || sum(lowIBIids) < 3 || sum(highIBIids) < 3
                 continue
             end
             
-            % split smoothed data
-            Output.(L).lowIBI_SD = mean(realPSTHs.PSTH(lowIBIids,:),1);
-            Output.(L).highIBI_SD   = mean(realPSTHs.PSTH(highIBIids,:),1);
+%             Output.(L).linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'linear');
+%             Output.(L).cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'cosine');
+%             Output.(L).cosine.coefs(2)      = Output.(L).cosine.coefs(2)+min(Output.phase_bin_centers);
+%             Output.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', 1);
+%             Output.(L).vonMisesPos.coefs(4) = Output.(L).vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+%             Output.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', -1);
+%             Output.(L).vonMisesNeg.coefs(4) = Output.(L).vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+            
+            % select lowIBI heart cycles
+            overall_lowIBI_ids = RPEAK_dur < Output.(L).IBI_median;
+            
+            % select lowIBI heart cycles from shuffled data
+            overall_shuffled_lowIBI_ids = RPEAK_dur_perm < Output.(L).IBI_median;
+            shuffled_lowIBI_dur         = select2D_cat_nans(RPEAK_dur_perm,overall_shuffled_lowIBI_ids);
+            shuffled_lowIBI_ts          = select2D_cat_nans(RPEAK_ts_perm,overall_shuffled_lowIBI_ids);
+            
+            % compute time-domain analysis for lowIBI
+            realPSTHs_lowIBI     = compute_PSTH(RPEAK_ts(overall_lowIBI_ids),RPEAK_dur(overall_lowIBI_ids),RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+%             realPSTHs_1ms_lowIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
+            shuffledPSTH_lowIBI  = compute_PSTH(shuffled_lowIBI_ts,shuffled_lowIBI_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            SD_lowIBI            = do_statistics(realPSTHs_lowIBI,shuffledPSTH_lowIBI,BINS,cfg.time.significance_window{numTiming});
+            
+            % select highIBI heart cycles
+            overall_highIBI_ids = RPEAK_dur > Output.(L).IBI_median;
+            
+            % select lowIBI heart cycles from shuffled data
+            overall_shuffled_highIBI_ids = RPEAK_dur_perm < Output.(L).IBI_median;
+            shuffled_highIBI_dur         = select2D_cat_nans(RPEAK_dur_perm,overall_shuffled_highIBI_ids);
+            shuffled_highIBI_ts          = select2D_cat_nans(RPEAK_ts_perm,overall_shuffled_highIBI_ids);
+            
+            % compute time-domain analysis for highIBI
+            realPSTHs_highIBI     = compute_PSTH(RPEAK_ts(overall_highIBI_ids),RPEAK_dur(overall_highIBI_ids),RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+%             realPSTHs_1ms_highIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
+            shuffledPSTH_highIBI  = compute_PSTH(shuffled_highIBI_ts,shuffled_highIBI_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            SD_highIBI            = do_statistics(realPSTHs_highIBI,shuffledPSTH_highIBI,BINS,cfg.time.significance_window{numTiming});
+            
+            Output.(L).lowIBI_SD          = SD_lowIBI.SD_mean;
+            Output.(L).lowIBI_SD_STD      = SD_lowIBI.SD_STD;
+            Output.(L).lowIBI_SD_SEM      = SD_lowIBI.SD_SEM ;
+            Output.(L).lowIBI_SDP         = SD_lowIBI.SDPmean ;
+            Output.(L).lowIBI_SDPCL       = SD_lowIBI.SDPconf(1,:) ;
+            Output.(L).lowIBI_SDPCu       = SD_lowIBI.SDPconf(2,:) ;
+            Output.(L).lowIBI_sig_all     = SD_lowIBI.sig_all;
+            Output.(L).lowIBI_sig         = SD_lowIBI.sig;
+            Output.(L).lowIBI_sig_FR_diff = SD_lowIBI.sig_FR_diff;
+            Output.(L).lowIBI_sig_time    = SD_lowIBI.sig_time;
+            Output.(L).lowIBI_sig_n_bins  = SD_lowIBI.sig_n_bins;
+            Output.(L).lowIBI_sig_sign    = SD_lowIBI.sig_sign;
+            Output.(L).lowIBI_SDsubstractedSDP            = Output.(L).lowIBI_SD - Output.(L).lowIBI_SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).lowIBI_SDsubstractedSDP_normalized = Output.(L).lowIBI_SDsubstractedSDP ./ Output.(L).lowIBI_SDP *100; % percent signal change
+            Output.(L).lowIBI_FR_ModIndex_SubtrSDP        = max(Output.(L).lowIBI_SDsubstractedSDP) - min(Output.(L).lowIBI_SDsubstractedSDP); % difference between max and min FR
+            Output.(L).lowIBI_FR_ModIndex_PcS             = max(Output.(L).lowIBI_SDsubstractedSDP_normalized) - min(Output.(L).lowIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
+            
+            Output.(L).highIBI_SD          = SD_highIBI.SD_mean;
+            Output.(L).highIBI_SD_STD      = SD_highIBI.SD_STD;
+            Output.(L).highIBI_SD_SEM      = SD_highIBI.SD_SEM ;
+            Output.(L).highIBI_SDP         = SD_highIBI.SDPmean ;
+            Output.(L).highIBI_SDPCL       = SD_highIBI.SDPconf(1,:) ;
+            Output.(L).highIBI_SDPCu       = SD_highIBI.SDPconf(2,:) ;
+            Output.(L).highIBI_sig_all     = SD_highIBI.sig_all;
+            Output.(L).highIBI_sig         = SD_highIBI.sig;
+            Output.(L).highIBI_sig_FR_diff = SD_highIBI.sig_FR_diff;
+            Output.(L).highIBI_sig_time    = SD_highIBI.sig_time;
+            Output.(L).highIBI_sig_n_bins  = SD_highIBI.sig_n_bins;
+            Output.(L).highIBI_sig_sign    = SD_highIBI.sig_sign;
+            Output.(L).highIBI_SDsubstractedSDP            = Output.(L).highIBI_SD - Output.(L).highIBI_SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).highIBI_SDsubstractedSDP_normalized = Output.(L).highIBI_SDsubstractedSDP ./ Output.(L).highIBI_SDP *100; % percent signal change
+            Output.(L).highIBI_FR_ModIndex_SubtrSDP        = max(Output.(L).highIBI_SDsubstractedSDP) - min(Output.(L).highIBI_SDsubstractedSDP); % difference between max and min FR
+            Output.(L).highIBI_FR_ModIndex_PcS             = max(Output.(L).highIBI_SDsubstractedSDP_normalized) - min(Output.(L).highIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
             
             % low IBI
-            Output.(L).lowIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'linear');
-            Output.(L).lowIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'cosine');
-            Output.(L).lowIBI_cosine.coefs(2)      = Output.(L).lowIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
-            Output.(L).lowIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', 1);
-            Output.(L).lowIBI_vonMisesPos.coefs(4) = Output.(L).lowIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
-            Output.(L).lowIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', -1);
-            Output.(L).lowIBI_vonMisesNeg.coefs(4) = Output.(L).lowIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+%             Output.(L).lowIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'linear');
+            
+%             Output.(L).lowIBI_linear_smoothed      = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.mean(bin_ids)', sum(lowIBIids), 'linear');
+            
+%             Output.(L).lowIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'cosine');
+%             Output.(L).lowIBI_cosine.coefs(2)      = Output.(L).lowIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
+            
+            
+            
+%             Output.(L).lowIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', 1);
+%             Output.(L).lowIBI_vonMisesPos.coefs(4) = Output.(L).lowIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+            
+%             Output.(L).lowIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'vonMises', -1);
+%             Output.(L).lowIBI_vonMisesNeg.coefs(4) = Output.(L).lowIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
             
             % high IBI
-            Output.(L).highIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'linear');
-            Output.(L).highIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'cosine');
-            Output.(L).highIBI_cosine.coefs(2)      = Output.(L).highIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
-            Output.(L).highIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', 1);
-            Output.(L).highIBI_vonMisesPos.coefs(4) = Output.(L).highIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
-            Output.(L).highIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', -1);
-            Output.(L).highIBI_vonMisesNeg.coefs(4) = Output.(L).highIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
+%             Output.(L).highIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'linear');
+            
+%             Output.(L).highIBI_cosine               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'cosine');
+%             Output.(L).highIBI_cosine.coefs(2)      = Output.(L).highIBI_cosine.coefs(2)+min(Output.phase_bin_centers);
+            
+%             Output.(L).highIBI_vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', 1);
+%             Output.(L).highIBI_vonMisesPos.coefs(4) = Output.(L).highIBI_vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
+            
+%             Output.(L).highIBI_vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(highIBIids, bin_ids)', sum(highIBIids), 'vonMises', -1);
+%             Output.(L).highIBI_vonMisesNeg.coefs(4) = Output.(L).highIBI_vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
             
             clear realPSTHs shuffledPSTH SD
             
@@ -482,7 +585,7 @@ SD            = conv(RAST,Kernel,'same');
 SD_1ms        = conv(RAST_1ms,Kernel,'same');
 end
 
-function [SD,BINS]=do_statistics(Real,Shuffled,BINS,cfg)
+function [SD,BINS]=do_statistics(Real,Shuffled,BINS,significance_window)
 definition='max';
 
 SD_mean=Real.mean;
@@ -498,7 +601,7 @@ SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 
 %% signficance
-sig_to_check=BINS>cfg.significance_window(1)*1000 & BINS<cfg.significance_window(2)*1000;
+sig_to_check=BINS>significance_window(1)*1000 & BINS<significance_window(2)*1000;
 pos_diff=SD_mean-(SDPmean+SDPconf(2,:));
 neg_diff=SD_mean-(SDPmean-SDPconf(1,:));
 sig_above=pos_diff>0&sig_to_check;
@@ -561,4 +664,19 @@ SD.sig_FR_diff=max_FR_diff;
 SD.sig_time=max_time;
 SD.sig_n_bins=m;
 SD.sig_sign=sig_sign;
+end
+
+function out = select2D_cat_nans(input_array,idx)
+
+cell_input_array = mat2cell(input_array, ones(size(input_array,1),1), size(input_array,2));
+cell_idx         = mat2cell(idx, ones(size(idx,1),1), size(idx,2));
+cell_selected    = cellfun(@(x,y) x(y), cell_input_array, cell_idx, 'UniformOutput', false);
+len_selected     = cellfun(@length, cell_selected, 'UniformOutput', true);
+max_len          = max(len_selected);
+elem2add         = max_len - len_selected;
+elem2add         = mat2cell(elem2add, ones(length(elem2add),1), 1);
+nan2add          = cellfun(@(x) nan(1,x), elem2add, 'UniformOutput', false);
+out              = cellfun(@(x,y) cat(2,x,y), cell_selected, nan2add, 'UniformOutput', false);
+out              = cat(1,out{:});
+
 end

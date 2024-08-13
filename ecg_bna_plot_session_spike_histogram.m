@@ -27,7 +27,7 @@ for numTiming = 1:length(cfg.analyse_states)
             error('Numbers and names of units don''t match for task and rest')
         end
         
-        BINS=(curr_analyse_states{1,3}:cfg.spk.PSTH_binwidth:curr_analyse_states{1,4})*1000;
+        BINS=(curr_analyse_states{1,3}:cfg.time.PSTH_binwidth:curr_analyse_states{1,4})*1000;
         BINS_1ms = (curr_analyse_states{1,3}:0.001:curr_analyse_states{1,4})*1000;
         
         unit_ID = Output.unit_ID;
@@ -124,10 +124,10 @@ for numTiming = 1:length(cfg.analyse_states)
             hstR=hstR/sum(hstR);
             hstP=hstP/sum(hstP);
             if ~isnan(hstR)
-                stairs(cfg.spk.histbins, hstR, 'Color', col, 'LineWidth', 2)
+                stairs(cfg.time.histbins, hstR, 'Color', col, 'LineWidth', 2)
             end
             if ~isnan(hstP)
-                stairs(cfg.spk.histbins, hstP, 'Color', [0.5,0.5,0.5], 'LineWidth', 2)
+                stairs(cfg.time.histbins, hstP, 'Color', [0.5,0.5,0.5], 'LineWidth', 2)
             end
             ylabel('fraction of intervals');
             xlabel('RR Duration, s');
