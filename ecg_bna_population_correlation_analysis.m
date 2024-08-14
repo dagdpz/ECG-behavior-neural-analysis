@@ -19,13 +19,14 @@ end
 
 %% load data
 %load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
-load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
+load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'ids_both')
 
 for a = 1: N_Areas
     T=unqTargets{a};
     currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
     curr_unit_ids = unit_ids(currTargIds);
-    dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, 'correlation_analysis', 'data', var_list);
+    curr_ids_both = ids_both(currTargIds);
+    dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, 'correlation_analysis', 'data', var_list, curr_ids_both);
 end
 
 %% autocorrelation & correlation coefs between FR and RR
@@ -44,7 +45,7 @@ for prefixNum = 1:length(var_prefix)
             
             splot_num = (c-1)*N_Areas + a;
             subplot(N_conditions, N_Areas, splot_num)
-            plot(dt.(T).cc_lag_list, dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']), 'Color', [0.5 0.5 0.5])
+            plot(dt.(T).cc_lag_list', dt.(T).(L).([var_prefix{prefixNum} 'pearson_r']), 'Color', [0.5 0.5 0.5])
             
             xlim([-12 12])
             ylim([-1 1])
@@ -160,6 +161,7 @@ for a = 1: N_Areas
         title([T ': ' L])
         xlim([-13 13])
         ylim([-0.5 0.5])
+        box on
     end
     
 end
@@ -195,7 +197,7 @@ for a = 1: N_Areas
         subplot(N_conditions, N_Areas, splot_num)
         hold on
         
-        laglist=dt.(T).cc_lag_list;
+        laglist=dt.(T).cc_lag_list(1,:);
         N=numel(ids);
         
         
@@ -244,15 +246,15 @@ for a = 1: N_Areas
     f2 = figure;
     set(f2,'Position',[364   319   580   584])
     
-    
-    aa=plot(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),'linestyle','none','MarkerFaceColor',[0.5 0.5 0.5]);
-    %
+    aa=...
+        scatter(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task), 20, cfg.area_colors{a}, 'filled', 'o', 'MarkerFaceAlpha', 0.3);
     %         scatterhistogram(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),...
     %             'Title',T,'HistogramDisplayStyle','smooth',...
     %             'ScatterPlotLocation','SouthEast','Color',cfg.area_colors{a}, 'MarkerAlpha',0.3)%,'Kernel','on','Marker','.'
     xlabel('Rest: Lag for Abs. Max. CC')
     ylabel('Task: Lag for Abs. Max. CC')
     title(T)
+    box on
     save_figure_as(f2, ['Scatterhist_Lags_Rest_vs_Task_' T], basepath_to_save, 1)
     
 end
@@ -291,7 +293,9 @@ for a = 1: N_Areas
             plot_data = [counts_pos counts_neg counts_nonsig];
             subplot(N_conditions, N_lags, splot_num)
             b = bar(-1:bin_resolution:1, plot_data, 'stacked');
-            set(b, 'LineWidth',0.000000000000000000000000000000000001);
+            set(b, 'FaceColor', 'Flat')
+            set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
+%             set(b, 'LineWidth',0.000000000000000000000000000000000001);
             xlim([-0.5 0.5])
             title(num2str(dt.(T).cc_lag_list(lag_num)))
             if lag_num > 1
@@ -351,6 +355,8 @@ for a = 1: N_Areas
         plot_data = [counts_pos counts_neg counts_nonsig];
         subplot(N_conditions, N_Areas, splot_num)
         b = bar(-1:bin_resolution:1, plot_data, 'stacked');
+        set(b, 'FaceColor', 'Flat')
+        set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
         xlim([-0.5 0.5])
         xlabel('CC between FR and RR duration')
         title([T ': ' L ', ' num2str(lag_to_plot) ' lag'])

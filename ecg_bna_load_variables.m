@@ -11,7 +11,6 @@ for varNum = 1:length(var_names)
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
-            
             dt.(L).(beforeDot).(afterDot) = nan(length(unit_list),1);
         end
         
@@ -21,7 +20,6 @@ for varNum = 1:length(var_names)
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
-            
             dt.(L).(var_names{varNum}) = nan(25,length(unit_list));
         end
         
@@ -29,7 +27,6 @@ for varNum = 1:length(var_names)
             strcmp(var_names{varNum}, 'SDP') || strcmp(var_names{varNum}, 'SDPCL') || strcmp(var_names{varNum}, 'SDPCu') || ...
             strcmp(var_names{varNum}, 'sig_all') || strcmp(var_names{varNum}, 'sig') || strcmp(var_names{varNum}, 'SDsubstractedSDP') || ...
             strcmp(var_names{varNum}, 'SDsubstractedSDP_normalized')
-        
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
@@ -78,7 +75,11 @@ for fileNum = 1:length(unit_list)
                     for subfield = fieldnames(B.criteria)'
                         dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
                     end
-                    
+                elseif strcmp(fn{1}, 'thresholds_microV')
+                    dt.(fn{1})            = nan(length(unit_list),4);
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
+                elseif strcmp(fn{1}, 'cc_lag_list')
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1}))
                     dt.(fn{1})         = cell(length(unit_list),1);
                     dt.(fn{1})(fileNum) = {B.(fn{1})};
@@ -95,9 +96,11 @@ for fileNum = 1:length(unit_list)
                         dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
                     end
                 elseif strcmp(fn{1}, 'thresholds_microV')
-                    dt.(fn{1}) = [dt.(fn{1}) B.(fn{1})];
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
+%                 elseif strcmp(fn{1}, 'cc_lag_list')
+%                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1})) || isstruct(B.(fn{1}))
-                    dt.(fn{1}) = [dt.(fn{1}); B.(fn{1})];
+                    dt.(fn{1})(fileNum) = {B.(fn{1})};
                 end
             end
             
