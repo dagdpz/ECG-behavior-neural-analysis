@@ -110,7 +110,7 @@ for unitNum = 1:length(population)
         % 0.2. Compute RR-intervals
         valid_RRinterval_ends      = single([Rpeaks.(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
         if any(isnan([Rpeaks.(['RPEAK_ts' cfg.condition(c).Rpeak_field])]))
-            thisisinteresing=1;
+            thisisinteresing=1
         end
         %valid_RRinterval_ends      = valid_RRinterval_ends(~isnan(valid_RRinterval_ends)); %% somehow, many of those can be NaN ?????
         valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks.(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
@@ -198,7 +198,6 @@ for unitNum = 1:length(population)
         data.(L).FRbyRR_Hz = FRbyRR_Hz;
         data.(L).cycleDurations_s = cycleDurations_s;
         
-        tic
         % compute correlation with different lag        
         [data.(L).n_cycles, data.(L).pearson_r, data.(L).pearson_p, data.(L).permuted_p] = ...
             compute_correlation_by_lag(cfg,FRbyRR_Hz,cycleDurations_s);
@@ -210,7 +209,6 @@ for unitNum = 1:length(population)
         % autocorrelation cycleDurations_s
         [data.(L).RR_n_cycles, data.(L).RR_pearson_r, data.(L).RR_pearson_p, data.(L).RR_permuted_p] = ...
             compute_correlation_by_lag(cfg,cycleDurations_s,cycleDurations_s);
-        toc
     end
     save([basepath_to_save filesep data.unitId '_' data.target '_correlation.mat'], 'data', '-v7.3')
     clear data
@@ -225,6 +223,8 @@ alpha_level    = cfg.correlation.alpha_level;
 stat           = cfg.correlation.stat;
 reports        = cfg.correlation.reports;
 seed_state     = cfg.correlation.seed_state;
+
+Min_overlap=cfg.spk.unit_exclusion.nCardiacCycles/2;
 
 % Initialize output structure to avoid broadcasting issues
 lag_list        = cfg.correlation.lag_list;
@@ -252,18 +252,20 @@ parfor lagNum = 1:nLags
     valid = ~isnan(fr_hz) & ~isnan(rr_s);
     [temp_r, temp_p] = corrcoef(fr_hz(valid), rr_s(valid));
     n_cycles(lagNum)  = sum(valid);
-    if sum(valid)>1
+    if sum(valid)>Min_overlap
         pearson_r(lagNum) = temp_r(2,1);
         pearson_p(lagNum) = temp_p(2,1);
         
         % i dont think this makes sense at all unfortunately... the
         % multicomparison correction should be due to multiple lags, no?
+        % NO! skewdness of both parameters to correlate causes a chance
+        % level correlation different from 0 !!!
         permuted_p(lagNum) = mult_comp_perm_corr(fr_hz(valid), rr_s(valid), n_permutations, tail, alpha_level, stat, reports, seed_state);
     else
         
-        pearson_r(lagNum) = 0;
-        pearson_p(lagNum) = 1;
-        permuted_p(lagNum) =1;
+        pearson_r(lagNum) = NaN;
+        pearson_p(lagNum) = NaN;
+        permuted_p(lagNum)= NaN;
     end
 end
 

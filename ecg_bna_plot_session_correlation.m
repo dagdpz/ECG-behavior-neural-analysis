@@ -125,47 +125,47 @@ for untNum = 1:length(fileList)
     legend({cfg.condition.name})
     
     filename= ['FR_RR_Correlations__' data.unitId, '_' data.target];
-    try
     export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
-    catch eeee
-       eeee; 
-    end
     close(gcf);
     
     %% unit FR per heart cycle as a function of time
-    if 0
-	figure;
-    set(gcf, 'Position', [1 41 1920 482])
-
-    for c=1:numel(cfg.condition)
-        L=cfg.condition(c).name;
-        yyaxis left
-        set(gca,'YColor',cfg.condition(c).color);
-        hold on
-        plot(data.(L).timeRRstart, data.(L).FRbyRR_Hz, 'o-', 'Color', cfg.condition(c).color)
-        ylabel('FR per Heart Cycle, Hz')
-        yyaxis right
-        set(gca,'YColor',[0 0 0]);
-        hold on
-        plot(data.(L).timeRRstart, data.(L).cycleDurations_s, 'kx--')
-        ylabel('Heart-Cycle Duration, s')
-        box on
+    if 1
+        figure;
+        set(gcf, 'Position', [1 41 1920 482])
         
-        xlim_lows(c)  = data.(L).timeRRstart(1);
-        xlim_highs(c) = data.(L).timeRRstart(end);
-    end
-    xlabel('Time from Session Start, s')
-    if ~isnan(min(xlim_lows)) && ~isnan(max(xlim_highs))
-        xlim([min(xlim_lows) max(xlim_highs)])
-    end
-    if matlab_year >= 2020
-        sgtitle(sgtitleText, 'interpreter', 'none')
-    end
-    
-    filename= ['Time_vs_FRperCycle_' data.unitId, '_' data.target];
-    export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
-    close(gcf);
-    
+        for c=1:numel(cfg.condition)
+            L=cfg.condition(c).name;
+%             yyaxis left
+%             set(gca,'YColor',cfg.condition(c).color);
+            subplot(2,1,1)
+            hold on
+            plot(data.(L).timeRRstart, data.(L).FRbyRR_Hz, 'o-', 'Color', cfg.condition(c).color)
+            ylabel('FR per Heart Cycle, Hz')
+%             yyaxis right
+%             set(gca,'YColor',[0 0 0]);
+%             hold on
+            subplot(2,1,2)
+            plot(data.(L).timeRRstart, data.(L).cycleDurations_s, 'kx--')
+            ylabel('Heart-Cycle Duration, s')
+            box on
+            
+            xlim_lows(c)  = data.(L).timeRRstart(1);
+            xlim_highs(c) = data.(L).timeRRstart(end);
+            
+            %legend({'FR rest', 'cycle duration rest','FR task', 'cycle duration task'})
+        end
+        xlabel('Time from Session Start, s')
+        if ~isnan(min(xlim_lows)) && ~isnan(max(xlim_highs))
+            xlim([min(xlim_lows) max(xlim_highs)])
+        end
+        if matlab_year >= 2020
+            sgtitle(sgtitleText, 'interpreter', 'none')
+        end
+        
+        filename= ['Time_vs_FRperCycle_' data.unitId, '_' data.target];
+        export_fig(gcf,[dataFolder, filesep, filename], '-pdf','-transparent') % pdf by run
+        close(gcf);
+        
     end
     
     %% unit FR by RR-cycle quintiles
