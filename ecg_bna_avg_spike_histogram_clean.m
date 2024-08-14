@@ -1,7 +1,74 @@
-function ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_folder, cfg)
+function ecg_bna_avg_spike_histogram_clean(cfg, data_folder, unitList, saveFolder)
 % Here comes some sort of across population plot i assume?
 
+%% load data
+output_folder = [cfg.SPK_root_results_fldr filesep saveFolder];
+load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\' unitList '.mat'], 'unit_ids', 'targets', 'ids_both')
+
+var_list = ...
+    {'SD', 'SD_STD', 'SD_SEM', 'SDP', 'SDPCL', 'SDPCu', ...
+    'sig_all', 'sig', 'sig_FR_diff', 'sig_time', 'sig_n_bins', 'sig_sign', ...
+    'NrTrials', 'NrEvents', 'FR', 'SDsubstractedSDP', 'SDsubstractedSDP_normalized', 'FR_ModIndex_SubtrSDP', 'FR_ModIndex_PcS'};
+% , ...
+%     'lowIBI.SD', 'lowIBI.SD_STD', 'lowIBI.SD_SEM', 'lowIBI.SDP', 'lowIBI.SDPCL', 'lowIBI.SDPCu', ...
+%     'lowIBI.sig_all', 'lowIBI.sig', 'lowIBI.sig_FR_diff', 'lowIBI.sig_time', 'lowIBI.sig_n_bins', 'lowIBI.sig_sign', ...
+%     'lowIBI.NrEvents', 'lowIBI.SDsubstractedSDP', 'lowIBI.SDsubstractedSDP_normalized', 'lowIBI.FR_ModIndex_SubtrSDP', 'lowIBI.FR_ModIndex_PcS', ...
+%     'highIBI.SD', 'highIBI.SD_STD', 'highIBI.SD_SEM', 'highIBI.SDP', 'highIBI.SDPCL', 'highIBI.SDPCu', ...
+%     'highIBI.sig_all', 'highIBI.sig', 'highIBI.sig_FR_diff', 'highIBI.sig_time', 'highIBI.sig_n_bins', 'highIBI.sig_sign', ...
+%     'highIBI.NrEvents', 'highIBI.SDsubstractedSDP', 'highIBI.SDsubstractedSDP_normalized', 'highIBI.FR_ModIndex_SubtrSDP', 'highIBI.FR_ModIndex_PcS'
+
+N_Areas    = 3;
+unqTargets = {'VPL', 'dPul', 'MD'};
+N_conditions=numel(cfg.condition);
 n_sig_bins = cfg.time.n_sig_bins;
+
+for a = 1: N_Areas
+    
+    T=unqTargets{a};
+    currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
+    curr_unit_ids  = unit_ids(currTargIds);
+    curr_ids_both = ids_both(currTargIds);
+    Out.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, data_folder, 'Output', var_list, curr_ids_both);
+    
+    for c=1:N_conditions
+        L=cfg.condition(c).name;
+        Out.(T).(L).FR_perECGTriggeredAverage = nanmean(Out.(T).(L).SD,1);
+        
+        %% compute histograms - unit fractions and counts
+        out = [Out.(T).(L)];
+        
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(end,:))';
+        Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
+        sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
+        
+        % decrease, increase, non-sign
+        Out.(T).(L).Pc_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+        Out.(T).(L).Nb_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] ) ;
+        
+        % [by unit] decrease, increase, non-sign
+        HeartResponseType_byUnit = out.sig_sign;
+        HeartResponseType_byUnit(~sig | ~Idx_Units_NonNaN) = 0;
+        Out.(T).(L).HeartResponseType_byUnit = HeartResponseType_byUnit; % increase, decrease, no response
+        
+        %% compute modulation indices with sign
+        curr_sign = Out.(T).(L).sig_sign;
+        curr_sign(curr_sign == 0) = 1; % to define real sign but not to lose non-significant ones
+        Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
+        Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
+    end
+    
+    for u = 1:size(Out.(T).unit_ID,2)
+        
+        if ~isnan(Out.(T).Rest.sig_FR_diff(u)) & ~isnan(Out.(T).Task.sig_FR_diff(u))
+            
+            [Out.(T).pp_rest_vs_task(u), Out.(T).cc_rest_vs_task(u)] = ...
+                mult_comp_perm_corr(Out.(T).Rest.SD(:,u), Out.(T).Task.SD(:,u), cfg.time.n_shuffles, cfg.time.tail, cfg.time.alpha_level, cfg.time.stat, cfg.time.reports, cfg.time.seed_state);
+            
+        end
+        
+    end
+    
+end
 
 bar_colors = [0 0.4470 0.7410; 0.8500 0.3250 0.0980; 1 1 1];
 
@@ -24,80 +91,12 @@ for conNum = 1:length(cfg.condition)
     lineProps{conNum} = {'color',cfg.condition(conNum).color,'linewidth',4};
 end
 
-TargetBrainArea = {SPK_PSTH.target};
-Ana_TargetBrainArea = cfg.targets;
-if cfg.combine_hemispheres
-    TargetBrainArea=cellfun(@(x) x(1:end-2),TargetBrainArea,'UniformOutput',false);
-%     Ana_TargetBrainArea=cellfun(@(x) x(1:end-2),Ana_TargetBrainArea,'UniformOutput',false);
-end
-% Ana_TargetBrainArea=unique(Ana_TargetBrainArea);
-% Ana_TargetBrainArea=Ana_TargetBrainArea(ismember(Ana_TargetBrainArea,TargetBrainArea));
-Ana_TargetBrainArea = {'VPL', 'dPul', 'MD'};
+TargetBrainArea = fieldnames(Out);
+Ana_TargetBrainArea = TargetBrainArea;
 
-N_Areas=numel(Ana_TargetBrainArea);
-N_conditions=numel(cfg.condition);
+% N_Areas=numel(Ana_TargetBrainArea);
 
 Color_BrainArea = cfg.area_colors;
-
-%%  Calculations
-for a = 1: N_Areas
-    T=Ana_TargetBrainArea{a};
-    for c=1:N_conditions
-        L=cfg.condition(c).name;
-        dat=[SPK_PSTH(ismember(TargetBrainArea,T)).(L)];
-        dat_fieldnames=...
-            fieldnames(rmfield(dat,{'raster','Rds','Rds_perm',...
-            'linear','cosine','vonMisesPos','vonMisesNeg',...
-            'lowIBI_linear','lowIBI_cosine','lowIBI_vonMisesPos','lowIBI_vonMisesNeg',...
-            'highIBI_linear','highIBI_cosine','highIBI_vonMisesPos','highIBI_vonMisesNeg'}));% ,'Rts'
-        for fn=1:numel(dat_fieldnames)
-            N=dat_fieldnames{fn};
-            Out.(T).(L).(N)=vertcat(dat.(N));
-        end
-        dat_fieldnames={'unit_ID','quantSNR','Single_rating','stability_rating'};
-        for fn=1:numel(dat_fieldnames)
-            N=dat_fieldnames{fn};
-            if strcmp(N, 'unit_ID')
-                Out.(T).(L).(N)=vertcat({SPK_PSTH(ismember(TargetBrainArea,T)).(N)}');
-            else
-                Out.(T).(L).(N)=vertcat(SPK_PSTH(ismember(TargetBrainArea,T)).(N));
-            end
-        end
-        
-        Out.(T).(L).FR_perECGTriggeredAverage = nanmean(vertcat(dat.SD),2);
-        
-        %% compute histograms - unit fractions and counts
-        out = [Out.(T).(L)];
-        
-        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
-        Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
-        sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
-        
-        % decrease, increase, non-sign
-        Out.(T).(L).Pc_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
-        Out.(T).(L).Nb_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] ) ;
-        
-        % [by unit] decrease, increase, non-sign
-        HeartResponseType_byUnit = out.sig_sign;
-        HeartResponseType_byUnit(~sig | ~Idx_Units_NonNaN) = 0;
-        Out.(T).(L).HeartResponseType_byUnit = HeartResponseType_byUnit; % increase, decrease, no response
-        
-        %% compute modulation indices with sign
-        curr_sign = Out.(T).(L).sig_sign;
-        curr_sign(curr_sign == 0) = 1; % to define real sign but not to lose non-significant ones
-        Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
-        Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
-        
-    end
-    
-    for u = 1:length(Out.(T).Rest.unit_ID)
-        
-        [Out.(T).pp_rest_vs_task(u), Out.(T).cc_rest_vs_task(u)] = ...
-            mult_comp_perm_corr(Out.(T).Rest.SD(u,:)', Out.(T).Task.SD(u,:)', cfg.time.n_shuffles, cfg.time.tail, cfg.time.alpha_level, cfg.time.stat, cfg.time.reports, cfg.time.seed_state);
-        
-    end
-    
-end
 
 % % create unit subset
 % for a = 1: N_Areas
@@ -147,7 +146,7 @@ for c=1:N_conditions
     ax = gca;
     ax.FontSize = 12;
     
-    Tab = table(Ana_TargetBrainArea', nb_mat(:,1), nb_mat(:,2), nb_mat(:,3), 'VariableNames', {'Brain Area', 'Dec', 'Inc', 'No Resp'});
+    Tab = table(Ana_TargetBrainArea, nb_mat(:,1), nb_mat(:,2), nb_mat(:,3), 'VariableNames', {'Brain Area', 'Dec', 'Inc', 'No Resp'});
     savename = [output_folder filesep 'UnitCounts_' L '.xlsx'];
     writetable(Tab, savename)
     clear Tab
@@ -171,8 +170,9 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
     
     % find corrected p-values
 %     [p_corr, h] = bonf_holm(p, 0.05);
-    h = fdr_bky(p, 0.05);
-    Tab = table(Ana_TargetBrainArea', p(:,1), p(:,2), h(:,1), h(:,2), 'VariableNames', {'Brain Area', 'p_corr dec', 'p_corr inc', 'h dec', 'h inc'});
+    h = fdr_bky(round(p,10), 0.05);
+    
+    Tab = table(Ana_TargetBrainArea, p(:,1), p(:,2), h(:,1), h(:,2), 'VariableNames', {'Brain Area', 'p_corr dec', 'p_corr inc', 'h dec', 'h inc'});
     savename = [output_folder filesep (cfg.condition(cond2_num).name) '_vs_' (cfg.condition(cond1_num).name) 'Table_Prevalences_pvalues_corrected.xlsx'];
     writetable(Tab, savename)
     clear Tab
@@ -229,7 +229,7 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         hold on;
         if numel(out.FR) > 1 && sum(~isnan(out.FR))
-            scatter(out.FR, nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',ccol)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
+            scatter(out.FR, nanmean(out.SDP,1), 'filled', 'MarkerFaceColor',ccol)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
             M=max([xlim,ylim]);
             line([0 M],[0 M], 'color','k');
             xlabel('average Firing rate','fontsize',14 );
@@ -241,7 +241,7 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a + N_Areas);
         hold on;
         if size(out.SD, 1) > 1  && sum(~isnan(nanmean(out.SD,2)))
-            scatter(nanmean(out.SD,2) , nanmean(out.SDP,2), 'filled', 'MarkerFaceColor',ccol)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
+            scatter(nanmean(out.SD,1) , nanmean(out.SDP,1), 'filled', 'MarkerFaceColor',ccol)  %,30, out.FR(idx_sig)/max(out.FR) , 'filled')
             M=max([xlim,ylim]);
             line([0 M],[0 M], 'color','k');
             xlabel('average Firing rate within analysis window','fontsize',14 );
@@ -270,16 +270,16 @@ for a = 1:N_Areas
         ylabel('Modulation index (%)','fontsize',14 );
         
         box on;hold on;
-        if ~isempty(out.quantSNR)
-            scatter(out.quantSNR(sig)  , out.FR_ModIndex_PcS(sig),  'filled', 'MarkerFaceColor', ccol);
-            scatter(out.quantSNR(~sig) , out.FR_ModIndex_PcS(~sig), 'filled', 'MarkerFaceColor', ccol/2);
+        if ~isempty(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]))
+            scatter(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(sig), out.FR_ModIndex_PcS(sig),  'filled', 'MarkerFaceColor', ccol);
+            scatter(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(~sig) , out.FR_ModIndex_PcS(~sig), 'filled', 'MarkerFaceColor', ccol/2);
             axis square;
             
-            %xf = [min(out.quantSNR), max(out.quantSNR)];
-            [p,S] = polyfit(out.quantSNR(~isnan(out.FR_ModIndex_PcS)),out.FR_ModIndex_PcS(~isnan(out.FR_ModIndex_PcS)),1); %
-            [y_fit,delta] = polyval(p,out.quantSNR(~isnan(out.FR_ModIndex_PcS)),S);
-            [coef, pval]  = corr(out.quantSNR,out.FR_ModIndex_PcS, 'rows','complete') ;
-            plot(out.quantSNR(~isnan(out.FR_ModIndex_PcS)), y_fit,'LineWidth', 2, 'Color', ccol);
+            %xf = [min(out.(['SNR_' cfg.condition(c).saccadeTask])), max(out.(['SNR_' cfg.condition(c).saccadeTask]))];
+            [p,S] = polyfit(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(~isnan(out.FR_ModIndex_PcS)),out.FR_ModIndex_PcS(~isnan(out.FR_ModIndex_PcS)),1); %
+            [y_fit,delta] = polyval(p,Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(~isnan(out.FR_ModIndex_PcS)),S);
+            [coef, pval]  = corr(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_PcS, 'rows','complete') ;
+            plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(~isnan(out.FR_ModIndex_PcS)), y_fit,'LineWidth', 2, 'Color', ccol);
             title({[T ' ' L], ['coef, p ', num2str([roundto(coef,2), roundto(pval,4)])]})
             %legend({'Significant Units', 'Non-Significant Units', 'Linear Fit (Overall)'}, 'Location', 'Best')
         end
@@ -306,20 +306,20 @@ for a = 1:N_Areas
         box on;hold on;
         UnitSig_Rest = out.FR_ModIndex_SubtrSDP >30 & sig;
         UnitNotSign_Rest = out.FR_ModIndex_PcS > 30 & ~sig;
-        text(-400,-15, out.unit_ID(UnitSig_Rest),'Color', ccol);
+        text(-400,-15, Out.(T).unit_ID(UnitSig_Rest),'Color', ccol);
         if sum(UnitSig_Rest)
             line(PSTH_bins, out.SDsubstractedSDP_normalized(UnitSig_Rest,:), 'color', ccol, 'LineWidth', 1);
         end
-        text(300,20, out.unit_ID(UnitNotSign_Rest),'Color','k');
+        text(300,20, Out.(T).unit_ID(UnitNotSign_Rest),'Color','k');
         xlabel('Time from R-peak, ms')
         ylabel('% signal change')
         title('Units with Modulation strength > 30%');
         
         subplot(2,4,7:8);
         box on; hold on;
-        text(300,20, out.unit_ID(UnitNotSign_Rest),'Color','k');
+        text(300,20, Out.(T).unit_ID(UnitNotSign_Rest),'Color','k');
         if sum(UnitNotSign_Rest)
-            line(PSTH_bins, out.SDsubstractedSDP_normalized(UnitNotSign_Rest,:), 'color', ccol,'LineWidth', 4);
+            line(PSTH_bins, out.SDsubstractedSDP_normalized(:,UnitNotSign_Rest), 'color', ccol,'LineWidth', 4);
         end
         xlabel('Time from R-peak, ms')
         ylabel('% signal change')
@@ -428,8 +428,8 @@ if Graph_SelectionCriterion
             idx_ex = ([out.sig_n_bins] <= 4 );
             
             subplot(rows_plot,colums_plot,1);
-            scatter(out.sig_n_bins , out.quantSNR, 'filled', 'MarkerFaceColor', ccol); hold on;
-            scatter(out.sig_n_bins(idx_ex) , out.quantSNR(idx_ex), 'filled', 'MarkerFaceColor',[0 0 0])
+            scatter(out.sig_n_bins , out.(['SNR_' cfg.condition(c).saccadeTask]), 'filled', 'MarkerFaceColor', ccol); hold on;
+            scatter(out.sig_n_bins(idx_ex) , out.(['SNR_' cfg.condition(c).saccadeTask])(idx_ex), 'filled', 'MarkerFaceColor',[0 0 0])
             ylabel('Signal-to-Noise Ratio','fontsize',14 );
             xlabel('Nr. of bins of sig. Interval','fontsize',14 );
             axis square;
@@ -473,8 +473,8 @@ for a = 1: N_Areas
         
         out = [Out.(T).(L)];
         % from all not NAN units - how many were significant?
-        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(:,end));
-        Idx_Units_NaN =  sum(isnan(out.SDsubstractedSDP(:,end)));
+        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(end,:));
+        Idx_Units_NaN    = sum(isnan(out.SDsubstractedSDP(end,:)));
         sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
         dec = (out.sig_sign == -1);
         inc = (out.sig_sign == 1);
@@ -483,10 +483,10 @@ for a = 1: N_Areas
         subplot(2,4,1:2);
         hold on;
         if sum(sig)
-            line(PSTH_bins, out.SDsubstractedSDP_normalized(sig,:), 'color', ccol, 'LineWidth', 1);
+            line(PSTH_bins, out.SDsubstractedSDP_normalized(:,sig), 'color', ccol, 'LineWidth', 1);
         end
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(sig, :), [], 1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(sig, :), 1))) ;
-        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(sig, :), 1) ,SDmean_SEM,lineProps{c},1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:, sig), [], 2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:, sig), 2))) ;
+        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:, sig), 2) ,SDmean_SEM,lineProps{c},1);
         ylabel('normalized Firing rate (%)','fontsize',14 );
         xlabel('Time relative to R-peak (ms)','fontsize',14 );
         box on
@@ -501,8 +501,8 @@ for a = 1: N_Areas
         % display only significant units showing a increase in FR
         subplot(2,4,5); %
         hold on;
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(inc & sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(inc & sig,:), 1))) ;
-        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc & sig,:),1), SDmean_SEM ,lineProps{c},1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:, inc & sig),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:, inc & sig), 2))) ;
+        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:, inc & sig),2), SDmean_SEM ,lineProps{c},1);
         set(gca,'ylim',[-10, 10]);
         ylabel('normalized Firing rate (%)','fontsize',14);
         xlabel('Time relative to R-peak (ms)','fontsize',14);
@@ -517,8 +517,8 @@ for a = 1: N_Areas
         
         % display only significant units showing a decrease in FR
         subplot(2,4,6);
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(dec & sig,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(dec & sig,:), 1))) ;
-        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(dec & sig,:),1), SDmean_SEM ,lineProps{c},1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:, dec & sig),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:, dec & sig), 2))) ;
+        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:, dec & sig),2), SDmean_SEM, lineProps{c},1);
         set(gca,'ylim',[-10, 10]);
         ylabel('normalized Firing rate (spike/s)','fontsize',14 );
         xlabel('Time relative to R-peak (ms)','fontsize',14 );
@@ -538,21 +538,22 @@ for a = 1: N_Areas
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('Signal-to-Noise','fontsize',14 );
         axis square;
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_PcS',sig,0,ccol,'raw') %% or FR_ModIndex_SubtrSDP ??
+%         SNR_fieldname = (['SNR_' cfg.condition(c).saccadeTask]);
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_PcS,sig,0,ccol,'raw') %% or FR_ModIndex_SubtrSDP ??
         
         subplot(2,4,7);
         hold on;
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('Signal-to-Noise','fontsize',14 );
         axis square;
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_SubtrSDP',sig,0,ccol,'-Surrogate')
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_SubtrSDP,sig,0,ccol,'-Surrogate')
         
         subplot(2,4,8);
         hold on
         ylabel('Modulation index(%)','fontsize',14 );
         xlabel('mean firing rate','fontsize',14);
         axis square;
-        make_correlation_plot(out,'FR','FR_ModIndex_SubtrSDP',sig,1,ccol,'-Surrogate, sig correlated')
+        make_correlation_plot(out.FR, out.FR_ModIndex_SubtrSDP,sig,1,ccol,'-Surrogate, sig correlated')
         
     end
     save_figure_as(['Average_ECG_triggered_spike_' (T)],output_folder,savePlot)
@@ -572,12 +573,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('SNR','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_PcS',sig,0,ccol,[T 'all units'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_PcS,sig,0,ccol,[T 'all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('SNR','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_PcS',sig,1,ccol,[T ' signficant only'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_PcS,sig,1,ccol,[T ' signficant only'])
     end
 end
 save_figure_as('ModulationIndex_Npsc',output_folder,savePlot)
@@ -596,12 +597,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (spike/s)','fontsize',14 );
         xlabel('Signal-to-Noise ratio (mV)','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_SubtrSDP',sig,0,ccol,[T 'all units'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_SubtrSDP,sig,0,ccol,[T 'all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (spike/s)','fontsize',14 );
         xlabel('Signal-to-Noise ratio (mV)','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_ModIndex_SubtrSDP',sig,1,ccol,[T ' signficicant only'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_ModIndex_SubtrSDP,sig,1,ccol,[T ' signficicant only'])
     end
 end
 save_figure_as('ModulationIndex_NSubtr',output_folder,savePlot)
@@ -620,12 +621,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (spike/s)','fontsize',14 );
         xlabel('Modulation index(%pSc)','fontsize',14 );
-        make_correlation_plot(out,'FR_ModIndex_PcS','FR_ModIndex_SubtrSDP',sig,0,ccol,[T 'all units']) %% was FR_ModIndex_PcS...
+        make_correlation_plot(out.FR_ModIndex_PcS, out.FR_ModIndex_SubtrSDP,sig,0,ccol,[T 'all units']) %% was FR_ModIndex_PcS...
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (spike/s)','fontsize',14 );
         xlabel('Modulation index(%pSc)','fontsize',14 );
-        make_correlation_plot(out,'FR_ModIndex_PcS','FR_ModIndex_SubtrSDP',sig,1,ccol,[T ' signficicant only'])
+        make_correlation_plot(out.FR_ModIndex_PcS, out.FR_ModIndex_SubtrSDP,sig,1,ccol,[T ' signficicant only'])
     end
 end
 save_figure_as('ModulationIndex_Cmp_Npsc_NSubtr',output_folder,savePlot)
@@ -678,7 +679,7 @@ for a = 1: N_Areas
         if any(sig)
             % all not significant & NaN units
             % scatter(out.FR_ModIndex_PcS(idx_sig) , out.FR_ModIndex_SubtrSDP(idx_sig), 'filled', 'MarkerFaceColor',Color)
-            scatter(out.quantSNR(sig),out.FR_ModIndex_PcS(sig) , 30, out.FR_perECGTriggeredAverage(sig)/max(out.FR_perECGTriggeredAverage(sig)) , 'filled')
+            scatter(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask])(sig),out.FR_ModIndex_PcS(sig) , 30, out.FR_perECGTriggeredAverage(sig)/max(out.FR_perECGTriggeredAverage(sig)) , 'filled')
             %scatter(out.FR_ModIndex_PcS(~idx_sig) , out.FR_ModIndex_SubtrSDP(~idx_sig),30, out.FR(~idx_sig)/max(out.FR) , 'filled')
             
             colorbar();
@@ -707,12 +708,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'FR','FR_ModIndex_PcS',sig,0,ccol,[T ' all units'])
+        make_correlation_plot(out.FR,out.FR_ModIndex_PcS,sig,0,ccol,[T ' all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'FR','FR_ModIndex_PcS',sig,1,ccol,[T ' only significant'])
+        make_correlation_plot(out.FR,out.FR_ModIndex_PcS,sig,1,ccol,[T ' only significant'])
     end
 end
 save_figure_as('ModulationIndex_Npsc_FiringRate',output_folder,savePlot)
@@ -731,12 +732,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         xlabel('Signal-to-Noise ratio','fontsize',14 );
         ylabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_perECGTriggeredAverage',sig,0,ccol,[T ' all units'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_perECGTriggeredAverage,sig,0,ccol,[T ' all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         xlabel('Signal-to-Noise ratio','fontsize',14 );
         ylabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'quantSNR','FR_perECGTriggeredAverage',sig,1,ccol,[T ' only significant'])
+        make_correlation_plot(Out.(T).criteria.(['SNR_' cfg.condition(c).saccadeTask]),out.FR_perECGTriggeredAverage,sig,1,ccol,[T ' only significant'])
     end
 end
 save_figure_as('SNR_FiringRate',output_folder,savePlot)
@@ -756,12 +757,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'FR','FR_ModIndex_SubtrSDP',sig,0,ccol,[T ' all units'])
+        make_correlation_plot(out.FR,out.FR_ModIndex_SubtrSDP,sig,0,ccol,[T ' all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('average Firing rate','fontsize',14 );
-        make_correlation_plot(out,'FR','FR_ModIndex_SubtrSDP',sig,1,ccol,[T ' only significant'])
+        make_correlation_plot(out.FR,out.FR_ModIndex_SubtrSDP,sig,1,ccol,[T ' only significant'])
     end
 end
 save_figure_as('ModulationIndex_NSubt_FR',output_folder,savePlot)
@@ -780,12 +781,12 @@ for a = 1: N_Areas
         subplot(2,N_Areas,a);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('Bin size of sig. Interval','fontsize',14 );
-        make_correlation_plot(out,'sig_n_bins','FR_ModIndex_PcS',sig,0,ccol,[T ' all units'])
+        make_correlation_plot(out.sig_n_bins,out.FR_ModIndex_PcS,sig,0,ccol,[T ' all units'])
         
         subplot(2,N_Areas,a +N_Areas);
         ylabel('Modulation index (%)','fontsize',14 );
         xlabel('Bin size of sig. Interval','fontsize',14 );
-        make_correlation_plot(out,'sig_n_bins','FR_ModIndex_PcS',sig,1,ccol,[T ' only significant'])
+        make_correlation_plot(out.sig_n_bins,out.FR_ModIndex_PcS,sig,1,ccol,[T ' only significant'])
     end
 end
 save_figure_as('ModulationIndex_Nspc_Binsize',output_folder,savePlot)
@@ -817,8 +818,8 @@ for c=1:N_conditions
         hold on; axis square; box on;
         lineProps={'color',acol,'linewidth',3};
 %         text(-400,-1* a, [(T), ' ' L ': units = ' ,num2str(sum(inc))],'Color',acol)
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(inc,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(inc,:),1))) ;
-        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc,:),1), SDmean_SEM ,lineProps,1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:, inc),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:, inc),1))) ;
+        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:, inc),2), SDmean_SEM ,lineProps,1);
         %set(gca,'ylim',[-10, 10]);
         ylabel('normalized Firing rate (%)','fontsize',12 );
         xlabel('Time relative to R-peak (ms)','fontsize',12 );
@@ -836,8 +837,8 @@ for c=1:N_conditions
         hold on; axis square; box on;
         lineProps={'color',acol,'linewidth',3};
         text(-400,1* a, [T ' ' L ': units = ' ,num2str(sum(dec)) ],'Color',acol)
-        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(dec,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(dec,:),1))) ;
-        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(dec,:),1), SDmean_SEM ,lineProps,1);
+        SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:,dec),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:,dec),2))) ;
+        shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:,dec),2), SDmean_SEM ,lineProps,1);
         %set(gca,'ylim',[-10, 10]);
 %         title(,'interpreter','none')
         ylabel('normalized Firing rate (spike/s)','fontsize',12 );
@@ -912,9 +913,9 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                     end
                 end
                 
-                SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(inc & tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:)))) ;
-                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1), SDmean_SEM ,lineProps,1);
-                MI_groups =  max(nanmean(out.SDsubstractedSDP_normalized(inc & tim,WindowIdx),1)) - min(nanmean(out.SDsubstractedSDP_normalized(inc & tim,:),1)) ;
+                SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:, inc & tim,:),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:, inc & tim)))) ;
+                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:,inc & tim),2), SDmean_SEM, lineProps,1);
+                MI_groups =  max(nanmean(out.SDsubstractedSDP_normalized(WindowIdx,inc & tim),2)) - min(nanmean(out.SDsubstractedSDP_normalized(:,inc & tim),2)) ;
                 
                 if a == 1
                     title({[L ' INCREASE ' ThreeTiming{i_Time}]})
@@ -943,9 +944,9 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
                     end
                 end
                 
-                SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(dec & tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1))) ;
-                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1), SDmean_SEM ,lineProps,1);
-                MI_groups =   max(nanmean(out.SDsubstractedSDP_normalized(dec & tim,:),1)) - min(nanmean(out.SDsubstractedSDP_normalized(dec & tim,WindowIdx),1));
+                SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:,dec & tim),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:,dec & tim),1))) ;
+                shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:,dec & tim),2), SDmean_SEM ,lineProps,1);
+                MI_groups =   max(nanmean(out.SDsubstractedSDP_normalized(:,dec & tim),2)) - min(nanmean(out.SDsubstractedSDP_normalized(WindowIdx,dec & tim),2));
                 
                 if a == 1
                     title({[L ' DECREASE ' ThreeTiming{i_Time}]})
@@ -1019,18 +1020,24 @@ for c=1:N_conditions
     if ~isempty(inc_vpl)
         disp('Increase: VPL vs. dPul')
         [pp(1+6*(c-1)), hh(1+6*(c-1))] = ranksum(inc_vpl, inc_dpul)
-        disp('Increase: VPL vs. MD')
-        [pp(2+6*(c-1)), hh(2+6*(c-1))] = ranksum(inc_vpl, inc_md)
+        if ~isempty(inc_md)
+            disp('Increase: VPL vs. MD')
+            [pp(2+6*(c-1)), hh(2+6*(c-1))] = ranksum(inc_vpl, inc_md)
+        end
     end
-    disp('Increase: dPul vs. MD')
-    [pp(3+6*(c-1)), hh(3+6*(c-1))] = ranksum(inc_dpul, inc_md)
+    if ~isempty(inc_md)
+        disp('Increase: dPul vs. MD')
+        [pp(3+6*(c-1)), hh(3+6*(c-1))] = ranksum(inc_dpul, inc_md)
+    end
     
     disp('Decrease: VPL vs. dPul')
     [pp(4+6*(c-1)), hh(4+6*(c-1))] = ranksum(dec_vpl, dec_dpul)
+    if ~isempty(dec_md)
     disp('Decrease: VPL vs. MD')
     [pp(5+6*(c-1)), hh(5+6*(c-1))] = ranksum(dec_vpl, dec_md)
     disp('Decrease: dPul vs. MD')
     [pp(6+6*(c-1)), hh(6+6*(c-1))] = ranksum(dec_dpul, dec_md)
+    end
 end
 
 %% GENERATE A TABLE FOR ALL THE NUMBER OF UNITS PER CATEGORY
@@ -1064,8 +1071,8 @@ for c=1:N_conditions
             
             subplot(N_conditions,3,i_Time +(c-1)*3);
             hold on; axis square; box on;
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(tim,:),1))) ;
-            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(tim,:),1), SDmean_SEM ,lineProps,1);
+            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:,tim),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:,tim),2))) ;
+            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:, tim),2), SDmean_SEM ,lineProps,1);
             
             if a == 1
                 title({[L ' ' ThreeTiming{i_Time}]})
@@ -1119,8 +1126,8 @@ for c=1:N_conditions
             
             subplot(N_conditions,N_Timing,i_Time +(c-1)*N_Timing);
             hold on; axis square; box on;
-            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(tim,:),0,1)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(tim,:),1))) ;
-            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(tim,:),1), SDmean_SEM ,lineProps,1);
+            SDmean_SEM = nanstd(out.SDsubstractedSDP_normalized(:,tim),0,2)/ sqrt(length(nanmean(out.SDsubstractedSDP_normalized(:,tim),2))) ;
+            shadedErrorBar(PSTH_bins,nanmean(out.SDsubstractedSDP_normalized(:,tim),2), SDmean_SEM ,lineProps,1);
             
             if a == 1
                 title({[L ' ' ThreeTiming{i_Time}]})
@@ -1249,9 +1256,11 @@ if OnlyUnits_withRestANDTask
             axis square
             xlim([0 60])
             ylim([0 60])
-            title({[T ': N = ' num2str(unit_count)], ...
-                ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ...
-                ['y = ' num2str(p(1)) '*x + ' num2str(p(2))]})
+            if numel(cc) > 1
+                title({[T ': N = ' num2str(unit_count)], ...
+                    ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ...
+                    ['y = ' num2str(p(1)) '*x + ' num2str(p(2))]})
+            end
             if a == 1
                 xlabel(['% signal change in ' cfg.condition(cond1_num).name])
                 ylabel(['% signal change in ' cfg.condition(cond2_num).name])
@@ -1629,8 +1638,8 @@ factor= 10^n;
 rounded=round(unrounded*factor)/factor;
 end
 
-function make_correlation_plot(out,X,Y,sig,onlysignificant,ccol,ttl)
-x=out.(X);y=out.(Y);
+function make_correlation_plot(X,Y,sig,onlysignificant,ccol,ttl)
+x=X(:);y=Y(:);
 axis square; box on;hold on;
 % all not significant & NaN units
 if ~isempty(x) && ~isempty(y)
