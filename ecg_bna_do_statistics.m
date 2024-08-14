@@ -14,12 +14,10 @@ SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 
 %% signficance
-pos_diff=SD_mean-(SDPmean+SDPconf(2,:));
-neg_diff=SD_mean-(SDPmean-SDPconf(1,:));
-
 sig_above=SD_mean > SDPmean+SDPconf(2,:);
 sig_below=SD_mean < SDPmean-SDPconf(1,:);
 
+% indices of significance cluster starts and ends
 sig_idx_above_start=find(diff([0 sig_above 0])>0);
 sig_idx_above_end=find(diff([0 sig_above 0])<0);
 sig_idx_below_start=find(diff([0 sig_below 0])>0);
@@ -38,39 +36,135 @@ if sig_below(1) && sig_below(end)
     consec_below(1) = consec_below(1)+consec_below(end);
 end
 
-if sig_above(1) % if starts with one
-    clust_above = consec_above(1:2:end); % then take lengths of non-zero clusters
-else
-    clust_above = consec_above(2:2:end);
-end
-
-if sig_below(1)
-    clust_below = consec_below(1:2:end);
-else
-    clust_below = consec_below(2:2:end);
-end
-
-% find longest period of significance
-[ma,m_ia]=max(clust_above);
-[mb,m_ib]=max(clust_below);
-% find maximum deviation from surrogates
-[~,m_abs_max] = max(abs(SD_mean - SDPmean));
-[max_pos_diff,max_idx]=max(pos_diff);
-[max_neg_diff,min_idx]=min(neg_diff);
-
-m_imax=find(sig_idx_above_start<=max_idx & sig_idx_above_end>=max_idx);
-m_imin=find(sig_idx_below_start<=min_idx & sig_idx_below_end>=min_idx);
-
 if strcmp(definition,'max')
+    
+    % find maximum deviation from surrogates
+    [~,m_abs_max] = max(abs(SD_mean - SDPmean));
+    [max_pos_diff,max_idx]=max(SD_mean - SDPmean);
+    [max_neg_diff,min_idx]=min(SD_mean - SDPmean);
+    
+    % find cluster number which max deviation from jittered mean belongs to
+    m_imax=find(sig_idx_above_start<=max_idx & sig_idx_above_end>=max_idx);
+    m_imin=find(sig_idx_below_start<=min_idx & sig_idx_below_end>=min_idx);
+    
     sig_sign = sign(SD_mean(m_abs_max) - SDPmean(m_abs_max)); % sign at max abs diff
-    if abs(max_pos_diff)>abs(max_neg_diff)
-        m_i=m_imax;
-        sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+    
+    % figure out whether the cluster with max deviation from the jittered
+    % mean starts at the cycle edge
+    sig_1st_clust  = sum([sig_idx_above_start(m_imax), sig_idx_below_start(m_imin)] == 1);
+    sig_last_clust = sum([sig_idx_above_end(m_imax), sig_idx_below_end(m_imin)] == 81);
+    
+%     if ~isempty(sig_idx_above_start) & ~isempty(sig_idx_above_end) & sig_idx_above_start(m_imax) == 1 & sig_idx_above_end(end) == 81
+%         % 1. 1st cluster above continues in the end of the cycle
+%         m_i=m_imax;
+%         sig_start_end=[sig_idx_above_start(1):sig_idx_above_end(1), sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+%         
+%     elseif ~isempty(sig_idx_above_start) & ~isempty(sig_idx_above_end) & sig_idx_above_start(1) == 1 & sig_idx_above_end(m_imax) == 81
+%         % 2. last cluster above continues in the beginning of the cycle
+%         m_i=m_imax;
+%         sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1, sig_idx_above_start(end):sig_idx_above_end(end)-1];
+%         
+%     elseif ~isempty(sig_idx_below_start) & ~isempty(sig_idx_below_end) & sig_idx_below_start(m_imin) == 1 & sig_idx_below_end(end) == 81
+%         % 3. 1st cluster below continues in the end of the cycle
+%         m_i=m_imin;
+%         sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1, sig_idx_below_start(end):sig_idx_below_end(end)-1];
+%         
+%     elseif ~isempty(sig_idx_below_start) & ~isempty(sig_idx_below_end) & sig_idx_below_start(1) == 1 & sig_idx_below_end(m_imin) == 81
+%         % 4. last cluster below continues in the beginning of the cycle
+%         m_i=m_imin;
+%         sig_start_end=[sig_idx_below_start(1):sig_idx_below_end(1), sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+%         
+%     else
+%         % use regular way to define cluster duration
+%         if abs(max_pos_diff)>abs(max_neg_diff)
+%             m_i=m_imax;
+%             sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+%         else
+%             m_i=m_imin;
+%             sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+%         end
+%         
+%     end
+    if sig_1st_clust
+        % check whether there is significance in the end of the cycle
+        if sum([sig_idx_above_end, sig_idx_below_end] == 81)
+            % take this into account when computing cluster duration
+            
+            if abs(max_pos_diff)>abs(max_neg_diff)
+                m_i=m_imax;
+                sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1, sig_idx_above_start(end):sig_idx_above_end(end)-1];
+            else
+                m_i=m_imin;
+                sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1, sig_idx_below_start(end):sig_idx_below_end(end)-1];
+            end
+            
+        else
+            
+            if abs(max_pos_diff)>abs(max_neg_diff)
+                m_i=m_imax;
+                sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+            else
+                m_i=m_imin;
+                sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+            end
+            
+        end
+    elseif sig_last_clust
+        
+        if sum([sig_idx_above_start sig_idx_below_start] == 1)
+        
+            if abs(max_pos_diff)>abs(max_neg_diff)
+                m_i=m_imax;
+                sig_start_end=[sig_idx_above_start(1):sig_idx_above_end(1), sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+            else
+                m_i=m_imin;
+                sig_start_end=[sig_idx_below_start(1):sig_idx_below_end(1), sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+            end
+            
+        else
+            
+            if abs(max_pos_diff)>abs(max_neg_diff)
+                m_i=m_imax;
+                sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+            else
+                m_i=m_imin;
+                sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+            end
+        
+        end
+        
     else
-        m_i=m_imin;
-        sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+        
+        if abs(max_pos_diff)>abs(max_neg_diff)
+            m_i=m_imax;
+            sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
+        else
+            m_i=m_imin;
+            sig_start_end=[sig_idx_below_start(m_i):sig_idx_below_end(m_i)-1];
+        end
+        
     end
+    
 elseif strcmp(definition,'dur')
+    warning('Peak detection based on cluster duration hasn''t been optimised for circular data')
+    
+    % find durations of clusters
+    if sig_above(1) % if starts with one
+        clust_above = consec_above(1:2:end); % then take lengths of non-zero clusters
+    else
+        clust_above = consec_above(2:2:end);
+    end
+
+    if sig_below(1)
+        clust_below = consec_below(1:2:end);
+    else
+        clust_below = consec_below(2:2:end);
+    end
+    
+    % find longest period of significance
+    [ma,m_ia]=max(clust_above);
+    [mb,m_ib]=max(clust_below);
+    
     if ma>mb
         sig_sign=1;
         m_i=m_ia;
@@ -103,4 +197,3 @@ SD.sig_time=max_time;
 SD.sig_n_bins=m;
 SD.sig_sign=sig_sign;
 end
-
