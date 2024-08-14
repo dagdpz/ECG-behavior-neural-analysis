@@ -1,4 +1,4 @@
-function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg)
+function Output=ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,sessions_info,cfg)
 Sanity_check=0; % ECG triggered ECG, turn off since typically there is no ECG data in the spike format
 
 for numTiming = 1:length(cfg.analyse_states)
@@ -40,6 +40,7 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.quantSNR              = pop.avg_SNR;
             Output.Single_rating         = pop.avg_single_rating;
             Output.stability_rating      = pop.avg_stability;
+            Output.criteria              = pop.criteria;
             % ecg-related variables
             Output.(L).SD                = single(nan(1, length(BINS)));
             Output.(L).SD_STD            = single(nan(1, length(BINS)));
@@ -68,39 +69,41 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.bin_centers                     = BINS(bin_ids);
             Output.phase_bin_centers               = 2 * pi * BINS(bin_ids) / range(BINS(bin_ids));
                                                      
-            Output.(L).lowIBI_SD          = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SD_STD      = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SD_SEM      = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SDP         = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SDPCL       = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SDPCu       = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_sig_all     = single(zeros(1,length(BINS)));
-            Output.(L).lowIBI_sig         = single(zeros(1,length(BINS)));
-            Output.(L).lowIBI_sig_FR_diff = single(nan(1));
-            Output.(L).lowIBI_sig_time    = single(nan(1));
-            Output.(L).lowIBI_sig_n_bins  = single(zeros(1));
-            Output.(L).lowIBI_sig_sign    = single(zeros(1));
-            Output.(L).lowIBI_SDsubstractedSDP            = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
-            Output.(L).lowIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
-            Output.(L).lowIBI_FR_ModIndex_PcS             = single(nan(1));
+            Output.(L).lowIBI.SD          = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SD_STD      = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SD_SEM      = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SDP         = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SDPCL       = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SDPCu       = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.sig_all     = single(zeros(1,length(BINS)));
+            Output.(L).lowIBI.sig         = single(zeros(1,length(BINS)));
+            Output.(L).lowIBI.sig_FR_diff = single(nan(1));
+            Output.(L).lowIBI.sig_time    = single(nan(1));
+            Output.(L).lowIBI.sig_n_bins  = single(zeros(1));
+            Output.(L).lowIBI.sig_sign    = single(zeros(1));
+            Output.(L).lowIBI.NrEvents    = single(nan(1));
+            Output.(L).lowIBI.SDsubstractedSDP            = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
+            Output.(L).lowIBI.FR_ModIndex_SubtrSDP        = single(nan(1));
+            Output.(L).lowIBI.FR_ModIndex_PcS             = single(nan(1));
             
-            Output.(L).highIBI_SD          = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SD_STD      = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SD_SEM      = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SDP         = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SDPCL       = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SDPCu       = single(nan(1,length(BINS)));
-            Output.(L).highIBI_sig_all     = single(zeros(1,length(BINS)));
-            Output.(L).highIBI_sig         = single(zeros(1,length(BINS)));
-            Output.(L).highIBI_sig_FR_diff = single(nan(1));
-            Output.(L).highIBI_sig_time    = single(nan(1));
-            Output.(L).highIBI_sig_n_bins  = single(zeros(1));
-            Output.(L).highIBI_sig_sign    = single(zeros(1));
-            Output.(L).highIBI_SDsubstractedSDP            = single(nan(1,length(BINS)));
-            Output.(L).highIBI_SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
-            Output.(L).highIBI_FR_ModIndex_SubtrSDP        = single(nan(1));
-            Output.(L).highIBI_FR_ModIndex_PcS             = single(nan(1));
+            Output.(L).highIBI.SD          = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SD_STD      = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SD_SEM      = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SDP         = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SDPCL       = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SDPCu       = single(nan(1,length(BINS)));
+            Output.(L).highIBI.sig_all     = single(zeros(1,length(BINS)));
+            Output.(L).highIBI.sig         = single(zeros(1,length(BINS)));
+            Output.(L).highIBI.sig_FR_diff = single(nan(1));
+            Output.(L).highIBI.sig_time    = single(nan(1));
+            Output.(L).highIBI.sig_n_bins  = single(zeros(1));
+            Output.(L).highIBI.sig_sign    = single(zeros(1));
+            Output.(L).highIBI.NrEvents    = single(nan(1));
+            Output.(L).highIBI.SDsubstractedSDP            = single(nan(1,length(BINS)));
+            Output.(L).highIBI.SDsubstractedSDP_normalized = single(nan(1,length(BINS)));
+            Output.(L).highIBI.FR_ModIndex_SubtrSDP        = single(nan(1));
+            Output.(L).highIBI.FR_ModIndex_PcS             = single(nan(1));
             
 %             Output.(L).linear.yfit                 = single(nan(1,length(bin_ids)));
 %             Output.(L).linear.coefs                = single([NaN NaN]);
@@ -155,8 +158,8 @@ for numTiming = 1:length(cfg.analyse_states)
             % median split - IBI low
             Output.(L).IBI_median                  = single(NaN);
             
-            Output.(L).lowIBI_SD                   = single(nan(1, length(BINS)));
-            Output.(L).highIBI_SD                  = single(nan(1, length(BINS)));
+            Output.(L).lowIBI.SD                   = single(nan(1, length(BINS)));
+            Output.(L).highIBI.SD                  = single(nan(1, length(BINS)));
             
             Output.(L).lowIBI_timeRRstart             = single(NaN);
             Output.(L).lowIBI_timeRRend               = single(NaN);
@@ -303,15 +306,7 @@ for numTiming = 1:length(cfg.analyse_states)
             [SD_all_trials,RAST,PSTH_time,SD_1ms,RAST_1ms,PSTH_time_1ms]=ecg_bna_spike_density(AT,trial_onsets,trial_ends,cfg.time);
             
             %% retrieve R-peaks and their reshuffles
-            if contains(cfg.condition(c).Rpeak_field, 'extrasystole')
-                RPEAK_ts  = [Rpeaks(b).RPEAK_ts_extrasystole];
-                RPEAK_dur = [Rpeaks(b).RPEAK_dur_extrasystole];
-            else
-                RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
-                RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
-                RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
-                RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
-            end
+            [RPEAK_ts,RPEAK_ts_perm,RPEAK_dur,RPEAK_dur_perm] = retrieve_Rpeaks_and_reshuffles(Rpeaks,b,cfg,c);
             
             %% define which parts of the continous PSTH are during a trial
             
@@ -323,37 +318,60 @@ for numTiming = 1:length(cfg.analyse_states)
             shuffledPSTH  = compute_PSTH(RPEAK_ts_perm,RPEAK_dur_perm,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             SD            = do_statistics(realPSTHs,shuffledPSTH,BINS,cfg.time.significance_window{numTiming});
             
-            Output.(L).SD                           = SD.SD_mean ;
-            Output.(L).SD_STD                       = SD.SD_STD;
-            Output.(L).SD_SEM                       = SD.SD_SEM ;
-            Output.(L).SDP                          = SD.SDPmean ;
-            Output.(L).SDPCL                        = SD.SDPconf(1,:) ;
-            Output.(L).SDPCu                        = SD.SDPconf(2,:) ;
-            Output.(L).sig_all                      = SD.sig_all;
-            Output.(L).sig                          = SD.sig;
-            Output.(L).sig_FR_diff                  = SD.sig_FR_diff;
-            Output.(L).sig_time                     = SD.sig_time;
-            Output.(L).sig_n_bins                   = SD.sig_n_bins;
-            Output.(L).sig_sign                     = SD.sig_sign;
-            Output.(L).NrTrials                     = sum(tr);
-            Output.(L).NrEvents                     = realPSTHs.n_events;
-            Output.(L).FR                           = mean(SD_all_trials); %% not too sure this was the intended one...
-            Output.(L).raster                       = logical(realPSTHs_1ms.raster); % logical replaces all numbers >0 with 1 and reduces memory load
-            %Output.(L).Rts                         = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
-            Output.(L).Rds                          = hist(realPSTHs.RDs{1},cfg.time.histbins); % put RR durations to plot those in the histograms later
-            Output.(L).Rds_perm                     = hist([shuffledPSTH.RDs{:}],cfg.time.histbins);
-            Output.(L).SDsubstractedSDP             = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
-            Output.(L).SDsubstractedSDP_normalized  = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
-            Output.(L).FR_ModIndex_SubtrSDP         = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
-            Output.(L).FR_ModIndex_PcS              = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
+            Output.(L).SD                          = SD.SD_mean ;
+            Output.(L).SD_STD                      = SD.SD_STD;
+            Output.(L).SD_SEM                      = SD.SD_SEM ;
+            Output.(L).SDP                         = SD.SDPmean ;
+            Output.(L).SDPCL                       = SD.SDPconf(1,:) ;
+            Output.(L).SDPCu                       = SD.SDPconf(2,:) ;
+            Output.(L).sig_all                     = SD.sig_all;
+            Output.(L).sig                         = SD.sig;
+            Output.(L).sig_FR_diff                 = SD.sig_FR_diff;
+            Output.(L).sig_time                    = SD.sig_time;
+            Output.(L).sig_n_bins                  = SD.sig_n_bins;
+            Output.(L).sig_sign                    = SD.sig_sign;
+            Output.(L).NrTrials                    = sum(tr);
+            Output.(L).NrEvents                    = realPSTHs.n_events;
+            Output.(L).FR                          = mean(SD_all_trials); %% not too sure this was the intended one...
+            Output.(L).raster                      = logical(realPSTHs_1ms.raster); % logical replaces all numbers >0 with 1 and reduces memory load
+            %Output.(L).Rts                        = single(realPSTHs.RTs{1}); % unless we need this, dont save it!
+            Output.(L).Rds                         = hist(realPSTHs.RDs{1},cfg.time.histbins); % put RR durations to plot those in the histograms later
+            Output.(L).Rds_perm                    = hist([shuffledPSTH.RDs{:}],cfg.time.histbins);
+            Output.(L).SDsubstractedSDP            = Output.(L).SD - Output.(L).SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).SDsubstractedSDP_normalized = Output.(L).SDsubstractedSDP ./ Output.(L).SDP *100; % percent signal change
+            Output.(L).FR_ModIndex_SubtrSDP        = max(Output.(L).SDsubstractedSDP) - min(Output.(L).SDsubstractedSDP); % difference between max and min FR
+            Output.(L).FR_ModIndex_PcS             = max(Output.(L).SDsubstractedSDP_normalized) - min(Output.(L).SDsubstractedSDP_normalized); % difference between max and min % signal change
             
             % implement median split to heart-cycle durations
             Output.(L).IBI_median           = median(realPSTHs.RDs{1});
             
+            % reshuffle based on the computed median
+            % lowIBI - set up settings
+            cfg.time.IBI       = 1;
+            cfg.time.IBI_low   = 1;
+            cfg.time.IBI_high  = 0;
+            cfg.time.IBI_thrsh = Output.(L).IBI_median * ones(1, length(Rblocks));
+            Rpeaks_lowIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+            [RPEAK_ts_lowIBI,RPEAK_ts_perm_lowIBI,RPEAK_dur_lowIBI,RPEAK_dur_perm_lowIBI] = ...
+                retrieve_Rpeaks_and_reshuffles(Rpeaks_lowIBI, b, cfg ,c);
+            
+            % highIBI - set up settings
+            cfg.time.IBI       = 1;
+            cfg.time.IBI_low   = 0;
+            cfg.time.IBI_high  = 1;
+            cfg.time.IBI_thrsh = Output.(L).IBI_median * ones(1, length(Rblocks));
+            Rpeaks_highIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+            [RPEAK_ts_highIBI,RPEAK_ts_perm_highIBI,RPEAK_dur_highIBI,RPEAK_dur_perm_highIBI] = ...
+                retrieve_Rpeaks_and_reshuffles(Rpeaks_highIBI, b, cfg, c);
+            
+            % !!! IMPORTANT !!! erase settings related to median split
+            % reshuffles and re-initiate them for the next unit
+            cfg.time = rmfield(cfg.time, {'IBI', 'IBI_low', 'IBI_high', 'IBI_thrsh'});
+            
             lowIBIids  = realPSTHs.RDs{1} < Output.(L).IBI_median;
             highIBIids = realPSTHs.RDs{1} > Output.(L).IBI_median;
             
-                        % check the number of spikes left after computing phases
+            % check the number of spikes left after computing phases
             if realPSTHs.n_events < 100 || sum(lowIBIids) < 3 || sum(highIBIids) < 3
                 continue
             end
@@ -368,65 +386,68 @@ for numTiming = 1:length(cfg.analyse_states)
             
             % select lowIBI heart cycles
             overall_lowIBI_ids = RPEAK_dur < Output.(L).IBI_median;
+%             RPEAK_ts_lowIBI    = [];
             
             % select lowIBI heart cycles from shuffled data
-            overall_shuffled_lowIBI_ids = RPEAK_dur_perm < Output.(L).IBI_median;
-            shuffled_lowIBI_dur         = select2D_cat_nans(RPEAK_dur_perm,overall_shuffled_lowIBI_ids);
-            shuffled_lowIBI_ts          = select2D_cat_nans(RPEAK_ts_perm,overall_shuffled_lowIBI_ids);
+%             overall_shuffled_lowIBI_ids = RPEAK_dur_perm_lowIBI < Output.(L).IBI_median;
+%             shuffled_lowIBI_dur         = select2D_cat_nans(RPEAK_dur_perm_lowIBI,overall_shuffled_lowIBI_ids);
+%             shuffled_lowIBI_ts          = select2D_cat_nans(RPEAK_ts_perm_lowIBI,overall_shuffled_lowIBI_ids);
             
             % compute time-domain analysis for lowIBI
-            realPSTHs_lowIBI     = compute_PSTH(RPEAK_ts(overall_lowIBI_ids),RPEAK_dur(overall_lowIBI_ids),RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            realPSTHs_lowIBI     = compute_PSTH(RPEAK_ts(overall_lowIBI_ids), RPEAK_dur(overall_lowIBI_ids), RAST, SD_all_trials, PSTH_time, during_trial_index, curr_analyse_states, cfg.time.PSTH_binwidth);
 %             realPSTHs_1ms_lowIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
-            shuffledPSTH_lowIBI  = compute_PSTH(shuffled_lowIBI_ts,shuffled_lowIBI_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            shuffledPSTH_lowIBI  = compute_PSTH(RPEAK_ts_perm_lowIBI,RPEAK_dur_perm_lowIBI,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             SD_lowIBI            = do_statistics(realPSTHs_lowIBI,shuffledPSTH_lowIBI,BINS,cfg.time.significance_window{numTiming});
+            
+            Output.(L).lowIBI.SD          = SD_lowIBI.SD_mean;
+            Output.(L).lowIBI.SD_STD      = SD_lowIBI.SD_STD;
+            Output.(L).lowIBI.SD_SEM      = SD_lowIBI.SD_SEM ;
+            Output.(L).lowIBI.SDP         = SD_lowIBI.SDPmean ;
+            Output.(L).lowIBI.SDPCL       = SD_lowIBI.SDPconf(1,:) ;
+            Output.(L).lowIBI.SDPCu       = SD_lowIBI.SDPconf(2,:) ;
+            Output.(L).lowIBI.sig_all     = SD_lowIBI.sig_all;
+            Output.(L).lowIBI.sig         = SD_lowIBI.sig;
+            Output.(L).lowIBI.sig_FR_diff = SD_lowIBI.sig_FR_diff;
+            Output.(L).lowIBI.sig_time    = SD_lowIBI.sig_time;
+            Output.(L).lowIBI.sig_n_bins  = SD_lowIBI.sig_n_bins;
+            Output.(L).lowIBI.sig_sign    = SD_lowIBI.sig_sign;
+            Output.(L).lowIBI.NrEvents    = realPSTHs_lowIBI.n_events;
+            Output.(L).lowIBI.SDsubstractedSDP            = Output.(L).lowIBI.SD - Output.(L).lowIBI.SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).lowIBI.SDsubstractedSDP_normalized = Output.(L).lowIBI.SDsubstractedSDP ./ Output.(L).lowIBI.SDP *100; % percent signal change
+            Output.(L).lowIBI.FR_ModIndex_SubtrSDP        = max(Output.(L).lowIBI.SDsubstractedSDP) - min(Output.(L).lowIBI.SDsubstractedSDP); % difference between max and min FR
+            Output.(L).lowIBI.FR_ModIndex_PcS             = max(Output.(L).lowIBI.SDsubstractedSDP_normalized) - min(Output.(L).lowIBI.SDsubstractedSDP_normalized); % difference between max and min % signal change
             
             % select highIBI heart cycles
             overall_highIBI_ids = RPEAK_dur > Output.(L).IBI_median;
             
-            % select lowIBI heart cycles from shuffled data
-            overall_shuffled_highIBI_ids = RPEAK_dur_perm < Output.(L).IBI_median;
-            shuffled_highIBI_dur         = select2D_cat_nans(RPEAK_dur_perm,overall_shuffled_highIBI_ids);
-            shuffled_highIBI_ts          = select2D_cat_nans(RPEAK_ts_perm,overall_shuffled_highIBI_ids);
+            % select highIBI heart cycles from shuffled data
+%             overall_shuffled_highIBI_ids = RPEAK_dur_perm_highIBI < Output.(L).IBI_median;
+%             shuffled_highIBI_dur         = select2D_cat_nans(RPEAK_dur_perm_highIBI,overall_shuffled_highIBI_ids);
+%             shuffled_highIBI_ts          = select2D_cat_nans(RPEAK_ts_perm_highIBI,overall_shuffled_highIBI_ids);
             
             % compute time-domain analysis for highIBI
             realPSTHs_highIBI     = compute_PSTH(RPEAK_ts(overall_highIBI_ids),RPEAK_dur(overall_highIBI_ids),RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
 %             realPSTHs_1ms_highIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
-            shuffledPSTH_highIBI  = compute_PSTH(shuffled_highIBI_ts,shuffled_highIBI_dur,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
+            shuffledPSTH_highIBI  = compute_PSTH(RPEAK_ts_perm_highIBI,RPEAK_dur_perm_highIBI,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             SD_highIBI            = do_statistics(realPSTHs_highIBI,shuffledPSTH_highIBI,BINS,cfg.time.significance_window{numTiming});
             
-            Output.(L).lowIBI_SD          = SD_lowIBI.SD_mean;
-            Output.(L).lowIBI_SD_STD      = SD_lowIBI.SD_STD;
-            Output.(L).lowIBI_SD_SEM      = SD_lowIBI.SD_SEM ;
-            Output.(L).lowIBI_SDP         = SD_lowIBI.SDPmean ;
-            Output.(L).lowIBI_SDPCL       = SD_lowIBI.SDPconf(1,:) ;
-            Output.(L).lowIBI_SDPCu       = SD_lowIBI.SDPconf(2,:) ;
-            Output.(L).lowIBI_sig_all     = SD_lowIBI.sig_all;
-            Output.(L).lowIBI_sig         = SD_lowIBI.sig;
-            Output.(L).lowIBI_sig_FR_diff = SD_lowIBI.sig_FR_diff;
-            Output.(L).lowIBI_sig_time    = SD_lowIBI.sig_time;
-            Output.(L).lowIBI_sig_n_bins  = SD_lowIBI.sig_n_bins;
-            Output.(L).lowIBI_sig_sign    = SD_lowIBI.sig_sign;
-            Output.(L).lowIBI_SDsubstractedSDP            = Output.(L).lowIBI_SD - Output.(L).lowIBI_SDP; % spikes/s, difference between mean and jittered data
-            Output.(L).lowIBI_SDsubstractedSDP_normalized = Output.(L).lowIBI_SDsubstractedSDP ./ Output.(L).lowIBI_SDP *100; % percent signal change
-            Output.(L).lowIBI_FR_ModIndex_SubtrSDP        = max(Output.(L).lowIBI_SDsubstractedSDP) - min(Output.(L).lowIBI_SDsubstractedSDP); % difference between max and min FR
-            Output.(L).lowIBI_FR_ModIndex_PcS             = max(Output.(L).lowIBI_SDsubstractedSDP_normalized) - min(Output.(L).lowIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
-            
-            Output.(L).highIBI_SD          = SD_highIBI.SD_mean;
-            Output.(L).highIBI_SD_STD      = SD_highIBI.SD_STD;
-            Output.(L).highIBI_SD_SEM      = SD_highIBI.SD_SEM ;
-            Output.(L).highIBI_SDP         = SD_highIBI.SDPmean ;
-            Output.(L).highIBI_SDPCL       = SD_highIBI.SDPconf(1,:) ;
-            Output.(L).highIBI_SDPCu       = SD_highIBI.SDPconf(2,:) ;
-            Output.(L).highIBI_sig_all     = SD_highIBI.sig_all;
-            Output.(L).highIBI_sig         = SD_highIBI.sig;
-            Output.(L).highIBI_sig_FR_diff = SD_highIBI.sig_FR_diff;
-            Output.(L).highIBI_sig_time    = SD_highIBI.sig_time;
-            Output.(L).highIBI_sig_n_bins  = SD_highIBI.sig_n_bins;
-            Output.(L).highIBI_sig_sign    = SD_highIBI.sig_sign;
-            Output.(L).highIBI_SDsubstractedSDP            = Output.(L).highIBI_SD - Output.(L).highIBI_SDP; % spikes/s, difference between mean and jittered data
-            Output.(L).highIBI_SDsubstractedSDP_normalized = Output.(L).highIBI_SDsubstractedSDP ./ Output.(L).highIBI_SDP *100; % percent signal change
-            Output.(L).highIBI_FR_ModIndex_SubtrSDP        = max(Output.(L).highIBI_SDsubstractedSDP) - min(Output.(L).highIBI_SDsubstractedSDP); % difference between max and min FR
-            Output.(L).highIBI_FR_ModIndex_PcS             = max(Output.(L).highIBI_SDsubstractedSDP_normalized) - min(Output.(L).highIBI_SDsubstractedSDP_normalized); % difference between max and min % signal change
+            Output.(L).highIBI.SD          = SD_highIBI.SD_mean;
+            Output.(L).highIBI.SD_STD      = SD_highIBI.SD_STD;
+            Output.(L).highIBI.SD_SEM      = SD_highIBI.SD_SEM ;
+            Output.(L).highIBI.SDP         = SD_highIBI.SDPmean ;
+            Output.(L).highIBI.SDPCL       = SD_highIBI.SDPconf(1,:) ;
+            Output.(L).highIBI.SDPCu       = SD_highIBI.SDPconf(2,:) ;
+            Output.(L).highIBI.sig_all     = SD_highIBI.sig_all;
+            Output.(L).highIBI.sig         = SD_highIBI.sig;
+            Output.(L).highIBI.sig_FR_diff = SD_highIBI.sig_FR_diff;
+            Output.(L).highIBI.sig_time    = SD_highIBI.sig_time;
+            Output.(L).highIBI.sig_n_bins  = SD_highIBI.sig_n_bins;
+            Output.(L).highIBI.sig_sign    = SD_highIBI.sig_sign;
+            Output.(L).highIBI.NrEvents    = realPSTHs_highIBI.n_events;
+            Output.(L).highIBI.SDsubstractedSDP            = Output.(L).highIBI.SD - Output.(L).highIBI.SDP; % spikes/s, difference between mean and jittered data
+            Output.(L).highIBI.SDsubstractedSDP_normalized = Output.(L).highIBI.SDsubstractedSDP ./ Output.(L).highIBI.SDP *100; % percent signal change
+            Output.(L).highIBI.FR_ModIndex_SubtrSDP        = max(Output.(L).highIBI.SDsubstractedSDP) - min(Output.(L).highIBI.SDsubstractedSDP); % difference between max and min FR
+            Output.(L).highIBI.FR_ModIndex_PcS             = max(Output.(L).highIBI.SDsubstractedSDP_normalized) - min(Output.(L).highIBI.SDsubstractedSDP_normalized); % difference between max and min % signal change
             
             % low IBI
 %             Output.(L).lowIBI_linear               = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(lowIBIids, bin_ids)', sum(lowIBIids), 'linear');
@@ -678,5 +699,19 @@ elem2add         = mat2cell(elem2add, ones(length(elem2add),1), 1);
 nan2add          = cellfun(@(x) nan(1,x), elem2add, 'UniformOutput', false);
 out              = cellfun(@(x,y) cat(2,x,y), cell_selected, nan2add, 'UniformOutput', false);
 out              = cat(1,out{:});
+
+end
+
+function [RPEAK_ts,RPEAK_ts_perm,RPEAK_dur,RPEAK_dur_perm] = retrieve_Rpeaks_and_reshuffles(Rpeaks,b,cfg,c)
+
+if contains(cfg.condition(c).Rpeak_field, 'extrasystole')
+    RPEAK_ts  = [Rpeaks(b).RPEAK_ts_extrasystole];
+    RPEAK_dur = [Rpeaks(b).RPEAK_dur_extrasystole];
+else
+    RPEAK_ts=[Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])];
+    RPEAK_ts_perm=[Rpeaks(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])];
+    RPEAK_dur = [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])];
+    RPEAK_dur_perm = [Rpeaks(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])];
+end
 
 end

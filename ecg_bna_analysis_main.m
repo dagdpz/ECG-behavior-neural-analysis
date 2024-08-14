@@ -74,11 +74,11 @@ for v = 1:length(versions)
                     cfg.Input_WC=sessions_info(i).Input_WC;
                     load(sessions_info(i).Input_spikes);
                     if cfg.spk.compute_spike_histograms
-                        ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,cfg);
+                        ecg_bna_compute_session_spike_histogram(trials,population,Rpeaks,sessions_info(i),cfg);
                     end
                     
                     if cfg.spk.compute_spike_phase
-                        ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
+                        ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,sessions_info(i),cfg)
                     end
                     
                     if cfg.spk.compute_correlation
