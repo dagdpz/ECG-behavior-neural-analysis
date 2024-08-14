@@ -1,4 +1,4 @@
-function dt = ecg_bna_load_variables(cfg,unit_list, folder, data_struct, var_names)
+function dt = ecg_bna_load_variables(cfg,unit_list, folder, data_struct, var_names, ids_both)
 
 cond_list = {cfg.condition.name};
 
@@ -23,6 +23,18 @@ for varNum = 1:length(var_names)
             L = cfg.condition(condNum).name;
             
             dt.(L).(var_names{varNum}) = nan(25,length(unit_list));
+        end
+        
+    elseif strcmp(var_names{varNum}, 'SD') || strcmp(var_names{varNum}, 'SD_STD') || strcmp(var_names{varNum}, 'SD_SEM') || ...
+            strcmp(var_names{varNum}, 'SDP') || strcmp(var_names{varNum}, 'SDPCL') || strcmp(var_names{varNum}, 'SDPCu') || ...
+            strcmp(var_names{varNum}, 'sig_all') || strcmp(var_names{varNum}, 'sig') || strcmp(var_names{varNum}, 'SDsubstractedSDP') || ...
+            strcmp(var_names{varNum}, 'SDsubstractedSDP_normalized')
+        
+        
+        for condNum = 1:length(cfg.condition)
+            L = cfg.condition(condNum).name;
+            
+            dt.(L).(var_names{varNum}) = nan(101,length(unit_list));
         end
         
     else
@@ -57,20 +69,25 @@ for fileNum = 1:length(unit_list)
         for fn = fieldnames(B)'
             if fileNum == 1
                 if strcmp(fn{1}, 'criteria')
-                    dt.(fn{1}).SNR_F = [];
-                    dt.(fn{1}).SNR_V = [];
+                    dt.(fn{1}).SNR_F = nan(length(unit_list),1);
+                    dt.(fn{1}).SNR_V = nan(length(unit_list),1);
                     
-                    dt.(fn{1}).stability_F = [];
-                    dt.(fn{1}).stability_V = [];
+                    dt.(fn{1}).stability_F = nan(length(unit_list),1);
+                    dt.(fn{1}).stability_V = nan(length(unit_list),1);
                     
                     for subfield = fieldnames(B.criteria)'
                         dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
                     end
                     
                 elseif ischar(B.(fn{1}))
-                    dt.(fn{1}) = {B.(fn{1})};
+                    dt.(fn{1})         = cell(length(unit_list),1);
+                    dt.(fn{1})(fileNum) = {B.(fn{1})};
+                elseif isnumeric(B.(fn{1})) & length(B.(fn{1})) > 1
+                    dt.(fn{1})          = nan(length(unit_list),81);
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
                 else
-                    dt.(fn{1}) = B.(fn{1});
+                    dt.(fn{1})          = nan(length(unit_list),1);
+                    dt.(fn{1})(fileNum) = B.(fn{1});
                 end
             else
                 if strcmp(fn{1}, 'criteria')
@@ -116,6 +133,11 @@ for fileNum = 1:length(unit_list)
                         strcmp(var_names{varNum}, 'FR_pearson_r') || strcmp(var_names{varNum}, 'FR_pearson_p') || strcmp(var_names{varNum}, 'FR_n_cycles') || ...
                         strcmp(var_names{varNum}, 'RR_pearson_r') || strcmp(var_names{varNum}, 'RR_pearson_p') || strcmp(var_names{varNum}, 'RR_n_cycles')
                     dt.(L).(var_names{varNum})(:, fileNum) = A.(data_struct).(L).(var_names{varNum});
+                elseif strcmp(var_names{varNum}, 'SD') || strcmp(var_names{varNum}, 'SD_STD') || strcmp(var_names{varNum}, 'SD_SEM') || ...
+                        strcmp(var_names{varNum}, 'SDP') || strcmp(var_names{varNum}, 'SDPCL') || strcmp(var_names{varNum}, 'SDPCu') || ...
+                        strcmp(var_names{varNum}, 'sig_all') || strcmp(var_names{varNum}, 'sig') || strcmp(var_names{varNum}, 'SDsubstractedSDP') || ...
+                        strcmp(var_names{varNum}, 'SDsubstractedSDP_normalized')
+                    dt.(L).(var_names{varNum})(:, fileNum) = A.(data_struct).(L).(var_names{varNum});
                 else
                     if ~isempty(A.(data_struct).(L).(var_names{varNum}))
                         dt.(L).(var_names{varNum})(fileNum,:) = A.(data_struct).(L).(var_names{varNum})';
@@ -128,6 +150,30 @@ for fileNum = 1:length(unit_list)
         clear Output
     end
     
+end
+
+% discard data for units that didn't pass criteria
+for varNum = 1:length(var_names)
+    for condNum = 1:length(cfg.condition)
+        L = cfg.condition(condNum).name;
+        
+        if strcmp(L,'Rest')
+            selection_list = ids_both ~= 2;
+        elseif strcmp(L,'Task')
+            selection_list = ids_both ~= 1;
+        end
+        
+        if size(dt.(L).(var_names{varNum}),1) == 1 | size(dt.(L).(var_names{varNum}),2) == 1
+            
+            dt.(L).(var_names{varNum})(~selection_list) = NaN;
+            
+        else
+            
+            dt.(L).(var_names{varNum})(:,~selection_list) = deal(NaN);
+            
+        end
+        
+    end
 end
 
 end
