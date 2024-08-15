@@ -350,8 +350,13 @@ for numTiming = 1:length(cfg.analyse_states)
             cfg.time.IBI       = 1;
             cfg.time.IBI_low   = 1;
             cfg.time.IBI_high  = 0;
-            cfg.time.IBI_thrsh = Output.(L).IBI_median * ones(1, length(Rblocks));
+            cfg.time.IBI_thrsh = Output.(L).IBI_median; % * ones(1, length(Rblocks));
             Rpeaks_lowIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+            for XXX=1:numel(Rpeaks_lowIBI)
+                Rpeaks_lowIBI(XXX).RPEAK_ts=Rpeaks_lowIBI(XXX).RPEAK_ts-Rpeaks_lowIBI(XXX).offset+Rpeaks(XXX).offset;
+                Rpeaks_lowIBI(XXX).shuffled_ts=Rpeaks_lowIBI(XXX).shuffled_ts-Rpeaks_lowIBI(XXX).offset+Rpeaks(XXX).offset;
+                Rpeaks_lowIBI(XXX).offset=Rpeaks(XXX).offset;
+            end
             [RPEAK_ts_lowIBI,RPEAK_ts_perm_lowIBI,RPEAK_dur_lowIBI,RPEAK_dur_perm_lowIBI] = ...
                 retrieve_Rpeaks_and_reshuffles(Rpeaks_lowIBI, b, cfg ,c);
             
@@ -359,8 +364,13 @@ for numTiming = 1:length(cfg.analyse_states)
             cfg.time.IBI       = 1;
             cfg.time.IBI_low   = 0;
             cfg.time.IBI_high  = 1;
-            cfg.time.IBI_thrsh = Output.(L).IBI_median * ones(1, length(Rblocks));
+            cfg.time.IBI_thrsh = Output.(L).IBI_median; % * ones(1, length(Rblocks));
             Rpeaks_highIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+            for XXX=1:numel(Rpeaks_highIBI)
+                Rpeaks_highIBI(XXX).RPEAK_ts=Rpeaks_highIBI(XXX).RPEAK_ts-Rpeaks_highIBI(XXX).offset+Rpeaks(XXX).offset;
+                Rpeaks_highIBI(XXX).shuffled_ts=Rpeaks_highIBI(XXX).shuffled_ts-Rpeaks_highIBI(XXX).offset+Rpeaks(XXX).offset;
+                Rpeaks_highIBI(XXX).offset=Rpeaks(XXX).offset;
+            end
             [RPEAK_ts_highIBI,RPEAK_ts_perm_highIBI,RPEAK_dur_highIBI,RPEAK_dur_perm_highIBI] = ...
                 retrieve_Rpeaks_and_reshuffles(Rpeaks_highIBI, b, cfg, c);
             
@@ -383,19 +393,10 @@ for numTiming = 1:length(cfg.analyse_states)
 %             Output.(L).vonMisesPos.coefs(4) = Output.(L).vonMisesPos.coefs(4)+min(Output.phase_bin_centers);
 %             Output.(L).vonMisesNeg          = ecg_bna_fit_neuronal_data(cfg, Output.phase_bin_centers-min(Output.phase_bin_centers), realPSTHs.raster(:, bin_ids)', realPSTHs.n_events, 'vonMises', -1);
 %             Output.(L).vonMisesNeg.coefs(4) = Output.(L).vonMisesNeg.coefs(4)+min(Output.phase_bin_centers);
-            
-            % select lowIBI heart cycles
-            overall_lowIBI_ids = RPEAK_dur < Output.(L).IBI_median;
-%             RPEAK_ts_lowIBI    = [];
-            
-            % select lowIBI heart cycles from shuffled data
-%             overall_shuffled_lowIBI_ids = RPEAK_dur_perm_lowIBI < Output.(L).IBI_median;
-%             shuffled_lowIBI_dur         = select2D_cat_nans(RPEAK_dur_perm_lowIBI,overall_shuffled_lowIBI_ids);
-%             shuffled_lowIBI_ts          = select2D_cat_nans(RPEAK_ts_perm_lowIBI,overall_shuffled_lowIBI_ids);
+           
             
             % compute time-domain analysis for lowIBI
-            realPSTHs_lowIBI     = compute_PSTH(RPEAK_ts(overall_lowIBI_ids), RPEAK_dur(overall_lowIBI_ids), RAST, SD_all_trials, PSTH_time, during_trial_index, curr_analyse_states, cfg.time.PSTH_binwidth);
-%             realPSTHs_1ms_lowIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
+            realPSTHs_lowIBI     = compute_PSTH(RPEAK_ts_lowIBI, RPEAK_dur_lowIBI, RAST, SD_all_trials, PSTH_time, during_trial_index, curr_analyse_states, cfg.time.PSTH_binwidth);
             shuffledPSTH_lowIBI  = compute_PSTH(RPEAK_ts_perm_lowIBI,RPEAK_dur_perm_lowIBI,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             SD_lowIBI            = do_statistics(realPSTHs_lowIBI,shuffledPSTH_lowIBI,BINS,cfg.time.significance_window{numTiming});
             
@@ -416,18 +417,9 @@ for numTiming = 1:length(cfg.analyse_states)
             Output.(L).lowIBI.SDsubstractedSDP_normalized = Output.(L).lowIBI.SDsubstractedSDP ./ Output.(L).lowIBI.SDP *100; % percent signal change
             Output.(L).lowIBI.FR_ModIndex_SubtrSDP        = max(Output.(L).lowIBI.SDsubstractedSDP) - min(Output.(L).lowIBI.SDsubstractedSDP); % difference between max and min FR
             Output.(L).lowIBI.FR_ModIndex_PcS             = max(Output.(L).lowIBI.SDsubstractedSDP_normalized) - min(Output.(L).lowIBI.SDsubstractedSDP_normalized); % difference between max and min % signal change
-            
-            % select highIBI heart cycles
-            overall_highIBI_ids = RPEAK_dur > Output.(L).IBI_median;
-            
-            % select highIBI heart cycles from shuffled data
-%             overall_shuffled_highIBI_ids = RPEAK_dur_perm_highIBI < Output.(L).IBI_median;
-%             shuffled_highIBI_dur         = select2D_cat_nans(RPEAK_dur_perm_highIBI,overall_shuffled_highIBI_ids);
-%             shuffled_highIBI_ts          = select2D_cat_nans(RPEAK_ts_perm_highIBI,overall_shuffled_highIBI_ids);
-            
+        
             % compute time-domain analysis for highIBI
-            realPSTHs_highIBI     = compute_PSTH(RPEAK_ts(overall_highIBI_ids),RPEAK_dur(overall_highIBI_ids),RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
-%             realPSTHs_1ms_highIBI = compute_PSTH(RPEAK_ts,RPEAK_dur,RAST_1ms,SD_1ms,PSTH_time_1ms,during_trial_index_1ms,curr_analyse_states,0.001); % for rasters with 1-ms bins
+            realPSTHs_highIBI     = compute_PSTH(RPEAK_ts_highIBI,RPEAK_dur_highIBI,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             shuffledPSTH_highIBI  = compute_PSTH(RPEAK_ts_perm_highIBI,RPEAK_dur_perm_highIBI,RAST,SD_all_trials,PSTH_time,during_trial_index,curr_analyse_states,cfg.time.PSTH_binwidth);
             SD_highIBI            = do_statistics(realPSTHs_highIBI,shuffledPSTH_highIBI,BINS,cfg.time.significance_window{numTiming});
             

@@ -25,9 +25,10 @@ N=cfg.n_permutations;
 
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
-<<<<<<< Updated upstream
     
-    if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec)
+    if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec) || ...
+       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_low && sum(out(b).R2R_valid < cfg.IBI_thrsh)<2) || ...
+       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_high && sum(out(b).R2R_valid > cfg.IBI_thrsh)<2) 
         Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).RR_durations = [];
@@ -37,21 +38,20 @@ for b=1:numel(out)
     end
     
     % To get IBI high/low in Task/Rest blocks Separately:
-    b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
-    trial_nBlocks_type = unique([trials(b_idx).type]);
+%     b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
+%     trial_nBlocks_type = unique([trials(b_idx).type]);
 
 %     if (cfg.IBI==1)
 %         if cfg.IBI_low == 1 || cfg.IBI_high == 0
-=======
     if isfield(cfg,'IBI') && cfg.IBI==1
         
         % To get IBI high/low in Task/Rest blocks Separately:
-        b_idx = [trials.block] == out(b).nrblock_combinedFiles;
-        trial_nBlocks_type = unique([trials(b_idx).type]);
+%         b_idx = [trials.block] == out(b).nrblock_combinedFiles;
+%         trial_nBlocks_type = unique([trials(b_idx).type]);
         
         if cfg.IBI_low == 1 && cfg.IBI_high == 0
             % indices of RRs that are below median
-            RR_below = out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type);
+            RR_below = out(b).R2R_valid < cfg.IBI_thrsh; %(trial_nBlocks_type);
 %             % indices of RRs that preceed RRs from the previous group and
 %             % are still below median
 %             RR_below_valid = find(RR_below & [false RR_below(1:end-1)]);
@@ -65,7 +65,7 @@ for b=1:numel(out)
             R2R_intersect        = intersect(R2R_consec,R2R_t);
             idx_valid_R2R_consec = find(ismember(R2R_intersect, R2R_t));
             
-            if ~isempty(idx_valid_R2R_consec) & idx_valid_R2R_consec(1) == 1
+            if ~isempty(idx_valid_R2R_consec) && idx_valid_R2R_consec(1) == 1
                 % drop the first Rpeak if it's consecutive as the jittering
                 % function complains about such a situation
                 idx_valid_R2R_consec(1) = [];
@@ -75,12 +75,11 @@ for b=1:numel(out)
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
             
->>>>>>> Stashed changes
 %             tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))-1);
 %             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
 %             out(b).idx_valid_R2R_consec = tmp2;
         elseif cfg.IBI_high == 1 && cfg.IBI_low == 0
-            RR_above = out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type);
+            RR_above = out(b).R2R_valid > cfg.IBI_thrsh; %(trial_nBlocks_type);
 %             RR_above_valid = find(RR_above & [false RR_above(1:end-1)]);
             
             R2R_valid = out(b).R2R_valid(RR_above);
@@ -91,7 +90,7 @@ for b=1:numel(out)
             R2R_intersect        = intersect(R2R_consec,R2R_t);
             idx_valid_R2R_consec = find(ismember(R2R_intersect, R2R_t));
             
-            if ~isempty(idx_valid_R2R_consec) & idx_valid_R2R_consec(1) == 1
+            if ~isempty(idx_valid_R2R_consec) && idx_valid_R2R_consec(1) == 1
                 % drop the first Rpeak if it's consecutive as the jittering
                 % function complains about such a situation
                 idx_valid_R2R_consec(1) = [];
@@ -100,10 +99,6 @@ for b=1:numel(out)
             out(b).R2R_valid            = R2R_valid;
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
-            
-%             tmp  = intersect(find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))-1);
-%             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
-%             out(b).idx_valid_R2R_consec = tmp2;
         else
             warning('Both lowIBI and highIBI are chosen or none was chosen, figure out before proceeding')
         end
