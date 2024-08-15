@@ -11,7 +11,16 @@ for varNum = 1:length(var_names)
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
+            
             dt.(L).(beforeDot).(afterDot) = nan(length(unit_list),1);
+        end
+        
+    elseif strcmp(var_names{varNum}, 'cc_PSTH_feature') || strcmp(var_names{varNum}, 'pp_PSTH_feature')
+        
+        for condNum = 1:length(cfg.condition)
+            L = cfg.condition(condNum).name;
+            
+            dt.(L).(var_names{varNum}) = nan(4,length(unit_list));
         end
         
     elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p') || strcmp(var_names{varNum}, 'n_cycles') || ...
@@ -76,9 +85,10 @@ for fileNum = 1:length(unit_list)
                         dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
                     end
                 elseif strcmp(fn{1}, 'thresholds_microV')
-                    dt.(fn{1})            = nan(length(unit_list),4);
+                    dt.(fn{1})          = nan(length(unit_list),4);
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
-                elseif strcmp(fn{1}, 'cc_lag_list')
+                elseif strcmp(fn{1}, 'AMP_MI') || strcmp(fn{1}, 'HW_MI') || strcmp(fn{1}, 'TPW_MI') || strcmp(fn{1}, 'REP_MI')
+                    dt.(fn{1})          = nan(length(unit_list),5);
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1}))
                     dt.(fn{1})         = cell(length(unit_list),1);
@@ -97,8 +107,6 @@ for fileNum = 1:length(unit_list)
                     end
                 elseif strcmp(fn{1}, 'thresholds_microV')
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
-%                 elseif strcmp(fn{1}, 'cc_lag_list')
-%                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1})) || isstruct(B.(fn{1}))
                     dt.(fn{1})(fileNum) = {B.(fn{1})};
                 end
@@ -126,10 +134,10 @@ for fileNum = 1:length(unit_list)
                         dt.(L).(beforeDot).(afterDot)(fileNum,1:var_len) = A.(data_struct).(L).(beforeDot).(afterDot)(1:var_len);
                     end
                     
-                elseif strcmp(var_names{varNum}, 'AMP_MI')
+                elseif strcmp(var_names{varNum}, 'AMP_MI') || strcmp(var_names{varNum}, 'HW_MI') || strcmp(var_names{varNum}, 'TPW_MI') || strcmp(var_names{varNum}, 'REP_MI')
                     dt.(L).(var_names{varNum})(fileNum, 1:5) = A.(data_struct).(L).(var_names{varNum});
                 elseif strcmp(var_names{varNum}, 'cc_PSTH_feature') || strcmp(var_names{varNum}, 'pp_PSTH_feature')
-                    dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})(1);
+                    dt.(L).(var_names{varNum})(:,fileNum) = A.(data_struct).(L).(var_names{varNum});
                 elseif strcmp(var_names{varNum}, 'NrEvents')
                     dt.(L).(var_names{varNum})(fileNum) = A.(data_struct).(L).(var_names{varNum})';
                 elseif strcmp(var_names{varNum}, 'pearson_r') || strcmp(var_names{varNum}, 'pearson_p') || strcmp(var_names{varNum}, 'n_cycles') || ...
