@@ -293,8 +293,9 @@ for a = 1: N_Areas
             plot_data = [counts_pos counts_neg counts_nonsig];
             subplot(N_conditions, N_lags, splot_num)
             b = bar(-1:bin_resolution:1, plot_data, 'stacked');
-            set(b, 'FaceColor', 'Flat')
-            set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
+            for ii = 1:size(bar_colors,1)
+                b(ii).FaceColor = bar_colors(ii,:);
+            end
 %             set(b, 'LineWidth',0.000000000000000000000000000000000001);
             xlim([-0.5 0.5])
             title(num2str(dt.(T).cc_lag_list(lag_num)))
@@ -356,7 +357,9 @@ for a = 1: N_Areas
         subplot(N_conditions, N_Areas, splot_num)
         b = bar(-1:bin_resolution:1, plot_data, 'stacked');
         set(b, 'FaceColor', 'Flat')
-        set(b, {'CData'}, {bar_colors(1,:); bar_colors(2,:); bar_colors(3,:)})
+        for ii = 1:size(bar_colors,1)
+            b(ii).FaceColor = bar_colors(ii,:);
+        end
         xlim([-0.5 0.5])
         xlabel('CC between FR and RR duration')
         title([T ': ' L ', ' num2str(lag_to_plot) ' lag'])
