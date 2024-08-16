@@ -113,7 +113,7 @@ if strcmp(definition,'max')
         
         if sum([sig_idx_above_start sig_idx_below_start] == 1)
         
-            if abs(max_pos_diff)>abs(max_neg_diff)
+            if abs(round(max_pos_diff,2))>abs(round(max_neg_diff,2)) % we round here and if they're equal, it will go into the 'else' statement
                 m_i=m_imax;
                 sig_start_end=[sig_idx_above_start(1):sig_idx_above_end(1), sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
             else
