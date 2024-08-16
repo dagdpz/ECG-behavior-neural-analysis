@@ -517,6 +517,7 @@ for unitNum = 1:length(population)
         block_nums                 = {trcell.block};
         state2_times               = cellfun(@(x,y) x(y == 2), states_onset, states, 'Uniformoutput', false); % trial starts = state 2
         state90_times              = cellfun(@(x,y) x(y == 90), states_onset, states, 'Uniformoutput', false); % trial ends = state 90
+        
         % compute RR-intervals
         valid_RRinterval_ends      = single([Rpeaks(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
         valid_RRinterval_starts    = single(valid_RRinterval_ends - [Rpeaks(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
@@ -537,7 +538,7 @@ for unitNum = 1:length(population)
         
         % Use logical indexing to filter valid RR intervals
         valid_RRinterval_starts = valid_RRinterval_starts(RR_within_trial_idx);
-        valid_RRinterval_ends = valid_RRinterval_ends(RR_within_trial_idx);
+        valid_RRinterval_ends   = valid_RRinterval_ends(RR_within_trial_idx);
         
         % reshuffled - get rid of RRs beyond the current set of trials
         for shuffNum = 1:length(shuffled_RRinterval_starts)
@@ -546,7 +547,6 @@ for unitNum = 1:length(population)
             
             shuffled_RRinterval_ends{shuffNum}   = shuffled_RRinterval_ends{shuffNum}(shuffledRR_within_trial_idx); 
             shuffled_RRinterval_starts{shuffNum} = shuffled_RRinterval_starts{shuffNum}(shuffledRR_within_trial_idx);
-            
         end
         
         % compute parameters of heart activity
@@ -556,27 +556,126 @@ for unitNum = 1:length(population)
         data.(L).SDNN_ms      = std(1000 * (valid_RRinterval_ends - valid_RRinterval_starts));
         
         % implement median split to heart-cycle durations
-        RRs     = valid_RRinterval_ends - valid_RRinterval_starts;
-        M_IBI   = median(valid_RRinterval_ends - valid_RRinterval_starts);
+        RRs   = valid_RRinterval_ends - valid_RRinterval_starts;
+        M_IBI = median(valid_RRinterval_ends - valid_RRinterval_starts);
         
-        data.(L).IBI_median           = M_IBI;
+        data.(L).IBI_median = M_IBI;
         
-        data.(L).lowIBI_timeRRstart   = valid_RRinterval_starts(RRs <= M_IBI);
-        data.(L).lowIBI_timeRRend     = valid_RRinterval_ends(RRs <= M_IBI);
-        data.(L).lowIBI_starts        = RRs(RRs <= M_IBI);
+        % reshuffle based on the computed median
+        %% lowIBI - set up settings
+        cfg.time.IBI       = 1;
+        cfg.time.IBI_low   = 1;
+        cfg.time.IBI_high  = 0;
+        cfg.time.IBI_thrsh = data.(L).IBI_median; % * ones(1, length(Rblocks));
+        Rpeaks_lowIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+        for XXX=1:numel(Rpeaks_lowIBI)
+            Rpeaks_lowIBI(XXX).RPEAK_ts=Rpeaks_lowIBI(XXX).RPEAK_ts-Rpeaks_lowIBI(XXX).offset+Rpeaks(XXX).offset;
+            Rpeaks_lowIBI(XXX).shuffled_ts=Rpeaks_lowIBI(XXX).shuffled_ts-Rpeaks_lowIBI(XXX).offset+Rpeaks(XXX).offset;
+            Rpeaks_lowIBI(XXX).offset=Rpeaks(XXX).offset;
+        end
+        
+        %% compute within trial lowIBI RR intervals for real and shuffled data
+        % compute RR-intervals
+        lowIBI_valid_RRinterval_ends      = single([Rpeaks_lowIBI(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
+        lowIBI_valid_RRinterval_starts    = single(lowIBI_valid_RRinterval_ends - [Rpeaks_lowIBI(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
+        % compute shuffled RR-intervals
+        lowIBI_shuffled_RRinterval_ends   = single([Rpeaks_lowIBI(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])]);
+        lowIBI_shuffled_RRinterval_starts = single(lowIBI_shuffled_RRinterval_ends - [Rpeaks_lowIBI(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])]);
+        
+        lowIBI_shuffled_RRinterval_ends   = mat2cell(lowIBI_shuffled_RRinterval_ends, ones(size(lowIBI_shuffled_RRinterval_ends,1),1), size(lowIBI_shuffled_RRinterval_ends,2));
+        lowIBI_shuffled_RRinterval_starts = mat2cell(lowIBI_shuffled_RRinterval_starts, ones(size(lowIBI_shuffled_RRinterval_starts,1),1), size(lowIBI_shuffled_RRinterval_starts,2));
+        
+%         % 0. figure out RR-intervals lying within trials
+%         lowIBI_trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks_lowIBI([Rpeaks_lowIBI.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
+%         lowIBI_trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks_lowIBI([Rpeaks_lowIBI.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        
+        % Create a logical array by vectorized comparison
+        lowIBI_RR_within_trial_idx = any(lowIBI_valid_RRinterval_starts' > trial_starts_one_stream & ...
+            lowIBI_valid_RRinterval_ends' < trial_ends_one_stream, 2);
+        
+        % Use logical indexing to filter valid RR intervals
+        lowIBI_valid_RRinterval_starts = lowIBI_valid_RRinterval_starts(lowIBI_RR_within_trial_idx);
+        lowIBI_valid_RRinterval_ends   = lowIBI_valid_RRinterval_ends(lowIBI_RR_within_trial_idx);
+        
+        % reshuffled - get rid of RRs beyond the current set of trials
+        for shuffNum = 1:length(lowIBI_shuffled_RRinterval_starts)
+            lowIBI_shuffledRR_within_trial_idx = any(lowIBI_shuffled_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
+                lowIBI_shuffled_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
+            
+            lowIBI_shuffled_RRinterval_ends{shuffNum}   = lowIBI_shuffled_RRinterval_ends{shuffNum}(lowIBI_shuffledRR_within_trial_idx); 
+            lowIBI_shuffled_RRinterval_starts{shuffNum} = lowIBI_shuffled_RRinterval_starts{shuffNum}(lowIBI_shuffledRR_within_trial_idx);
+        end
+        
+        lowIBI_RRs   = lowIBI_valid_RRinterval_ends - lowIBI_valid_RRinterval_starts;
+        
+        %% highIBI - set up settings
+        cfg.time.IBI       = 1;
+        cfg.time.IBI_low   = 0;
+        cfg.time.IBI_high  = 1;
+        cfg.time.IBI_thrsh = data.(L).IBI_median; % * ones(1, length(Rblocks));
+        Rpeaks_highIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+        for XXX=1:numel(Rpeaks_highIBI)
+            Rpeaks_highIBI(XXX).RPEAK_ts=Rpeaks_highIBI(XXX).RPEAK_ts-Rpeaks_highIBI(XXX).offset+Rpeaks(XXX).offset;
+            Rpeaks_highIBI(XXX).shuffled_ts=Rpeaks_highIBI(XXX).shuffled_ts-Rpeaks_highIBI(XXX).offset+Rpeaks(XXX).offset;
+            Rpeaks_highIBI(XXX).offset=Rpeaks(XXX).offset;
+        end
+        
+        % !!! IMPORTANT !!! erase settings related to median split
+        % reshuffles and re-initiate them for the next unit
+        cfg.time = rmfield(cfg.time, {'IBI', 'IBI_low', 'IBI_high', 'IBI_thrsh'});
+        
+        %% compute within trial highIBI RR intervals for real and shuffled data
+        % compute RR-intervals
+        highIBI_valid_RRinterval_ends      = single([Rpeaks_highIBI(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
+        highIBI_valid_RRinterval_starts    = single(highIBI_valid_RRinterval_ends - [Rpeaks_highIBI(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
+        % compute shuffled RR-intervals
+        highIBI_shuffled_RRinterval_ends   = single([Rpeaks_highIBI(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])]);
+        highIBI_shuffled_RRinterval_starts = single(highIBI_shuffled_RRinterval_ends - [Rpeaks_highIBI(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])]);
+        
+        highIBI_shuffled_RRinterval_ends   = mat2cell(highIBI_shuffled_RRinterval_ends, ones(size(highIBI_shuffled_RRinterval_ends,1),1), size(highIBI_shuffled_RRinterval_ends,2));
+        highIBI_shuffled_RRinterval_starts = mat2cell(highIBI_shuffled_RRinterval_starts, ones(size(highIBI_shuffled_RRinterval_starts,1),1), size(highIBI_shuffled_RRinterval_starts,2));
+        
+%         % 0. figure out RR-intervals lying within trials
+%         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks_highIBI([Rpeaks_highIBI.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
+%         trial_ends_one_stream      = cellfun(@(x,y,z) x+y+Rpeaks_highIBI([Rpeaks_highIBI.block] == z).offset, state90_times, TDT_ECG1_t0_from_rec_start, block_nums);
+        
+        % Create a logical array by vectorized comparison
+        highIBI_RR_within_trial_idx = any(highIBI_valid_RRinterval_starts' > trial_starts_one_stream & ...
+            highIBI_valid_RRinterval_ends' < trial_ends_one_stream, 2);
+        
+        % Use logical indexing to filter valid RR intervals
+        highIBI_valid_RRinterval_starts = highIBI_valid_RRinterval_starts(highIBI_RR_within_trial_idx);
+        highIBI_valid_RRinterval_ends   = highIBI_valid_RRinterval_ends(highIBI_RR_within_trial_idx);
+        
+        % reshuffled - get rid of RRs beyond the current set of trials
+        for shuffNum = 1:length(highIBI_shuffled_RRinterval_starts)
+            highIBI_shuffledRR_within_trial_idx = any(highIBI_shuffled_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
+                highIBI_shuffled_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
+            
+            highIBI_shuffled_RRinterval_ends{shuffNum}   = highIBI_shuffled_RRinterval_ends{shuffNum}(highIBI_shuffledRR_within_trial_idx); 
+            highIBI_shuffled_RRinterval_starts{shuffNum} = highIBI_shuffled_RRinterval_starts{shuffNum}(highIBI_shuffledRR_within_trial_idx);
+        end
+        
+        highIBI_RRs   = highIBI_valid_RRinterval_ends - highIBI_valid_RRinterval_starts;
+        
+%         lowIBIids  = realPSTHs.RDs{1} < Output.(L).IBI_median;
+%         highIBIids = realPSTHs.RDs{1} > Output.(L).IBI_median;
+        
+        data.(L).lowIBI_timeRRstart   = lowIBI_valid_RRinterval_starts;
+        data.(L).lowIBI_timeRRend     = lowIBI_valid_RRinterval_ends;
+        data.(L).lowIBI_starts        = lowIBI_RRs;
         data.(L).lowIBI_meanHR_bpm    = mean(60 ./ data.(L).lowIBI_starts);
         data.(L).lowIBI_medianHR_bpm  = median(60 ./ data.(L).lowIBI_starts);
         data.(L).lowIBI_stdHR_bpm     = std(60 ./ data.(L).lowIBI_starts);
         data.(L).lowIBI_SDNN_ms       = std(1000 * data.(L).lowIBI_starts);
         
-        data.(L).highIBI_timeRRstart  = valid_RRinterval_starts(RRs > M_IBI);
-        data.(L).highIBI_timeRRend    = valid_RRinterval_ends(RRs > M_IBI);
-        data.(L).highIBI_starts       = RRs(RRs > M_IBI);
+        data.(L).highIBI_timeRRstart  = highIBI_valid_RRinterval_starts;
+        data.(L).highIBI_timeRRend    = highIBI_valid_RRinterval_ends;
+        data.(L).highIBI_starts       = highIBI_RRs;
         data.(L).highIBI_meanHR_bpm   = mean(60 ./ data.(L).highIBI_starts);
         data.(L).highIBI_medianHR_bpm = median(60 ./ data.(L).highIBI_starts);
         data.(L).highIBI_stdHR_bpm    = std(60 ./ data.(L).highIBI_starts);
         data.(L).highIBI_SDNN_ms      = std(1000 * data.(L).highIBI_starts);
-        
         
         % 1. take arrival times and the corresponding waveforms
         AT = {popcell.arrival_times};
@@ -614,7 +713,7 @@ for unitNum = 1:length(population)
         shuffled_SDF_highIBI = nan(cfg.time.n_permutations,cfg.phase.N_phase_bins);
         
         tic
-        medianIBI = data.(L).IBI_median;
+%         medianIBI = data.(L).IBI_median;
         phase_bin_centers = cfg.phase.phase_bin_centers;
         parfor shuffNum = 1:length(shuffled_RRinterval_starts)
             % all data
@@ -629,30 +728,30 @@ for unitNum = 1:length(population)
             shuffled_SDF(shuffNum,:) = mean(average_smooth_data(shuffled_histogram,cfg));
             
             % compute median IBI
-            currRRids  = unique(shuffled_cycleNums_withSpikes);
-            currRRdurs = shuffled_RRinterval_ends{shuffNum}(currRRids) - shuffled_RRinterval_starts{shuffNum}(currRRids);
+%             currRRids  = unique(shuffled_cycleNums_withSpikes);
+%             currRRdurs = shuffled_RRinterval_ends{shuffNum}(currRRids) - shuffled_RRinterval_starts{shuffNum}(currRRids);
             
             % low IBI
-            lowIBI_ids = currRRdurs < medianIBI;
+%             lowIBI_ids = currRRdurs < medianIBI;
             [lowIBI_shuffled_eventPhases, ~, lowIBI_shuffled_cycleNums_withSpikes] = ...
-                DAG_eventPhase(shuffled_RRinterval_starts{shuffNum}(lowIBI_ids), shuffled_RRinterval_ends{shuffNum}(lowIBI_ids), AT_one_stream);
+                DAG_eventPhase(lowIBI_shuffled_RRinterval_starts{shuffNum}, lowIBI_shuffled_RRinterval_ends{shuffNum}, AT_one_stream);
             
             % high IBI
-            highIBI_ids = currRRdurs > medianIBI;
+%             highIBI_ids = currRRdurs > medianIBI;
             [highIBI_shuffled_eventPhases, ~, highIBI_shuffled_cycleNums_withSpikes] = ...
-                DAG_eventPhase(shuffled_RRinterval_starts{shuffNum}(highIBI_ids), shuffled_RRinterval_ends{shuffNum}(highIBI_ids), AT_one_stream);
+                DAG_eventPhase(highIBI_shuffled_RRinterval_starts{shuffNum}, highIBI_shuffled_RRinterval_ends{shuffNum}, AT_one_stream);
             
             % low IBI
             shuffled_histogram_lowIBI = ...
                 hist3([lowIBI_shuffled_eventPhases, lowIBI_shuffled_cycleNums_withSpikes], ...
-                'ctrs', {phase_bin_centers 1:sum(lowIBI_ids)});
+                'ctrs', {phase_bin_centers 1:length(lowIBI_RRs)});
             
             shuffled_SDF_lowIBI(shuffNum,:) = mean(average_smooth_data(shuffled_histogram_lowIBI,cfg));
             
             % high IBI
             shuffled_histogram_highIBI = ...
                 hist3([highIBI_shuffled_eventPhases, highIBI_shuffled_cycleNums_withSpikes], ...
-                'ctrs', {phase_bin_centers 1:sum(highIBI_ids)});
+                'ctrs', {phase_bin_centers 1:length(highIBI_RRs)});
             
             shuffled_SDF_highIBI(shuffNum,:) = mean(average_smooth_data(shuffled_histogram_highIBI,cfg));
             
@@ -930,22 +1029,22 @@ for unitNum = 1:length(population)
         if sum(isnan(data.(L).AMP_microV_byBin)) == length(data.(L).AMP_microV_byBin)
             data.(L).AMP_microV_byBin_smoothed    = nan(1,cfg.phase.N_phase_bins);
         else
-            data.(L).AMP_microV_byBin_smoothed    = circ_smooth(data.(L).AMP_microV_byBin);
+            data.(L).AMP_microV_byBin_smoothed    = DAG_circ_smooth(data.(L).AMP_microV_byBin);
         end
         if sum(isnan(data.(L).HW_ms_byBin)) == length(data.(L).HW_ms_byBin)
             data.(L).HW_ms_byBin_smoothed         = nan(1,cfg.phase.N_phase_bins);
         else
-            data.(L).HW_ms_byBin_smoothed         = circ_smooth(data.(L).HW_ms_byBin);
+            data.(L).HW_ms_byBin_smoothed         = DAG_circ_smooth(data.(L).HW_ms_byBin);
         end
         if sum(isnan(data.(L).TPW_ms_byBin)) == length(data.(L).TPW_ms_byBin)
             data.(L).TPW_ms_byBin_smoothed        = nan(1,cfg.phase.N_phase_bins);
         else
-            data.(L).TPW_ms_byBin_smoothed        = circ_smooth(data.(L).TPW_ms_byBin);
+            data.(L).TPW_ms_byBin_smoothed        = DAG_circ_smooth(data.(L).TPW_ms_byBin);
         end
         if sum(isnan(data.(L).REP_ms_byBin)) == length(data.(L).REP_ms_byBin)
             data.(L).REP_ms_byBin_smoothed        = nan(1,cfg.phase.N_phase_bins);
         else
-            data.(L).REP_ms_byBin_smoothed        = circ_smooth(data.(L).REP_ms_byBin);
+            data.(L).REP_ms_byBin_smoothed        = DAG_circ_smooth(data.(L).REP_ms_byBin);
         end
         
         %         data.(L).allCorr                      = allCorr;
