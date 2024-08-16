@@ -33,6 +33,7 @@ for b=1:numel(out)
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).RR_durations = [];
         Rpeaks(b).shuffled_ts=[];
+        Rpeaks(b).offset = NaN;
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
         continue
     end
