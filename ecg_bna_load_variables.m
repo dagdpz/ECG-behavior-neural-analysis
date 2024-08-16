@@ -90,6 +90,9 @@ for fileNum = 1:length(unit_list)
                 elseif strcmp(fn{1}, 'AMP_MI') || strcmp(fn{1}, 'HW_MI') || strcmp(fn{1}, 'TPW_MI') || strcmp(fn{1}, 'REP_MI')
                     dt.(fn{1})          = nan(length(unit_list),5);
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
+                elseif strcmp(fn{1}, 'cc_lag_list')
+                    dt.(fn{1})          = nan(length(unit_list),25);
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1}))
                     dt.(fn{1})         = cell(length(unit_list),1);
                     dt.(fn{1})(fileNum) = {B.(fn{1})};
@@ -106,6 +109,8 @@ for fileNum = 1:length(unit_list)
                         dt.(fn{1}).(subfield{1})(fileNum) = B.criteria.(subfield{1});
                     end
                 elseif strcmp(fn{1}, 'thresholds_microV')
+                    dt.(fn{1})(fileNum,:) = B.(fn{1});
+                elseif strcmp(fn{1}, 'cc_lag_list')
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1})) || isstruct(B.(fn{1}))
                     dt.(fn{1})(fileNum) = {B.(fn{1})};
