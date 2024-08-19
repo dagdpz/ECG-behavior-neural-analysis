@@ -230,9 +230,12 @@ figure(f10)
 save_figure_as(f10, 'Histograms_MaxAbsLags_AllAreas', basepath_to_save, 1)
 
 
+    f2 = figure;
 %% lag scatters task versus rest
 for a = 1: N_Areas
     
+        subplot(1, N_Areas, a)
+        
     T=unqTargets{a};
     L1=cfg.condition(1).name;
     L2=cfg.condition(2).name;
@@ -243,22 +246,22 @@ for a = 1: N_Areas
     lag_rest(invalid)=[];
     lag_task(invalid)=[];
     
-    f2 = figure;
-    set(f2,'Position',[364   319   580   584])
+    tmp=[dt.(T).cc_lag_list(lag_rest);dt.(T).cc_lag_list(lag_task)]';
+    [rtaskrest,ptaskrest] = corrcoef(tmp(:,1),tmp(:,2));
     
     aa=...
-        scatter(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task), 20, cfg.area_colors{a}, 'filled', 'o', 'MarkerFaceAlpha', 0.3);
-    %         scatterhistogram(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task),...
+        scatter(dt.(T).cc_lag_list(lag_rest),dt.(T).cc_lag_list(lag_task), 20, cfg.area_colors{a}, 'filled', 'o');
+    %         scatterhistogram(tmp(:,1),tmp(:,2),...
     %             'Title',T,'HistogramDisplayStyle','smooth',...
     %             'ScatterPlotLocation','SouthEast','Color',cfg.area_colors{a}, 'MarkerAlpha',0.3)%,'Kernel','on','Marker','.'
-    xlabel('Rest: Lag for Abs. Max. CC')
-    ylabel('Task: Lag for Abs. Max. CC')
-    title(T)
+    xlabel('Rest: Max. CC lag')
+    ylabel('Task: Max. CC lag')
+    title([T ', r=' num2str(rtaskrest(2,1)) ', p=' num2str(ptaskrest(2,1))]);
     box on
-    save_figure_as(f2, ['Scatterhist_Lags_Rest_vs_Task_' T], basepath_to_save, 1)
     
 end
-
+save_figure_as(f2, ['Scatterhist_Lags_Rest_vs_Task'], basepath_to_save, 1)
+    
 %% CC histograms per area, for all lags and conditions
 for a = 1: N_Areas
     
