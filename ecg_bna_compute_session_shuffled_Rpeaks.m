@@ -26,9 +26,13 @@ N=cfg.n_permutations;
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
     
-    if isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec) || ...
-       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_low && sum(out(b).R2R_valid < cfg.IBI_thrsh)<2) || ...
-       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_high && sum(out(b).R2R_valid > cfg.IBI_thrsh)<2) 
+    % To get IBI high/low in Task/Rest blocks Separately:
+    b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
+    trial_nBlocks_type = unique([trials(b_idx).type]);
+    
+    if ~isemtpy(trial_nBlocks_type) && isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec) || ...
+       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_low && sum(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))<2) || ...
+       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_high && sum(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))<2) 
         Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).RR_durations = [];
@@ -38,12 +42,6 @@ for b=1:numel(out)
         continue
     end
     
-    % To get IBI high/low in Task/Rest blocks Separately:
-%     b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
-%     trial_nBlocks_type = unique([trials(b_idx).type]);
-
-%     if (cfg.IBI==1)
-%         if cfg.IBI_low == 1 || cfg.IBI_high == 0
     if isfield(cfg,'IBI') && cfg.IBI==1
         
         % To get IBI high/low in Task/Rest blocks Separately:
@@ -52,14 +50,9 @@ for b=1:numel(out)
         
         if cfg.IBI_low == 1 && cfg.IBI_high == 0
             % indices of RRs that are below median
-            RR_below = out(b).R2R_valid < cfg.IBI_thrsh; %(trial_nBlocks_type);
-%             % indices of RRs that preceed RRs from the previous group and
-%             % are still below median
-%             RR_below_valid = find(RR_below & [false RR_below(1:end-1)]);
-            
+            RR_below = out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type); 
             R2R_valid = out(b).R2R_valid(RR_below);
             R2R_t     = out(b).R2R_t(RR_below);
-%             RPEAK_ts  = intersect(out(b).Rpeak_t, R2R_t);
             
             % prepare idx_valid_R2R_consec
             R2R_consec           = out(b).R2R_t(out(b).idx_valid_R2R_consec);
@@ -76,13 +69,9 @@ for b=1:numel(out)
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
             
-%             tmp  = intersect(find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type)), find(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))-1);
-%             tmp2 = intersect(out(b).idx_valid_R2R_consec, tmp);
 %             out(b).idx_valid_R2R_consec = tmp2;
         elseif cfg.IBI_high == 1 && cfg.IBI_low == 0
-            RR_above = out(b).R2R_valid > cfg.IBI_thrsh; %(trial_nBlocks_type);
-%             RR_above_valid = find(RR_above & [false RR_above(1:end-1)]);
-            
+            RR_above = out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type);
             R2R_valid = out(b).R2R_valid(RR_above);
             R2R_t     = out(b).R2R_t(RR_above);
 

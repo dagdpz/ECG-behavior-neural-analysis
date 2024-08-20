@@ -96,9 +96,7 @@ for fileNum = 1:length(unit_list)
                 elseif ischar(B.(fn{1}))
                     dt.(fn{1})         = cell(length(unit_list),1);
                     dt.(fn{1})(fileNum) = {B.(fn{1})};
-                elseif strcmp(fn{1}, 'cc_lag_list')
-                    dt.(fn{1})(fileNum,:) = B.(fn{1});
-                elseif isnumeric(B.(fn{1})) & length(B.(fn{1})) > 1
+                elseif isnumeric(B.(fn{1})) && length(B.(fn{1})) > 1
                     dt.(fn{1})          = nan(length(unit_list),81);
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 else
