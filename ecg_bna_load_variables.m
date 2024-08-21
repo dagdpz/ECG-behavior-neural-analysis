@@ -169,27 +169,31 @@ for fileNum = 1:length(unit_list)
 end
 
 % discard data for units that didn't pass criteria
-for varNum = 1:length(var_names)
-    for condNum = 1:length(cfg.condition)
-        L = cfg.condition(condNum).name;
-        
-        if strcmp(L,'Rest')
-            selection_list = ids_both ~= 2;
-        elseif strcmp(L,'Task')
-            selection_list = ids_both ~= 1;
+if ids_both ~= 0
+    
+    for varNum = 1:length(var_names)
+        for condNum = 1:length(cfg.condition)
+            L = cfg.condition(condNum).name;
+            
+            if strcmp(L,'Rest')
+                selection_list = ids_both ~= 2;
+            elseif strcmp(L,'Task')
+                selection_list = ids_both ~= 1;
+            end
+            
+            if size(dt.(L).(var_names{varNum}),1) == 1 | size(dt.(L).(var_names{varNum}),2) == 1
+                
+                dt.(L).(var_names{varNum})(~selection_list) = NaN;
+                
+            else
+                
+                dt.(L).(var_names{varNum})(:,~selection_list) = deal(NaN);
+                
+            end
+            
         end
-        
-        if size(dt.(L).(var_names{varNum}),1) == 1 | size(dt.(L).(var_names{varNum}),2) == 1
-            
-            dt.(L).(var_names{varNum})(~selection_list) = NaN;
-            
-        else
-            
-            dt.(L).(var_names{varNum})(:,~selection_list) = deal(NaN);
-            
-        end
-        
     end
+    
 end
 
 end

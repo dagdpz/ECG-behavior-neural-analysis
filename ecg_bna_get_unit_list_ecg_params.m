@@ -41,7 +41,7 @@ for listNum = 1:length(list_of_lists)
     load(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
     
     % figure out number of R-peaks
-    dt = ecg_bna_load_variables(cfg,unit_ids, 'per_unit_-0.25-0.25s', 'Output', {'NrEvents'});
+    dt = ecg_bna_load_variables(cfg,unit_ids, 'per_unit_-0.25-0.25s', 'Output', {'NrEvents'}, 0);
     
     enoughRpeaks = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
@@ -63,7 +63,7 @@ for listNum = 1:length(list_of_lists)
     
     clear dt enoughRpeaks
                                              
-    dt = ecg_bna_load_variables(cfg, unit_ids, 'cardioballistic', 'data', {'distance2thr', 'AMP_MI', 'cc_PSTH_feature', 'pp_PSTH_feature'});
+    dt = ecg_bna_load_variables(cfg, unit_ids, 'cardioballistic', 'data', {'distance2thr', 'AMP_MI', 'cc_PSTH_feature', 'pp_PSTH_feature'}, 0);
     enough_bins = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
         L = cfg.condition(conNum).name;
@@ -95,8 +95,8 @@ for listNum = 1:length(list_of_lists)
         
         h_AMP_MI(conNum,:) = dt.(L).AMP_MI(:,2) < 0.01;
         high_Rsq(conNum,:) = dt.(L).AMP_MI(:,4) > 0.3; % to drop false positives
-        AMP_pp(conNum,:)   = dt.(L).pp_PSTH_feature;
-        AMP_cc(conNum,:)   = dt.(L).cc_PSTH_feature;
+        AMP_pp(conNum,:)   = dt.(L).pp_PSTH_feature(1,:); % take the first feature - AMP
+        AMP_cc(conNum,:)   = dt.(L).cc_PSTH_feature(1,:);
         
     end
     
