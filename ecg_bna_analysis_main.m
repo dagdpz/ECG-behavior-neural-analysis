@@ -431,12 +431,25 @@ for v = 1:length(versions)
         
         if cfg.process_spikes
             
-            % both task and rest - NO low spike amplitude + any ccs
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_noLowAmp_ccs_any');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noLow_amplitude_ccs_any','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
+            % loop though all selection lists
+            for listNum = 1:length(cfg.pop.unit_selection_lists)
             
+                %% time-domain analysis
+                ecg_bna_avg_spike_histogram_clean(cfg, 'per_unit_-0.25-0.25s', cfg.pop.unit_selection_lists{listNum})
+                
+                %% phase-domain analysis will be here
+                
+                
+                %% correlation analysis
+                ecg_bna_population_correlation_analysis(cfg, 'correlation_analysis', cfg.pop.unit_selection_lists{listNum})
+                
+            end
             
+            ecg_bna_population_cardioballistic(cfg, 'cardioballistic', 'unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any', 'Population_noLowAmp_ccs_any_cardioballistic')
+            
+            ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.25-0.25s', 'Circular_population_results_0-0.5s')
+            
+            ecg_bna_plot_averageHR(cfg)
             
             ecg_bna_plot_venns(cfg)
             
@@ -494,90 +507,11 @@ for v = 1:length(versions)
             output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noLow_amplitude_ccs_both');
             SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noLow_amplitude_ccs_both','data');
             ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
-            
-            
-            % population analysis for units with at least 1 rest OR 1 task
-            % block
-%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population');
-%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600','Output');
-%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-%             
-%             % population analysis for units without cardioballistic effect
-%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_1');
-%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600_noCB','Output');
-%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-%             
-%             % population analysis for units without cardioballistic effect
-%             % or with high amplitude of spike
-%             output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_2');
-%             SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_selected_600_noCB_corr','Output');
-%             ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-%             
-            % population analysis for units with both task and rest
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_3');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            % population analysis for units with both task and rest without
-            % the cardioballistic effect
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_4');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-%             
-            % population analysis for units with both task and rest WITH
-            % the cardioballistic effect
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_5');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_withCB','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-
-            % population analysis for units with both task and rest without
-            % the cardioballistic effect or with high amplitude of spike
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_6');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB_corr','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            % population analysis for units for both task and rest without 
-            % cardioballistic effect, high spike amplitude and significant 
-            % cc between phase PSTH and AMP phase dynamic
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_7');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noCB_corr_ccs','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            % both task and rest - high spike amplitude
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_highAmp');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_high_amplitude','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            % both task and rest - low spike amplitude
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            % both task and rest - low spike amplitude + any ccs
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp_ccs_any');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude_ccs_any','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            editr
-            % both task and rest - low spike amplitude + both ccs
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_lowAmp_ccs_both');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_low_amplitude_ccs_both','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            
-            
-            % both task and rest - NO low spike amplitude + both ccs
-            output_dir = fullfile(cfg.SPK_root_results_fldr, 'Population_noLowAmp_ccs_both');
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit_stable_600_noLow_amplitude_ccs_both','Output');
-            ecg_bna_avg_spike_histogram_clean(SPK_PSTH, output_dir, cfg);
-            
-            
-            ecg_bna_population_correlation_analysis(cfg)
 
             ecg_bna_plot_circular_fits(cfg, 'per_unit_0-0.5s', 'Circular_population_results_0-0.5s')
             ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.25-0.25s', 'Circular_population_results_-0.25-0.25s')
             ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.5-0s', 'Circular_population_results_-0.5-0s')
             
-            ecg_bna_plot_averageHR(cfg)
         end
         
     end
