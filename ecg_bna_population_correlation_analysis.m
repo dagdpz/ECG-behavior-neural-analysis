@@ -1,4 +1,4 @@
-function ecg_bna_population_correlation_analysis(cfg)
+function ecg_bna_population_correlation_analysis(cfg, data_folder, unitList)
 
 unqTargets = {'VPL', 'dPul', 'MD'};
 N_Areas = length(unqTargets);
@@ -12,21 +12,29 @@ var_prefix = {'', 'FR_', 'RR_'};
 
 bar_colors = [244 149 173; 126 221 95; 127 127 127]/255;
 
-basepath_to_save = [cfg.SPK_root_results_fldr filesep 'Population_correlation_analysis'];
+basepath_to_save = [cfg.SPK_root_results_fldr filesep 'Population_correlation_analysis' unitList(9:end)];
 if ~exist(basepath_to_save, 'dir')
     mkdir(basepath_to_save)
 end
 
 %% load data
-%load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_selected_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets')
-load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\unitInfo_after_SNR_exclusion_stable_noLow_amplitude_ccs_any.mat'], 'unit_ids', 'targets', 'ids_both')
+load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG' filesep unitList], 'unit_ids', 'targets', 'ids_both')
 
-for a = 1: N_Areas
-    T=unqTargets{a};
-    currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
-    curr_unit_ids = unit_ids(currTargIds);
-    curr_ids_both = ids_both(currTargIds);
-    dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, 'correlation_analysis', 'data', var_list, curr_ids_both);
+dataset_name       = [basepath_to_save filesep 'data.mat'];
+ephys_dataset_name = [cfg.SPK_root_results_fldr filesep 'Population_time_domain' unitList(9:end) filesep 'Output.mat'];
+
+if ~exist(dataset_name,'file')
+    for a = 1: N_Areas
+        T=unqTargets{a};
+        currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
+        curr_unit_ids = unit_ids(currTargIds);
+        curr_ids_both = ids_both(currTargIds);
+        dt.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, data_folder, 'data', var_list, curr_ids_both);
+    end
+    save(dataset_name,'dt')
+else
+    load(dataset_name,'dt')
+    load(ephys_dataset_name,'Out')
 end
 
 %% autocorrelation & correlation coefs between FR and RR
