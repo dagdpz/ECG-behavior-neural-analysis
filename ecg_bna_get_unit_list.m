@@ -95,7 +95,7 @@ if compute_unit_subsets
     % 2. Exclude by SNR
     % 2.0. load 'criteria' structure for units that passed FR cirterion
     curr_unit_ids = unit_ids_after_condition_exclusion_stable;
-    dt = ecg_bna_load_variables(cfg, curr_unit_ids, 'cardioballistic', 'data', {});
+    dt = ecg_bna_load_variables(cfg, curr_unit_ids, 'cardioballistic', 'data', {}, 0);
     % 2.1. [passed] exclude by SNR
     task_SNR_ids  = dt.criteria.SNR_F >= SNR(1) & dt.criteria.SNR_F <= SNR(2);
     rest_SNR_ids  = dt.criteria.SNR_V >= SNR(1) & dt.criteria.SNR_V <= SNR(2);
@@ -150,7 +150,7 @@ if compute_unit_subsets
     hemispheres_after_exclusion_rest = keys.tuning_table(2:end, hemisphere_column_index);
     % 1.1. exclude by SNR threshold
     % 1.1.0. load criteria from the data
-    dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_rest, 'cardioballistic', 'data', {});
+    dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_rest, 'cardioballistic', 'data', {}, 0);
     % 1.1.1. [passed] exclude by SNR
     task_SNR_ids  = dt.criteria.SNR_F >= SNR(1) & dt.criteria.SNR_F <= SNR(2);
 %     rest_SNR_ids  = dt.criteria.SNR_V >= SNR(1) & dt.criteria.SNR_V <= SNR(2);
@@ -186,7 +186,7 @@ if compute_unit_subsets
     hemispheres_after_exclusion_task = keys.tuning_table(2:end, hemisphere_column_index);
     % 2.1. exclude by SNR threshold
     % 2.1.0. load criteria from the data
-    dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_task, 'cardioballistic', 'data', {});
+    dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_task, 'cardioballistic', 'data', {}, 0);
     % 2.1.1. [passed] exclude by SNR
 %     task_SNR_ids  = dt.criteria.SNR_F >= SNR(1) & dt.criteria.SNR_F <= SNR(2);
     rest_SNR_ids  = dt.criteria.SNR_V >= SNR(1) & dt.criteria.SNR_V <= SNR(2);
