@@ -1,8 +1,11 @@
-function ecg_bna_avg_spike_histogram_clean(cfg, data_folder, unitList, saveFolder)
+function ecg_bna_avg_spike_histogram_clean(cfg, data_folder, unitList)
 % Here comes some sort of across population plot i assume?
 
 %% load data
-output_folder = [cfg.SPK_root_results_fldr filesep saveFolder];
+output_folder = [cfg.SPK_root_results_fldr filesep 'Population_time_domain' unitList(9:end)];
+if ~exist(output_folder,'dir')
+    mkdir(output_folder)
+end
 load([cfg.SPK_root_results_fldr filesep 'unit_lists_ECG\' unitList '.mat'], 'unit_ids', 'targets', 'ids_both')
 
 var_list = ...
@@ -17,57 +20,71 @@ var_list = ...
 %     'highIBI.sig_all', 'highIBI.sig', 'highIBI.sig_FR_diff', 'highIBI.sig_time', 'highIBI.sig_n_bins', 'highIBI.sig_sign', ...
 %     'highIBI.NrEvents', 'highIBI.SDsubstractedSDP', 'highIBI.SDsubstractedSDP_normalized', 'highIBI.FR_ModIndex_SubtrSDP', 'highIBI.FR_ModIndex_PcS'
 
+BINS = linspace(cfg.analyse_states{1}{3},cfg.analyse_states{1}{4}, 101);
+
 N_Areas    = 3;
 unqTargets = {'VPL', 'dPul', 'MD'};
 N_conditions=numel(cfg.condition);
 n_sig_bins = cfg.time.n_sig_bins;
 
-for a = 1: N_Areas
-    
-    T=unqTargets{a};
-    currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
-    curr_unit_ids  = unit_ids(currTargIds);
-    curr_ids_both = ids_both(currTargIds);
-    Out.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, data_folder, 'Output', var_list, curr_ids_both);
-    
-    for c=1:N_conditions
-        L=cfg.condition(c).name;
-        Out.(T).(L).FR_perECGTriggeredAverage = nanmean(Out.(T).(L).SD,1);
+dataset_name = [output_folder filesep 'Output.mat'];
+
+if ~exist(dataset_name,'file')
+    for a = 1: N_Areas
         
-        %% compute histograms - unit fractions and counts
-        out = [Out.(T).(L)];
+        T=unqTargets{a};
+        currTargIds = cellfun(@(x) strcmp(x, unqTargets{a}), targets);
+        curr_unit_ids  = unit_ids(currTargIds);
+        curr_ids_both = ids_both(currTargIds);
+        Out.(T) = ecg_bna_load_variables(cfg, curr_unit_ids, data_folder, 'Output', var_list, curr_ids_both);
         
-        Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(end,:))';
-        Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
-        sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
-        
-        % decrease, increase, non-sign
-        Out.(T).(L).Pc_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
-        Out.(T).(L).Nb_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] ) ;
-        
-        % [by unit] decrease, increase, non-sign
-        HeartResponseType_byUnit = out.sig_sign;
-        HeartResponseType_byUnit(~sig | ~Idx_Units_NonNaN) = 0;
-        Out.(T).(L).HeartResponseType_byUnit = HeartResponseType_byUnit; % increase, decrease, no response
-        
-        %% compute modulation indices with sign
-        curr_sign = Out.(T).(L).sig_sign;
-        curr_sign(curr_sign == 0) = 1; % to define real sign but not to lose non-significant ones
-        Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
-        Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
-    end
-    
-    for u = 1:size(Out.(T).unit_ID,2)
-        
-        if ~isnan(Out.(T).Rest.sig_FR_diff(u)) & ~isnan(Out.(T).Task.sig_FR_diff(u))
+        for c=1:N_conditions
+            L=cfg.condition(c).name;
+            Out.(T).(L).FR_perECGTriggeredAverage = nanmean(Out.(T).(L).SD,1);
             
-            [Out.(T).pp_rest_vs_task(u), Out.(T).cc_rest_vs_task(u)] = ...
-                mult_comp_perm_corr(Out.(T).Rest.SD(:,u), Out.(T).Task.SD(:,u), cfg.time.n_shuffles, cfg.time.tail, cfg.time.alpha_level, cfg.time.stat, cfg.time.reports, cfg.time.seed_state);
+            %% compute histograms - unit fractions and counts
+            out = [Out.(T).(L)];
+            
+            Idx_Units_NonNaN = ~isnan(out.SDsubstractedSDP(end,:))';
+            Idx_Units_NaN =  sum(~Idx_Units_NonNaN);
+            sig =  ~isnan(out.sig_FR_diff) & (out.sig_n_bins > n_sig_bins) ;
+            
+            % decrease, increase, non-sign
+            Out.(T).(L).Pc_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] / sum(Idx_Units_NonNaN)) *100;
+            Out.(T).(L).Nb_SignFR = ([sum(out.sig_sign(sig) == -1), sum(out.sig_sign(sig) == 1) ,(sum(~sig) -Idx_Units_NaN),] ) ;
+            
+            % [by unit] decrease, increase, non-sign
+%             HeartResponseType_byUnit = out.sig_sign;
+%             HeartResponseType_byUnit(~sig | ~Idx_Units_NonNaN) = 0;
+            Out.(T).(L).HeartResponseType_byUnit = out.sig_sign; % increase, decrease, no response
+            
+            %% compute modulation indices with sign
+            curr_sign = Out.(T).(L).sig_sign;
+            curr_sign(curr_sign == 0) = 1; % to define real sign but not to lose non-significant ones
+            Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
+            Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
+            
+            
+        end
+        
+        
+        % preallocate
+        [Out.(T).pp_rest_vs_task, Out.(T).cc_rest_vs_task] = deal(nan(length(Out.(T).unit_ID),1));
+        for u = 1:length(Out.(T).unit_ID)
+            
+            if ~isnan(Out.(T).Rest.sig_FR_diff(u)) & ~isnan(Out.(T).Task.sig_FR_diff(u))
+                
+                [Out.(T).pp_rest_vs_task(u), Out.(T).cc_rest_vs_task(u)] = ...
+                    mult_comp_perm_corr(Out.(T).Rest.SD(:,u), Out.(T).Task.SD(:,u), cfg.time.n_shuffles, cfg.time.tail, cfg.time.alpha_level, cfg.time.stat, cfg.time.reports, cfg.time.seed_state);
+                
+            end
             
         end
         
     end
-    
+    save(dataset_name,'Out')
+else
+    load(dataset_name,'Out')
 end
 
 bar_colors = [0 0.4470 0.7410; 0.8500 0.3250 0.0980; 1 1 1];
@@ -164,7 +181,7 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
         
         disp(T)
         
-        p(a,:) = ecg_bna_fisher_test(Out.(T).(cfg.condition(cond2_num).name).Nb_SignFR, Out.(T).(cfg.condition(cond1_num).name).Nb_SignFR);
+        p(a,:) = ecg_bna_fisher_test(Out.(T).(cfg.condition(cond2_num).name).Nb_SignFR([2 1 3]), Out.(T).(cfg.condition(cond1_num).name).Nb_SignFR([2 1 3]));
         
     end
     
@@ -172,7 +189,7 @@ for groupNum = 1:length(cfg.spk.compare_conditions)
 %     [p_corr, h] = bonf_holm(p, 0.05);
     h = fdr_bky(round(p,10), 0.05);
     
-    Tab = table(Ana_TargetBrainArea, p(:,1), p(:,2), h(:,1), h(:,2), 'VariableNames', {'Brain Area', 'p_corr dec', 'p_corr inc', 'h dec', 'h inc'});
+    Tab = table(Ana_TargetBrainArea, p(:,1), p(:,2), h(:,1), h(:,2), 'VariableNames', {'Brain Area', 'p_corr inc', 'p_corr dec', 'h inc', 'h dec'});
     savename = [output_folder filesep (cfg.condition(cond2_num).name) '_vs_' (cfg.condition(cond1_num).name) 'Table_Prevalences_pvalues_corrected.xlsx'];
     writetable(Tab, savename)
     clear Tab
@@ -198,6 +215,9 @@ for a = 1: N_Areas
     
     % prepare the categorical data for plotting
     t = [Out.(T).Rest.HeartResponseType_byUnit, Out.(T).Task.HeartResponseType_byUnit];
+    
+    nan_ids    = any(isnan(t),2);
+    t(nan_ids,:) = [];
     
     tmp = cell(size(t));
     tmp(t == 0)  = deal({'no response'});
@@ -308,7 +328,7 @@ for a = 1:N_Areas
         UnitNotSign_Rest = out.FR_ModIndex_PcS > 30 & ~sig;
         text(-400,-15, Out.(T).unit_ID(UnitSig_Rest),'Color', ccol);
         if sum(UnitSig_Rest)
-            line(PSTH_bins, out.SDsubstractedSDP_normalized(UnitSig_Rest,:), 'color', ccol, 'LineWidth', 1);
+            line(PSTH_bins, out.SDsubstractedSDP_normalized(:,UnitSig_Rest), 'color', ccol, 'LineWidth', 1);
         end
         text(300,20, Out.(T).unit_ID(UnitNotSign_Rest),'Color','k');
         xlabel('Time from R-peak, ms')
@@ -1599,10 +1619,10 @@ if OnlyUnits_withRestANDTask
             ( (Out.(T).Rest.sig_n_bins > n_sig_bins) | (Out.(T).Task.sig_n_bins > n_sig_bins) );
         
         % ids for unit groups
-        noCorr_nonResp  = ~ids_cc_sig & ~sig';
-        noCorr_sigResp  = ~ids_cc_sig & sig';
-        sigCorr_sigResp = ids_cc_sig & sig';
-        sigCorr_noResp  = ids_cc_sig & ~sig';
+        noCorr_nonResp  = ~ids_cc_sig(:) & ~sig(:);
+        noCorr_sigResp  = ~ids_cc_sig(:) & sig(:);
+        sigCorr_sigResp = ids_cc_sig(:) & sig(:);
+        sigCorr_noResp  = ids_cc_sig(:) & ~sig(:);
         
         % unit counts
         counts_noCorr_sigResp  = histc(cc(noCorr_sigResp),hist_bins);  % blue
@@ -1611,7 +1631,7 @@ if OnlyUnits_withRestANDTask
         counts_noCorr_nonResp  = histc(cc(noCorr_nonResp),hist_bins);  % white
         
         subplot(1,3,a)
-        b = bar(hist_bin_centers,[counts_noCorr_sigResp; counts_sigCorr_sigResp; counts_sigCorr_noResp; counts_noCorr_nonResp]','stacked'); % 
+        b = bar(hist_bin_centers,[counts_noCorr_sigResp counts_sigCorr_sigResp counts_sigCorr_noResp counts_noCorr_nonResp],'stacked'); % 
         
         for ii = 1:4
             b(ii).FaceColor = b_colors(ii,:);
