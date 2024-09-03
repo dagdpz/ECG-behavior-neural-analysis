@@ -179,6 +179,13 @@ for a = 1: N_Areas
         % compute sign test to know whether medians differ from 0
         p_sign(a,c) = signtest(curr_cc);
         
+        % before computing t-test, make sure those distributions are normal
+        % with Kolmogorov-Smirnov test
+        [~,p_kstest(a,c)] = kstest(zscore(curr_cc));
+        
+        % compute one-sample t-test to know whether averages differ from 0
+        [~,p_ttest(a,c)] = ttest(curr_cc);
+        
         % (1) plot histograms for the current lag
         figure(f1);
         
@@ -362,6 +369,29 @@ TBL = table(unqTargets', M(:,1), p_sign(:,1), h_sign(:,1), I(:,1), M(:,2), p_sig
     'Task: Median cc', 'Task: Sign Test p', 'Task: Sign Test h', 'Task: IQR', 'FDR: Crit. p'});
 writetable(TBL, [basepath_to_save filesep filename '.xls'])
 clear TBL
+
+% correct Kolmogorov-Smirnov test results for multiple comparisons
+[h_kstest, p_crit_kstest] = fdr_bky(p_kstest);
+
+% table with Kolmogorov-Smirnov test results
+filename = 'Kolmogorov-Smirnov_test_Mean_ccs';
+TBL = table(unqTargets', p_kstest(:,1), h_kstest(:,1), p_kstest(:,2), h_kstest(:,2), [p_crit_kstest; NaN; NaN], ...
+    'VariableNames', {'Target Area', ...
+    'Rest: KS p-value', 'Rest: KS h', ...
+    'Task: KS p-value', 'Task: KS h', 'FDR: Crit. p'});
+writetable(TBL, [basepath_to_save filesep filename '.xls'])
+clear TBL
+
+% correct ttest results for multiple comparisons
+[h_ttest, p_crit_ttest] = fdr_bky(p_ttest);
+
+% table with one-sample t-test results
+filename = 'One-Sample_t-test_results_Mean_ccs';
+TBL = table(unqTargets', p_ttest(:,1), h_ttest(:,1), p_ttest(:,2), h_ttest(:,2), [p_crit_ttest; NaN; NaN], ...
+    'VariableNames', {'Target Area', ...
+    'Rest: t-test p-value', 'Rest: t-test h', ...
+    'Task: t-test p-value', 'Task: t-test h', 'FDR: Crit. p'});
+writetable(TBL, [basepath_to_save filesep filename '.xls'])
 
 % correct Fisher's test results for multiple comparisons
 [h_fisher, p_crit_fisher] = fdr_bky(p_fisher);
