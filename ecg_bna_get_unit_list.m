@@ -15,6 +15,8 @@ keys.tuning_table = ph_load_tuning_table(keys); %% load tuning table
 unit_column_index   = DAG_find_column_index(keys.tuning_table, 'unit_ID');
 target_column_index = DAG_find_column_index(keys.tuning_table, 'target');
 site_column_index   = DAG_find_column_index(keys.tuning_table, 'site_ID');
+grid_x_column_index = DAG_find_column_index(keys.tuning_table, 'grid_x');
+grid_y_column_index = DAG_find_column_index(keys.tuning_table, 'grid_y');
 depths_column_index = DAG_find_column_index(keys.tuning_table, 'electrode_depth');
 
 % create 'hemisphere' column in the tuning table
@@ -31,22 +33,26 @@ keys.tuning_table(2:end, target_column_index) = cellfun(@(x) x(1:end-2), keys.tu
 unit_ids    = keys.tuning_table(2:end, unit_column_index);
 targets     = keys.tuning_table(2:end, target_column_index);
 sites       = keys.tuning_table(2:end, site_column_index);
+grid_x      = keys.tuning_table(2:end, grid_x_column_index);
+grid_y      = keys.tuning_table(2:end, grid_y_column_index);
 depths      = keys.tuning_table(2:end, depths_column_index);
 hemispheres = keys.tuning_table(2:end, hemisphere_column_index);
 
 filename = [cfg.unit_lists filesep 'unitInfo_before_exclusion'];
-save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'grid_x', 'grid_y', 'hemispheres')
 
 % keep unit list before exclusion for later
 unit_ids_before_exclusion    = unit_ids;
 targets_before_exclusion     = targets;
 sites_before_exclusion       = sites;
+grid_x_before_exclusion      = grid_x;
+grid_y_before_exclusion      = grid_y;
 depths_before_exclusion      = depths;
 hemispheres_before_exclusion = hemispheres;
 
 % create table of unit numbers by area
 write_unit_table(targets, filename);
-clear unit_ids targets sites depths hemispheres
+clear unit_ids targets sites grid_x grid_y depths hemispheres
 
 if compute_unit_subsets
     % II. Unit list for BOTH task and rest
@@ -68,29 +74,35 @@ if compute_unit_subsets
     unit_ids    = keys.tuning_table(2:end, unit_column_index);
     targets     = keys.tuning_table(2:end, target_column_index);
     sites       = keys.tuning_table(2:end, site_column_index);
+    grid_x      = keys.tuning_table(2:end, grid_x_column_index);
+    grid_y      = keys.tuning_table(2:end, grid_y_column_index);
     depths      = keys.tuning_table(2:end, depths_column_index);
     hemispheres = keys.tuning_table(2:end, hemisphere_column_index);
     filename = [cfg.unit_lists filesep 'unitInfo_after_condition_exclusion_stable'];
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres')
     % 1.2. [passed] create and save unit count table
     write_unit_table(targets, filename);
     % 1.3. figure out units excluded by number of spikes and save those
     unit_ids_after_condition_exclusion_stable    = unit_ids;
     targets_after_condition_exclusion_stable     = targets;
     sites_after_condition_exclusion_stable       = sites;
+    grid_x_after_condition_exclusion_stable      = grid_x;
+    grid_y_after_condition_exclusion_stable      = grid_y;
     depths_after_condition_exclusion_stable      = depths;
     hemispheres_after_condition_exclusion_stable = hemispheres;
     % find excluded units
     [unit_ids, ia] = setdiff(unit_ids_before_exclusion, unit_ids_after_condition_exclusion_stable); % 1 - before current exclusion step, 2 - after
     targets     = targets_before_exclusion(ia);
     sites       = sites_before_exclusion(ia);
+    grid_x      = grid_x_before_exclusion(ia);
+    grid_y      = grid_y_before_exclusion(ia);
     depths      = depths_before_exclusion(ia);
     hemispheres = hemispheres_before_exclusion(ia);
     filename = [cfg.unit_lists filesep 'unitInfo_excluded_by_condition_stable'];
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres')
     % 1.4. [excluded] create and save unit count table
     write_unit_table(targets, filename);
-    clear unit_ids targets sites depths hemispheres ia
+    clear unit_ids targets sites grid_x grid_y depths hemispheres ia
     
     % 2. Exclude by SNR
     % 2.0. load 'criteria' structure for units that passed FR cirterion
@@ -103,16 +115,20 @@ if compute_unit_subsets
     unit_ids      = unit_ids_after_condition_exclusion_stable(SNR_ids);
     targets       = targets_after_condition_exclusion_stable(SNR_ids);
     sites         = sites_after_condition_exclusion_stable(SNR_ids);
+    grid_x        = grid_x_after_condition_exclusion_stable(SNR_ids);
+    grid_y        = grid_y_after_condition_exclusion_stable(SNR_ids);
     depths        = depths_after_condition_exclusion_stable(SNR_ids);
     hemispheres   = hemispheres_after_condition_exclusion_stable(SNR_ids);
     filename = [cfg.unit_lists filesep 'unitInfo_after_SNR_exclusion_stable'];
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres')
     % 2.2. [passed] save table
     write_unit_table(targets, filename);
     % 2.3. figure out units excluded by SNR and save those
     unit_ids_after_SNR_exclusion_stable    = unit_ids;
     targets_after_SNR_exclusion_stable     = targets;
     sites_after_SNR_exclusion_stable       = sites;
+    grid_x_after_SNR_exclusion_stable      = grid_x;
+    grid_y_after_SNR_exclusion_stable      = grid_y;
     depths_after_SNR_exclusion_stable      = depths;
     hemispheres_after_SNR_exclusion_stable = hemispheres;
     
@@ -120,13 +136,15 @@ if compute_unit_subsets
     [unit_ids, ia] = setdiff(unit_ids_after_condition_exclusion_stable, unit_ids_after_SNR_exclusion_stable);
     targets     = targets_after_condition_exclusion_stable(ia);
     sites       = sites_after_condition_exclusion_stable(ia);
+    grid_x      = grid_x_after_condition_exclusion_stable(ia);
+    grid_y      = grid_y_after_condition_exclusion_stable(ia);
     depths      = depths_after_condition_exclusion_stable(ia);
     hemispheres = hemispheres_after_condition_exclusion_stable(ia);
     filename = [cfg.unit_lists filesep 'unitInfo_excluded_by_SNR_stable'];
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres')
     % 2.4. [excluded] create and save unit count table
     write_unit_table(targets, filename);
-    clear unit_ids targets sites depths hemispheres
+    clear unit_ids targets sites grid_x grid_y depths hemispheres
     
     % IV. Unit list for either task or rest
     % apply exclusion criteria - choose cells that had either a task or a rest
@@ -146,6 +164,8 @@ if compute_unit_subsets
     unit_ids_after_exclusion_rest    = keys.tuning_table(2:end, unit_column_index);
     targets_after_exclusion_rest     = keys.tuning_table(2:end, target_column_index);
     sites_after_exclusion_rest       = keys.tuning_table(2:end, site_column_index);
+    grid_x_after_exclusion_rest      = keys.tuning_table(2:end, grid_x_column_index);
+    grid_y_after_exclusion_rest      = keys.tuning_table(2:end, grid_y_column_index);
     depths_after_exclusion_rest      = keys.tuning_table(2:end, depths_column_index);
     hemispheres_after_exclusion_rest = keys.tuning_table(2:end, hemisphere_column_index);
     % 1.1. exclude by SNR threshold
@@ -158,6 +178,8 @@ if compute_unit_subsets
     unit_ids_task    = unit_ids_after_exclusion_rest(task_SNR_ids);
     targets_task     = targets_after_exclusion_rest(task_SNR_ids);
     sites_task       = sites_after_exclusion_rest(task_SNR_ids);
+    grid_x_task      = grid_x_after_exclusion_rest(task_SNR_ids);
+    grid_y_task      = grid_y_after_exclusion_rest(task_SNR_ids);
     depths_task      = depths_after_exclusion_rest(task_SNR_ids);
     hemispheres_task = hemispheres_after_exclusion_rest(task_SNR_ids);
 %     filename = [cfg.unit_lists filesep 'unitInfo_after_SNR_exclusion_stable'];
@@ -182,6 +204,8 @@ if compute_unit_subsets
     unit_ids_after_exclusion_task    = keys.tuning_table(2:end, unit_column_index);
     targets_after_exclusion_task     = keys.tuning_table(2:end, target_column_index);
     sites_after_exclusion_task       = keys.tuning_table(2:end, site_column_index);
+    grid_x_after_exclusion_task      = keys.tuning_table(2:end, grid_x_column_index);
+    grid_y_after_exclusion_task      = keys.tuning_table(2:end, grid_y_column_index);
     depths_after_exclusion_task      = keys.tuning_table(2:end, depths_column_index);
     hemispheres_after_exclusion_task = keys.tuning_table(2:end, hemisphere_column_index);
     % 2.1. exclude by SNR threshold
@@ -194,6 +218,8 @@ if compute_unit_subsets
     unit_ids_rest    = unit_ids_after_exclusion_task(rest_SNR_ids);
     targets_rest     = targets_after_exclusion_task(rest_SNR_ids);
     sites_rest       = sites_after_exclusion_task(rest_SNR_ids);
+    grid_x_rest      = grid_x_after_exclusion_task(rest_SNR_ids);
+    grid_y_rest      = grid_y_after_exclusion_task(rest_SNR_ids);
     depths_rest      = depths_after_exclusion_task(rest_SNR_ids);
     hemispheres_rest = hemispheres_after_exclusion_task(rest_SNR_ids);
     
@@ -209,6 +235,12 @@ if compute_unit_subsets
     sites_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
     sites_after_exclusion(ids_rest)  = sites_rest;
     sites_after_exclusion(ids_task)  = sites_task;
+    grid_x_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
+    grid_x_after_exclusion(ids_rest)  = grid_x_rest;
+    grid_x_after_exclusion(ids_task)  = grid_x_task;
+    grid_y_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
+    grid_y_after_exclusion(ids_rest)  = grid_y_rest;
+    grid_y_after_exclusion(ids_task)  = grid_y_task;
     depths_after_exclusion           = cell(length(unit_ids_after_exclusion), 1);
     depths_after_exclusion(ids_rest) = depths_rest;
     depths_after_exclusion(ids_task) = depths_task;
@@ -220,9 +252,11 @@ if compute_unit_subsets
     unit_ids    = unit_ids_after_exclusion;
     targets     = targets_after_exclusion;
     sites       = sites_after_exclusion;
+    grid_x      = grid_x_after_exclusion;
+    grid_y      = grid_y_after_exclusion;
     depths      = depths_after_exclusion;
     hemispheres = hemispheres_after_exclusion;
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres', 'ids_both')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres', 'ids_both')
     % clear unit_ids_after_exclusion targets_after_exclusion
     write_unit_table(targets, filename);
     %     clear T unique_areas ic unit_counts unit_ids_excluded targets_after_exclusion
@@ -232,15 +266,19 @@ if compute_unit_subsets
     unit_ids_excluded = unit_ids_before_exclusion(ids_excluded);
     targets_excluded  = targets_before_exclusion(ids_excluded);
     sites_excluded    = sites_before_exclusion(ids_excluded);
+    grid_x_excluded   = grid_x_before_exclusion(ids_excluded);
+    grid_y_excluded   = grid_y_before_exclusion(ids_excluded);
     depths_excluded   = depths_before_exclusion(ids_excluded);
     hemispheres_excluded = hemispheres_before_exclusion(ids_excluded);
     unit_ids    = unit_ids_excluded;
     targets     = targets_excluded;
     sites       = sites_excluded;
+    grid_x      = grid_x_excluded;
+    grid_y      = grid_y_excluded;
     depths      = depths_excluded;
     hemispheres = hemispheres_excluded;
     filename = [cfg.unit_lists filesep 'unitInfo_excluded_by_SNR_selected'];
-    save(filename, 'unit_ids', 'targets', 'sites', 'depths', 'hemispheres')
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres')
     write_unit_table(targets, filename);
     %     clear T unique_areas ic unit_counts filename unit_ids_excluded targets_excluded unit_ids_excluded targets_excluded unit_ids_before_exclusion targets_before_exclusion
 end
