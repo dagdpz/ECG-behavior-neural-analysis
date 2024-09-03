@@ -29,7 +29,7 @@ for varNum = 1:length(var_names)
         
         for condNum = 1:length(cfg.condition)
             L = cfg.condition(condNum).name;
-            dt.(L).(var_names{varNum}) = nan(25,length(unit_list));
+            dt.(L).(var_names{varNum}) = nan(length(cfg.correlation.lag_list),length(unit_list));
         end
         
     elseif strcmp(var_names{varNum}, 'SD') || strcmp(var_names{varNum}, 'SD_STD') || strcmp(var_names{varNum}, 'SD_SEM') || ...
@@ -91,7 +91,7 @@ for fileNum = 1:length(unit_list)
                     dt.(fn{1})          = nan(length(unit_list),5);
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif strcmp(fn{1}, 'cc_lag_list')
-                    dt.(fn{1})          = nan(length(unit_list),25);
+                    dt.(fn{1})          = nan(length(unit_list),length(cfg.correlation.lag_list));
                     dt.(fn{1})(fileNum,:) = B.(fn{1});
                 elseif ischar(B.(fn{1}))
                     dt.(fn{1})         = cell(length(unit_list),1);
