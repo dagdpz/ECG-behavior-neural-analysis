@@ -64,9 +64,21 @@ if ~exist(dataset_name,'file')
             Out.(T).(L).FR_ModIndex_SubtrSDP_signed = Out.(T).(L).FR_ModIndex_SubtrSDP .* curr_sign;
             Out.(T).(L).FR_ModIndex_PcS_signed      = Out.(T).(L).FR_ModIndex_PcS .* curr_sign;
             
+            %% compute modulation directionality index
+            Out.(T).(L).Mod_Directionality_Index = ...
+                (abs(max(Out.(T).(L).SDsubstractedSDP)) - abs(min(Out.(T).(L).SDsubstractedSDP))) ./ (abs(max(Out.(T).(L).SDsubstractedSDP)) + abs(min(Out.(T).(L).SDsubstractedSDP)));
+            [tmp_max, max_id] = max(Out.(T).(L).SDsubstractedSDP);
+            [tmp_min, min_id] = min(Out.(T).(L).SDsubstractedSDP);
+            Out.(T).(L).RespMag_at_Max  = abs(tmp_max);
+            Out.(T).(L).RespMag_at_Min  = abs(tmp_min);
+            Out.(T).(L).RespTime_at_Max = BINS(max_id);
+            Out.(T).(L).RespTime_at_Min = BINS(min_id);
             
         end
         
+        % find shift of the max and shift of the min between conditions
+        Out.(T).Shift_of_Max = Out.(T).Rest.RespTime_at_Max - Out.(T).Task.RespTime_at_Max;
+        Out.(T).Shift_of_Min = Out.(T).Rest.RespTime_at_Min - Out.(T).Task.RespTime_at_Min;
         
         % preallocate
         [Out.(T).pp_rest_vs_task, Out.(T).cc_rest_vs_task] = deal(nan(length(Out.(T).unit_ID),1));
