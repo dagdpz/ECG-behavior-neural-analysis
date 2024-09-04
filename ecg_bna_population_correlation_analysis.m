@@ -478,7 +478,7 @@ for a = 1: N_Areas
         var_non_sig = R(non_sig) .^ 2 * 100;
         
         % compute median variances
-        expl_var{a,c} = [var_pos_sig var_neg_sig var_non_sig];
+        expl_var{a,c} = [var_pos_sig var_neg_sig];
         M_all(a,c)    = nanmedian([var_pos_sig var_neg_sig var_non_sig]);
         M_sig(a,c)    = nanmedian([var_pos_sig var_neg_sig]);
         
@@ -508,7 +508,7 @@ for a = 1: N_Areas
             
     end
     
-    p_wilcox(a) = signrank(expl_var{a,1},expl_var{a,2});
+    p_wilcox(a) = ranksum(expl_var{a,1},expl_var{a,2});
     
 end
 save_figure_as(f0, 'Explained_Variance_Bars', basepath_to_save, 1)
