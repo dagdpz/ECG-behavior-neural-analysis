@@ -172,9 +172,13 @@ for a = 1: N_Areas
         counts_neg    = counts_neg(:);
         counts_nonsig = counts_nonsig(:);
         
-        % compute medians
-        M(a,c) = nanmedian(curr_cc);
+        % compute medians and IQRs
+        M_median(a,c) = nanmedian(curr_cc);
         I(a,c) = iqr(curr_cc);
+        
+        % compute means and stds
+        M_mean(a,c) = nanmean(curr_cc);
+        S_STD(a,c)  = std(curr_cc);
         
         % compute sign test to know whether medians differ from 0
         p_sign(a,c) = signtest(curr_cc);
@@ -363,7 +367,7 @@ save_figure_as(f3, 'Unit_Pcs', basepath_to_save, 1)
 
 % construct table with medians and their signtest results
 filename = 'Median_CCs';
-TBL = table(unqTargets', M(:,1), p_sign(:,1), h_sign(:,1), I(:,1), M(:,2), p_sign(:,2), h_sign(:,2), I(:,2), [p_crit_sign; NaN; NaN], ...
+TBL = table(unqTargets', M_median(:,1), p_sign(:,1), h_sign(:,1), I(:,1), M_median(:,2), p_sign(:,2), h_sign(:,2), I(:,2), [p_crit_sign; NaN; NaN], ...
     'VariableNames', {'Target Area', ...
     'Rest: Median cc', 'Rest: Sign Test p', 'Rest: Sign Test h', 'Rest: IQR', ...
     'Task: Median cc', 'Task: Sign Test p', 'Task: Sign Test h', 'Task: IQR', 'FDR: Crit. p'});
@@ -387,10 +391,10 @@ clear TBL
 
 % table with one-sample t-test results
 filename = 'One-Sample_t-test_results_Mean_ccs';
-TBL = table(unqTargets', p_ttest(:,1), h_ttest(:,1), p_ttest(:,2), h_ttest(:,2), [p_crit_ttest; NaN; NaN], ...
+TBL = table(unqTargets', M_mean(:,1), S_STD(:,1), p_ttest(:,1), h_ttest(:,1), M_mean(:,2), S_STD(:,2), p_ttest(:,2), h_ttest(:,2), [p_crit_ttest; NaN; NaN], ...
     'VariableNames', {'Target Area', ...
-    'Rest: t-test p-value', 'Rest: t-test h', ...
-    'Task: t-test p-value', 'Task: t-test h', 'FDR: Crit. p'});
+    'Rest: cc mean', 'Rest: cc std', 'Rest: t-test p-value', 'Rest: t-test h', ...
+    'Task: cc mean', 'Task: cc std', 'Task: t-test p-value', 'Task: t-test h', 'FDR: Crit. p'});
 writetable(TBL, [basepath_to_save filesep filename '.xls'])
 
 % correct Fisher's test results for multiple comparisons
@@ -656,7 +660,7 @@ f10 = figure;
 set(f10, 'Position', [22 441 1857 491])
 
 % preallocate variables
-M = nan(N_Areas,N_conditions);
+M_median = nan(N_Areas,N_conditions);
 
 f11 = figure;
 % set(f11,'Position',[])
@@ -685,7 +689,7 @@ for a = 1: N_Areas
 %         N=numel(ids);
 
         % compute lag medians only sig.
-        M(a,c) = median(laglist(ids(sig_idx)));
+        M_median(a,c) = median(laglist(ids(sig_idx)));
         
         % compute sign test over sig lags
         [p_signtest_lag(a,c), h_signtest_lag(a,c)] = signtest(laglist(ids(sig_idx)));
@@ -754,7 +758,7 @@ for a = 1: N_Areas
         plot(m0(a,c), 0, '^', 'MarkerFaceColor', bar_colors(3,:), 'MarkerEdgeColor', [0 0 0]) % median non-sig
         plot(m1(a,c), 0, '^', 'MarkerFaceColor', bar_colors(2,:), 'MarkerEdgeColor', [0 0 0]) % median sig pos
         plot(m2(a,c), 0, '^', 'MarkerFaceColor', bar_colors(1,:), 'MarkerEdgeColor', [0 0 0]) % median sig neg
-        plot(M(a,c),  0, '^', 'MarkerFaceColor', [0 0 0], 'MarkerEdgeColor', [0 0 0])         % median overall
+        plot(M_median(a,c),  0, '^', 'MarkerFaceColor', [0 0 0], 'MarkerEdgeColor', [0 0 0])         % median overall
         
         xlabel('Lag for Most Effective Correlation, # cardiac cycles')
         ylabel('N units')
@@ -772,7 +776,7 @@ save_figure_as(f10, 'Histograms_MaxAbsLags_AllAreas', basepath_to_save, 1)
 [h_signtest_lag, p_crit_signtest_lag] = fdr_bky(p_signtest_lag); % correct for multiple comparisons with FDR-BKY
 filename = 'Median_Lags_Only_Sig';
 T = table(unqTargets', ...
-    M(:,1), M(:,2), ...
+    M_median(:,1), M_median(:,2), ...
     p_signtest_lag(:,1), p_signtest_lag(:,2), ...
     h_signtest_lag(:,1), h_signtest_lag(:,2), ...
     [p_crit_signtest_lag; NaN; NaN], ...
