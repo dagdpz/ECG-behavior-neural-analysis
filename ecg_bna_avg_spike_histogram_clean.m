@@ -150,6 +150,79 @@ Color_BrainArea = cfg.area_colors;
 %     end
 % end
 
+
+
+
+
+
+%% Decrease and Increase grouped for brain region
+
+maxmin={'Max','Min'};
+symbolstoplot={'o','s','v'};
+for groupNum = 1:length(cfg.spk.compare_conditions)
+    
+    cond1_num = cfg.spk.compare_conditions{groupNum}(1);
+    cond2_num = cfg.spk.compare_conditions{groupNum}(2);
+    L1=cfg.condition(cond1_num).name;
+    L2=cfg.condition(cond2_num).name;
+    
+    figure('Name',sprintf('ConditionsPeakComparison'),'Position',[200 100 1400 1200],'PaperPositionMode', 'auto');
+    
+    %m=colormap(bluewhitered);
+    
+    logscale_127=(0:126)'/127;
+    colneg=[0 0 255];
+    colpos=[255 0 0];
+    
+    m=[logscale_127*([255 255 255]-colneg)+repmat(colneg,size(logscale_127)); 255 255 255;...
+        flipud(logscale_127*([255 255 255]-colpos)+repmat(colpos,size(logscale_127)))]/255;
+    
+    for maxmini=1:2
+        subplot(1,2,maxmini);
+        hold on
+        
+        for a = 1: N_Areas
+            T=Ana_TargetBrainArea{a};
+            
+            toplot1=Out.(T).(L1).(['RespTime_at_' maxmin{maxmini}]);
+            toplot2=Out.(T).(L2).(['RespTime_at_' maxmin{maxmini}]);
+            cols=mean([Out.(T).(L1).Mod_Directionality_Index; Out.(T).(L1).Mod_Directionality_Index],1);
+            colidx=round((cols+1)*(size(m,1)-1)/2)+1;
+            sigidx=Out.(T).(L1).sig_n_bins>cfg.time.n_sig_bins | Out.(T).(L2).sig_n_bins>cfg.time.n_sig_bins;
+            ix=~isnan(cols) & ~sigidx';
+            colstoplot=m(colidx(ix),:);
+            
+            if any(ix)
+                sc=scatter(toplot1(ix),toplot2(ix),40,colstoplot,'marker',symbolstoplot{a});
+            end
+            ix=~isnan(cols) & sigidx';
+            colstoplot=m(colidx(ix),:);
+            if any(ix)
+                sc=scatter(toplot1(ix),toplot2(ix),40,colstoplot,'filled');
+                set(sc,'marker',symbolstoplot{a})
+            end
+            xlabel(['peak at' L1]);
+            ylabel(['peak at' L2]);
+        end
+        title(maxmin{maxmini})
+    end
+    save_figure_as('ConditionsPeakComparison',output_folder,savePlot)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% percentages of units with different responsivenes - pos. / neg. / non-sig.
 figure('Name',sprintf('BarPlot_Pc'),'Position',[846 552 600 239],'PaperPositionMode', 'auto');
 for c=1:N_conditions
