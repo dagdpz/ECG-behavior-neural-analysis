@@ -1,4 +1,4 @@
-function Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(session_info,cfg)
+function [Rpeaks , IBIsplit_concat] =ecg_bna_compute_session_shuffled_Rpeaks(session_info,cfg)
 %% load seed/reset RGN seed
 load(session_info.Input_ECG);
 load(session_info.Input_trials);
@@ -6,6 +6,7 @@ load(session_info.Input_trials);
 % get the number of permutations from settings
 global N
 N=cfg.n_permutations;
+
 
 % % condition for using CAP data instead of ECG 
 % if (ecg_bna_cfg.outNameCap)  
@@ -22,7 +23,15 @@ N=cfg.n_permutations;
 %     nrblockscell=num2cell(ses.nrblock_combinedFiles);
 %     [out.nrblock_combinedFiles] = deal(nrblockscell{:});
 % end
-
+% if exist(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'),'file')
+%     IBI_split_Rpeak_list = [];
+%     IBIsplit_concat = [];
+% else
+    IBI_split_Rpeak_list = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
+        'Task_IBI_low' , [], 'Task_IBI_high' , []);
+    IBIsplit_concat = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
+        'Task_IBI_low' , [], 'Task_IBI_high' , []);
+% end
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
     
@@ -43,11 +52,12 @@ for b=1:numel(out)
     end
     
     if isfield(cfg,'IBI') && cfg.IBI==1
-        
+        low_IBI_name = {'Rest_IBI_low', 'Task_IBI_low'};
+        high_IBI_name = {'Rest_IBI_high', 'Task_IBI_high'};
         % To get IBI high/low in Task/Rest blocks Separately:
 %         b_idx = [trials.block] == out(b).nrblock_combinedFiles;
 %         trial_nBlocks_type = unique([trials(b_idx).type]);
-        
+
         if cfg.IBI_low == 1 && cfg.IBI_high == 0
             % indices of RRs that are below median
             RR_below = out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type); 
@@ -68,6 +78,8 @@ for b=1:numel(out)
             out(b).R2R_valid            = R2R_valid;
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
+            IBI_split_Rpeak_list(b).(low_IBI_name{trial_nBlocks_type}) = numel(idx_valid_R2R_consec);
+            IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = [IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) , IBI_split_Rpeak_list(b).(low_IBI_name{trial_nBlocks_type})];
             
 %             out(b).idx_valid_R2R_consec = tmp2;
         elseif cfg.IBI_high == 1 && cfg.IBI_low == 0
@@ -89,6 +101,8 @@ for b=1:numel(out)
             out(b).R2R_valid            = R2R_valid;
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
+            IBI_split_Rpeak_list(b).(high_IBI_name{trial_nBlocks_type}) = numel(idx_valid_R2R_consec);
+            IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = [IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) , IBI_split_Rpeak_list(b).(high_IBI_name{trial_nBlocks_type})];
         else
             warning('Both lowIBI and highIBI are chosen or none was chosen, figure out before proceeding')
         end
@@ -107,6 +121,7 @@ for b=1:numel(out)
     Rpeaks(b).shuffled_dur = RPEAK_dur_p; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
     offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b)+max(RPEAK_ts)+allowed_jitter_range*2;
     
+    Rpeaks(b).IBI_split_Rpeak_list = IBI_split_Rpeak_list(b);
     clear RPEAK_ts RPEAK_dur RPEAK_ts_p RPEAK_dur_p allowed_jitter_range
     
 %     %% jitter data for exhalation and inhalation

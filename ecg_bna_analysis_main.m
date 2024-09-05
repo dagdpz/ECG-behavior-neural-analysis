@@ -38,8 +38,8 @@ for v = 1:length(versions)
     
     
     
-    %% temporary - loading data for those and plotting 
-%     ecg_bna_modulation_indices_vs_motion_indices(cfg)
+    %% temporary - loading data for those and plotting
+    %     ecg_bna_modulation_indices_vs_motion_indices(cfg)
     
     %% apply exclusion criteria and save lists of units - we do it once
     if cfg.spk.compute_unit_subsets
@@ -69,8 +69,8 @@ for v = 1:length(versions)
                 %% do ECG spike analysis and computations related to cardioballistic effect
                 if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase || cfg.spk.compute_correlation
                     Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
-%                     sandbox_bb_vs_waveform(cfg, Rpeaks)
-%                     Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
+                    %                     sandbox_bb_vs_waveform(cfg, Rpeaks)
+                    %                     Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
                     load(sessions_info(i).Input_spikes);
                     if cfg.spk.compute_spike_histograms
@@ -95,128 +95,174 @@ for v = 1:length(versions)
                 if cfg.spk.plot_correlation
                     ecg_bna_plot_session_correlation(sessions_info(i),cfg)
                 end
-
+                
             end
             if cfg.process_LFP
-                
-                Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
+                if exist(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'),'file')
+                    load(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'))
+                end
+                [Rpeaks, IBIsplit_concat] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
                 %Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.lfp);
                 
-                fprintf('Analysing for session %s\n', session_name);
-                
-                if cfg.lfp.IBI==1
-                    if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
-                        % Read LFP data
-                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
-                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
-                        
-                    elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
-                        % Read LFP data
-                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
-                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
-                    end
-                    
-                else
-                    % Read LFP data
-                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
-                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
-                end
-                %% this is new
-                sitesdir=fileparts(sessions_info(i).Input_LFP{:});
-                [sitefiles]=dir(sessions_info(i).Input_LFP{:});
-                sr=unique([trials.TDT_LFPx_SR]);
-                ts_original=1/sr;
-                
-                for s = 1:length(sitefiles)
-                    load([sitesdir filesep sitefiles(s).name], 'sites');
-                    site_LFP= ecg_bna_process_LFP(sites, cfg, ts_original);
-                    n_LFP_samples_per_block=site_LFP.tfs.n_samples_per_block;
+                % new condition to only produce IBI split table in the
+                % Rpeak shuffles and save it, rather than compliting the
+                % whole analysis:
+                if isfield(cfg,'produce_List_only') && (cfg.produce_List_only == 1)
+
+                    allsessions_IBIsplit(i).session = sessions_info(i).Date;
+                    allsessions_IBIsplit(i).blockwise_IBIsplit = Rpeaks.IBI_split_Rpeak_list;
+                    allsessions_IBIsplit(i).IBIsplit_concat = IBIsplit_concat;
+                    allsessions_IBIsplit(i).Rest_IBI_low_total = sum(IBIsplit_concat.Rest_IBI_low);
+                    allsessions_IBIsplit(i).Rest_IBI_high_total = sum(IBIsplit_concat.Rest_IBI_high);
+                    allsessions_IBIsplit(i).Task_IBI_low_total = sum(IBIsplit_concat.Task_IBI_low);
+                    allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
                     
                     
-                    %% CHECK BLOCKS OVERLAP - remove LFP for which there is no trigger block - we did the opposite already in resample_triggers!
-                    blocks_not_present_in_triggers=n_LFP_samples_per_block(1, ~ismember(n_LFP_samples_per_block(1,:),[Rpeaks.block]));
-                    if numel(blocks_not_present_in_triggers)==size(n_LFP_samples_per_block,2)
-                        continue;
-                    end
-                    
-                    tfr_samples_to_remove=[];
-                    for b=1:numel(blocks_not_present_in_triggers)
-                        B=blocks_not_present_in_triggers(b);
-                        start_to_remove=sum(n_LFP_samples_per_block(2,n_LFP_samples_per_block(1,:)<B))+1;
-                        end_to_remove=n_LFP_samples_per_block(2,n_LFP_samples_per_block(1,:)==B)+start_to_remove-1;
-                        b_idx=[site_LFP.block]==B;
-                        FN_tr={'LFP_samples','dataset','block','run','n','LFP_tStart','LFP_t0'};
-                        for f=1:numel(FN_tr)
-                            FN=FN_tr{f};
-                            site_LFP.(FN)(b_idx)=[];
+                    if cfg.lfp.IBI==1
+                        if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
+                            % Read LFP data
+                            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
+                            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                            
+                        elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                            % Read LFP data
+                            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
+                            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
                         end
-                        tfr_samples_to_remove=[tfr_samples_to_remove start_to_remove:end_to_remove];
+                        
+                    else
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
                     end
-                    FN_tfs={'phabp','powbp','pha','pow','lfp'};
-                    for f=1:numel(FN_tfs)
-                        FN=FN_tfs{f};
-                        site_LFP.tfs.(FN)(:,tfr_samples_to_remove)=[];
+                    %% this is new
+                    sitesdir=fileparts(sessions_info(i).Input_LFP{:});
+                    [sitefiles]=dir(sessions_info(i).Input_LFP{:});
+                    sr=unique([trials.TDT_LFPx_SR]);
+                    ts_original=1/sr;
+                    
+                    continue;
+                else
+                    fprintf('Analysing for session %s\n', session_name);
+                    if cfg.lfp.IBI==1
+                        if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
+                            % Read LFP data
+                            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
+                            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                            
+                        elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                            % Read LFP data
+                            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
+                            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
+                        end
+                        
+                    else
+                        % Read LFP data
+                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
+                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
+                    end
+                    %% this is new
+                    sitesdir=fileparts(sessions_info(i).Input_LFP{:});
+                    [sitefiles]=dir(sessions_info(i).Input_LFP{:});
+                    sr=unique([trials.TDT_LFPx_SR]);
+                    ts_original=1/sr;
+                    
+                    for s = 1:length(sitefiles)
+                        load([sitesdir filesep sitefiles(s).name], 'sites');
+                        site_LFP= ecg_bna_process_LFP(sites, cfg, ts_original);
+                        n_LFP_samples_per_block=site_LFP.tfs.n_samples_per_block;
+                        
+                        
+                        %% CHECK BLOCKS OVERLAP - remove LFP for which there is no trigger block - we did the opposite already in resample_triggers!
+                        blocks_not_present_in_triggers=n_LFP_samples_per_block(1, ~ismember(n_LFP_samples_per_block(1,:),[Rpeaks.block]));
+                        if numel(blocks_not_present_in_triggers)==size(n_LFP_samples_per_block,2)
+                            continue;
+                        end
+                        
+                        tfr_samples_to_remove=[];
+                        for b=1:numel(blocks_not_present_in_triggers)
+                            B=blocks_not_present_in_triggers(b);
+                            start_to_remove=sum(n_LFP_samples_per_block(2,n_LFP_samples_per_block(1,:)<B))+1;
+                            end_to_remove=n_LFP_samples_per_block(2,n_LFP_samples_per_block(1,:)==B)+start_to_remove-1;
+                            b_idx=[site_LFP.block]==B;
+                            FN_tr={'LFP_samples','dataset','block','run','n','LFP_tStart','LFP_t0'};
+                            for f=1:numel(FN_tr)
+                                FN=FN_tr{f};
+                                site_LFP.(FN)(b_idx)=[];
+                            end
+                            tfr_samples_to_remove=[tfr_samples_to_remove start_to_remove:end_to_remove];
+                        end
+                        FN_tfs={'phabp','powbp','pha','pow','lfp'};
+                        for f=1:numel(FN_tfs)
+                            FN=FN_tfs{f};
+                            site_LFP.tfs.(FN)(:,tfr_samples_to_remove)=[];
+                        end
+                        
+                        blockstarts=[1, find(diff([trials.block]))+1];
+                        t_offset_per_block=[[trials(blockstarts).block];[trials(blockstarts).TDT_LFPx_tStart]];
+                        triggers.ecg.shuffled = ecg_bna_resample_triggers(Rpeaks,'shuffled_ts',t_offset_per_block,n_LFP_samples_per_block,1/site_LFP.tfs.sr);
+                        triggers.ecg.real     = ecg_bna_resample_triggers(Rpeaks,'RPEAK_ts',t_offset_per_block,n_LFP_samples_per_block,1/site_LFP.tfs.sr);
+                        
+                        site_data=ecg_bna_compute_session_Rpeak_triggered_variables( site_LFP,triggers,trials,cfg );
+                        triggered_session_data.sites(s) = site_data;
+                        triggered_session_data.session = site_data.session;
                     end
                     
-                    blockstarts=[1, find(diff([trials.block]))+1];
-                    t_offset_per_block=[[trials(blockstarts).block];[trials(blockstarts).TDT_LFPx_tStart]];
-                    triggers.ecg.shuffled = ecg_bna_resample_triggers(Rpeaks,'shuffled_ts',t_offset_per_block,n_LFP_samples_per_block,1/site_LFP.tfs.sr);
-                    triggers.ecg.real     = ecg_bna_resample_triggers(Rpeaks,'RPEAK_ts',t_offset_per_block,n_LFP_samples_per_block,1/site_LFP.tfs.sr);
+                    % make a folder to save figures
+                    session_result_folder = fullfile(cfg.session_lfp_fldr);
+                    if ~exist(session_result_folder, 'dir')
+                        mkdir(session_result_folder);
+                    end
+                    save(fullfile(session_result_folder, ['Triggered_session_' triggered_session_data.session '.mat']), 'triggered_session_data');
+                    clear session_proc_lfp site_data triggered_session_data;
                     
-                    site_data=ecg_bna_compute_session_Rpeak_triggered_variables( site_LFP,triggers,trials,cfg );
-                    triggered_session_data.sites(s) = site_data;
-                    triggered_session_data.session = site_data.session;
                 end
-                
-                % make a folder to save figures
-                session_result_folder = fullfile(cfg.session_lfp_fldr);
-                if ~exist(session_result_folder, 'dir')
-                    mkdir(session_result_folder);
-                end
-                save(fullfile(session_result_folder, ['Triggered_session_' triggered_session_data.session '.mat']), 'triggered_session_data');
-                clear session_proc_lfp site_data triggered_session_data;
-                
             end
         end
+        allresult_folder = fullfile(cfg.results_folder);
+        if ~exist(allresult_folder, 'dir')
+            mkdir(allresult_folder);
+        end
+        save(fullfile(allresult_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'), 'allsessions_IBIsplit');
     end
     
     if cfg.process_spikes
-    %% additionaly exclude by R-peak number and (in the future) other heart-related criteria
+        %% additionaly exclude by R-peak number and (in the future) other heart-related criteria
         if cfg.spk.ecg_exclusion_criteria
             ecg_bna_get_unit_list_ecg_params(cfg)
         end
         
         %% copy selected units separately - we do it once
         if cfg.spk.move_files
-%             % move units for either task or rest
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.per_session_folder, cfg.per_session_selected, cfg)
-%             % move files for units with no cardioballistic effect
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.per_session_folder, ...
-%                 output_folder, cfg)
-%             
-%             % move files for units WITH the cardioballistic effect
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_withCB'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.per_session_folder, ...
-%                 output_folder, cfg)
-% 
-%             % move files for units with no significant cardioballitic
-%             % effect AND those that had huge amplitude
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.per_session_folder, ...
-%                 output_folder, cfg)
-%             
-%             % move units for both task and rest without cardioballistic
-%             % effect, high spike amplitude and non-significant cc between 
-%             % phase PSTH and AMP phase dynamic
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr_ccs'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.per_session_folder, ...
-%                 output_folder, cfg)
-%             
-%             % both task and rest - high amplitudes
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_highAmp'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_highAmp', cfg.per_session_folder, ...
-%                 output_folder, cfg)
+            %             % move units for either task or rest
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.per_session_folder, cfg.per_session_selected, cfg)
+            %             % move files for units with no cardioballistic effect
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.per_session_folder, ...
+            %                 output_folder, cfg)
+            %
+            %             % move files for units WITH the cardioballistic effect
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_withCB'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.per_session_folder, ...
+            %                 output_folder, cfg)
+            %
+            %             % move files for units with no significant cardioballitic
+            %             % effect AND those that had huge amplitude
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.per_session_folder, ...
+            %                 output_folder, cfg)
+            %
+            %             % move units for both task and rest without cardioballistic
+            %             % effect, high spike amplitude and non-significant cc between
+            %             % phase PSTH and AMP phase dynamic
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_noCB_corr_ccs'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.per_session_folder, ...
+            %                 output_folder, cfg)
+            %
+            %             % both task and rest - high amplitudes
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_selected_600_highAmp'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_highAmp', cfg.per_session_folder, ...
+            %                 output_folder, cfg)
             
             
             % ><\\\'> ??? <'///><
@@ -243,7 +289,7 @@ for v = 1:length(versions)
                 output_folder, cfg)
             
             % move units for both task and rest without cardioballistic
-            % effect, high spike amplitude and non-significant cc between 
+            % effect, high spike amplitude and non-significant cc between
             % phase PSTH and AMP phase dynamic
             output_folder = [cfg.SPK_root_results_fldr filesep 'per_unit_stable_600_noCB_corr_ccs'];
             ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_noCB_corr_ccs', [cfg.per_session_folder '_-0.25-0.25s'], ...
@@ -283,26 +329,26 @@ for v = 1:length(versions)
             % ><\\\'> ??? <'///><
             
             %% move cardioballistic files
-%             % for either task or rest
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.cardioballistic_folder, cfg.cardioballistic_selected, cfg)
-%             
-%             % for units with no cardioballistic effect
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.cardioballistic_folder, output_folder, cfg)
-%             
-%             % for units WITH cardioballistic effect
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_withCB'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.cardioballistic_folder, output_folder, cfg)
-%             
-%             % for units with no significant cardioballitic effect AND those that had huge amplitude
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.cardioballistic_folder, output_folder, cfg)
-%             
-%             % move units for both task and rest without cardioballistic
-%             % effect, high spike amplitude and non-significant cc between 
-%             % phase PSTH and AMP phase dynamic
-%             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr_ccs'];
-%             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.cardioballistic_folder, output_folder, cfg)
+            %             % for either task or rest
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_600', cfg.cardioballistic_folder, cfg.cardioballistic_selected, cfg)
+            %
+            %             % for units with no cardioballistic effect
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB', cfg.cardioballistic_folder, output_folder, cfg)
+            %
+            %             % for units WITH cardioballistic effect
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_withCB'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_withCB', cfg.cardioballistic_folder, output_folder, cfg)
+            %
+            %             % for units with no significant cardioballitic effect AND those that had huge amplitude
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr', cfg.cardioballistic_folder, output_folder, cfg)
+            %
+            %             % move units for both task and rest without cardioballistic
+            %             % effect, high spike amplitude and non-significant cc between
+            %             % phase PSTH and AMP phase dynamic
+            %             output_folder = [cfg.SPK_root_results_fldr filesep 'cardioballistic_selected_600_noCB_corr_ccs'];
+            %             ecg_bna_copy_selected_units('unitInfo_after_exclusion_noCB_corr_ccs', cfg.cardioballistic_folder, output_folder, cfg)
             
             % for both task and rest
             ecg_bna_copy_selected_units('unitInfo_after_SNR_exclusion_stable_600', cfg.cardioballistic_folder, cfg.cardioballistic_stable, cfg)
@@ -385,20 +431,20 @@ for v = 1:length(versions)
     end
     %% average across sessions
     if cfg.process_population
-%         
-%         % ==================================================================================================        
-%         %            Temp, for checking similar selected units of Luba
-%         % ==================================================================================================
-%         monkeys = unique({cfg.session_info.Monkey});
-%         load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_',monkeys{1},...
-%             '_TaskRest\unit_lists\unitInfo_after_exclusion_stableTaskAndRest_noCB_corr.mat']);
-% %         load(['Y:\Projects\Pulv_bodysignal\ephys\ECG_TaskRest_',monkeys{1},...
-% %             '_merged\tuning_table_combined_CI.mat']);
-% %         
-%         site_ID_idx  = contains(keys.tuning_table(2:end,1),unit_ids);
-%         cfg.site_IDS = keys.tuning_table(site_ID_idx,find_column_index(keys.tuning_table,'site_ID'));
-%         % ==================================================================================================
-%         % ==================================================================================================
+        %
+        %         % ==================================================================================================
+        %         %            Temp, for checking similar selected units of Luba
+        %         % ==================================================================================================
+        %         monkeys = unique({cfg.session_info.Monkey});
+        %         load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_',monkeys{1},...
+        %             '_TaskRest\unit_lists\unitInfo_after_exclusion_stableTaskAndRest_noCB_corr.mat']);
+        % %         load(['Y:\Projects\Pulv_bodysignal\ephys\ECG_TaskRest_',monkeys{1},...
+        % %             '_merged\tuning_table_combined_CI.mat']);
+        % %
+        %         site_ID_idx  = contains(keys.tuning_table(2:end,1),unit_ids);
+        %         cfg.site_IDS = keys.tuning_table(site_ID_idx,find_column_index(keys.tuning_table,'site_ID'));
+        %         % ==================================================================================================
+        %         % ==================================================================================================
         
         if cfg.process_LFP
             keys=ecg_bna_get_unit_list(cfg,0);
@@ -407,21 +453,21 @@ for v = 1:length(versions)
             monkeys = unique({cfg.session_info.Monkey});
             cfg.monkey = [monkeys{:}];
             if contains(fieldnames(cfg.lfp),'IBI') | cfg.lfp.IBI==1
-                    if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
-                        % Read LFP data
-                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
-                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
-                        
-                    elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
-                        % Read LFP data
-                        cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
-                        cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
-                    end
-                    
-            else
+                if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
                     % Read LFP data
-                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
-                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
+                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
+                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                    
+                elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                    % Read LFP data
+                    cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
+                    cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
+                end
+                
+            else
+                % Read LFP data
+                cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
+                cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             end
             
             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
@@ -433,7 +479,7 @@ for v = 1:length(versions)
             
             % loop though all selection lists
             for listNum = 1:length(cfg.pop.unit_selection_lists)
-            
+                
                 %% time-domain analysis
                 ecg_bna_avg_spike_histogram_clean(cfg, 'per_unit_-0.25-0.25s', cfg.pop.unit_selection_lists{listNum})
                 
@@ -472,7 +518,7 @@ for v = 1:length(versions)
             output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noCB_corr');
             SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noCB_corr','data');
             ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
-
+            
             % stable 600 noCB corr ccs
             output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noCB_corr_ccs');
             SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noCB_corr_ccs','data');
@@ -507,7 +553,7 @@ for v = 1:length(versions)
             output_folder = fullfile(cfg.SPK_root_results_fldr, 'Population_cardioballistic_stable_noLow_amplitude_ccs_both');
             SPK_cardioballistic=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','', 'cardioballistic_stable_600_noLow_amplitude_ccs_both','data');
             ecg_bna_population_cardioballistic(SPK_cardioballistic, output_folder, cfg)
-
+            
             ecg_bna_plot_circular_fits(cfg, 'per_unit_0-0.5s', 'Circular_population_results_0-0.5s')
             ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.25-0.25s', 'Circular_population_results_-0.25-0.25s')
             ecg_bna_plot_circular_fits(cfg, 'per_unit_-0.5-0s', 'Circular_population_results_-0.5-0s')
