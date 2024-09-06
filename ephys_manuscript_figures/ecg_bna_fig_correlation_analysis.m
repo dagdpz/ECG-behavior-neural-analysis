@@ -13,25 +13,43 @@ bar_colors = [244 149 173; ... % pink  - pos
 deep_green = [6,64,43]/255;
 
 %% load data
-load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Bacchus_TaskRest\correlation_analysis\Bac_20210716_11_VPL_R_correlation.mat')
-load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Magnus_TaskRest\Population_correlation_analysis_after_SNR_exclusion_stable_noLow_amplitude_ccs_any\data.mat')
-
 figure,
 set(gcf, 'Position', [160 237 1612 726])
 
 
 %% sequences of FR and RRs in the rest
+load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Bacchus_TaskRest\correlation_analysis\Bac_20210716_11_VPL_R_correlation.mat')
+
+x_lim = [3280 3290];
+
 subplot(2,4,1)
+box on
 yyaxis left
-plot(data.Rest.timeRRstart, data.Rest.FRbyRR_Hz)
+plot(data.Rest.timeRRstart, data.Rest.FRbyRR_Hz, 'b.-')
 ylim([0 70])
+set(gca,'YColor','b')
+ylabel('Firing Rate, Hz')
 yyaxis right
-plot(data.Rest.timeRRstart, data.Rest.cycleDurations_s)
-ylim([0.3 0.5])
-xlim([3280 3290])
+plot(data.Rest.timeRRstart, data.Rest.cycleDurations_s, 'ko-')
+ylim([0.35 0.46])
+set(gca,'YColor','k')
+set(gca,'YTick',[])
+xlim(x_lim)
 xlabel('Time from the recording onset, s')
 
+ids_data_points = find(data.Rest.timeRRstart > x_lim(1) & data.Rest.timeRRstart < x_lim(2));
+for n_dp = [1,3,6,9,12,14,18,22]
+    
+    curr_dp = ids_data_points(n_dp);
+    text(double(data.Rest.timeRRstart(curr_dp))+0.2, double(data.Rest.cycleDurations_s(curr_dp)), ...
+        num2str(1000*round(data.Rest.cycleDurations_s(curr_dp),3)), ...
+        'FontWeight', 'bold')
+    
+end
+
 %% histogram of ccs in example case at lag 0
+load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Magnus_TaskRest\Population_correlation_analysis_after_SNR_exclusion_stable_noLow_amplitude_ccs_any\data.mat')
+
 subplot(2,4,2)
 curr_cc = dt.VPL.Rest.pearson_r(ceil(end/2), :);
 curr_pp = dt.VPL.Rest.pearson_p(ceil(end/2), :);
@@ -40,7 +58,7 @@ pos_idx = curr_cc > 0;
 neg_idx = curr_cc < 0;
 nan_idx = isnan(curr_cc);
 
-median_cc = median(curr_cc);
+mean_cc = mean(curr_cc);
 
 % prepare data for plotting
 counts_pos    = histc(curr_cc(sig_idx & pos_idx),   -1+bin_resolution/2:bin_resolution:1-bin_resolution/2); % significant and positive
@@ -55,13 +73,13 @@ plot_data = [counts_pos counts_neg counts_nonsig];
 
 hold on
 b = bar([-1+bin_resolution/2:bin_resolution:1-bin_resolution/2]+bin_resolution/2, plot_data, 'stacked');
-plot(median_cc, 0, '^', 'MarkerFaceColor', [0 0 0], 'MarkerEdgeColor', 'none')
+plot(mean_cc, 0, '^', 'MarkerFaceColor', [0 0 0], 'MarkerEdgeColor', 'none')
 set(b, 'FaceColor', 'Flat')
 for ii = 1:size(bar_colors,1)
     b(ii).FaceColor = bar_colors(ii,:);
 end
-xlim([-0.5 0.5])
-set(gca,'XTick',-0.4:0.1:0.4,'XTickLabel',-0.4:0.1:0.4)
+xlim([-0.35 0.35])
+set(gca,'XTick',-0.4:0.2:0.4,'XTickLabel',-0.4:0.2:0.4, 'TickDir', 'both')
 box on
 legend({'Sig.Pos.', 'Sig.Neg.', 'Non-Sig.'})
 xlabel('CC between FR and RR duration')
@@ -139,11 +157,11 @@ ylabel('Correlation Coefficient')
 legend({'Rest', 'Task'}, 'Location', 'best')
 
 %% plot for lag of most effective correlation
-load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Magnus_TaskRest\Population_correlation_analysis_after_SNR_exclusion_stable_noLow_amplitude_ccs_any\data.mat')
+load('Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_Bacchus_TaskRest\Population_correlation_analysis_after_SNR_exclusion_stable_noLow_amplitude_ccs_any\data.mat')
 
 laglist=dt.(T).cc_lag_list(1,:);
-R=dt.dPul.Rest.('pearson_r');
-P=dt.dPul.Rest.('pearson_p');
+R=dt.dPul.Rest.pearson_r;
+P=dt.dPul.Rest.pearson_p;
 [~, ids]  = max(abs(R), [], 1); % find max abs ccs; I will need 'ids' to figure out significance of corresponding ccs
 ccs=R(sub2ind(size(R),ids,1:numel(ids)));
 invalid=isnan(ccs);
@@ -169,15 +187,19 @@ m2(a,c)=median(laglist(ids(sig==1)));
 M(a,c) = median(laglist(ids(sig_idx)));
 
 subplot(2,4,6)
-x     = -20:0.125:20;
-h1_h2_smo = smooth(interp1(laglist,h1+h2,x,'pchip'),50);
-h1_smo    = smooth(interp1(laglist,h1,x,'pchip'),50);
-h2_smo    = smooth(interp1(laglist,h2,x,'pchip'),50);
+% x         = -20:0.125:20;
+% h1_h2_smo = smooth(interp1(laglist,h1+h2,x,'pchip'),50);
+% h1_smo    = smooth(interp1(laglist,h1,x,'pchip'),50);
+% h2_smo    = smooth(interp1(laglist,h2,x,'pchip'),50);
+x         = -20:20;
+h1_h2_smo = h1+h2;
+h1_smo    = h1;
+h2_smo    = h2;
 hold on
 
-fill([x fliplr(x) x(1)], [h1_h2_smo; zeros(size(h1_h2_smo)); h1_h2_smo(1)]', deep_green, 'EdgeColor','none')
-fill([x fliplr(x) x(1)], [h2_smo; zeros(size(h2_smo)); h2_smo(1)]', bar_colors(2,:), 'EdgeColor',deep_green,'FaceAlpha',1)
-fill([x fliplr(x) x(1)], [h1_smo; zeros(size(h1_smo)); h1_smo(1)]', bar_colors(1,:), 'EdgeColor','none','FaceAlpha',0.7)
+fill([x fliplr(x) x(1)], [h1_h2_smo zeros(size(h1_h2_smo)) h1_h2_smo(1)], deep_green, 'EdgeColor','none')
+fill([x fliplr(x) x(1)], [h1_smo zeros(size(h1_smo)) h1_smo(1)], bar_colors(2,:), 'EdgeColor','none','FaceAlpha',0.7)
+fill([x fliplr(x) x(1)], [h2_smo zeros(size(h2_smo)) h2_smo(1)], bar_colors(1,:), 'EdgeColor','none','FaceAlpha',0.7)
 % plot(M(a,c),  0, '^', 'MarkerFaceColor', deep_green, 'MarkerEdgeColor', deep_green)         % median overall
 plot(m1(a,c), 0, '^', 'MarkerFaceColor', bar_colors(2,:), 'MarkerEdgeColor', bar_colors(2,:)/2) % median sig pos
 plot(m2(a,c), 0, '^', 'MarkerFaceColor', bar_colors(1,:), 'MarkerEdgeColor', bar_colors(1,:)/2) % median sig neg
