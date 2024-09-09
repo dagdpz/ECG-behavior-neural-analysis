@@ -45,6 +45,7 @@ for listNum = 1:length(list_of_lists)
     
     enoughRpeaks = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
+        
         L = cfg.condition(conNum).name;
         
         enoughRpeaks(conNum,:) = dt.(L).NrEvents > cfg.spk.unit_exclusion.nCardiacCycles;
@@ -61,8 +62,30 @@ for listNum = 1:length(list_of_lists)
         continue % don't create ECG-related dataset for this unit list
     end
     
-    clear dt enoughRpeaks
-                                             
+    clear dt
+    
+    % update ids_both according to the sufficiency of R-peaks collected - I
+    % have to update cases where there were not enough R-peaks
+    ids_both_tmp = zeros(size(enoughRpeaks));
+    ids_both_tmp(1,enoughRpeaks(1,:)==1) = 1; % for rest
+    ids_both_tmp(2,enoughRpeaks(2,:)==1) = 2; % for task
+    
+    ids_both_ecg_based_sum = sum(ids_both_tmp); % come up with the same condition encoding
+    
+    % construct the resulting ids_both that considers also the number of
+    % R-peaks
+    ids_both_ecg_based = zeros(1,size(enoughRpeaks,2));
+    % 1. If ids_both == ids_both_tmp, we're fine, take indices over
+    ids_both_ecg_based(eq(ids_both,ids_both_ecg_based_sum')) = ids_both_ecg_based_sum(eq(ids_both,ids_both_ecg_based_sum'));
+    % 2. If spike-based is 3 AND ecg-based is lower, take only one
+    % condition
+    ids_to_take = ids_both == 3 & ids_both_ecg_based_sum' < 3;
+    ids_both_ecg_based(ids_to_take) = ids_both_ecg_based_sum(ids_to_take);
+    % There are no other suitable conditions
+    ids_both = ids_both_ecg_based;
+    
+    clear enoughRpeaks
+    
     dt = ecg_bna_load_variables(cfg, unit_ids, 'cardioballistic', 'data', {'distance2thr', 'AMP_MI', 'cc_PSTH_feature', 'pp_PSTH_feature'}, 0);
     enough_bins = zeros(length(cfg.condition), length(unit_ids));
     for conNum = 1:length(cfg.condition)
@@ -130,7 +153,7 @@ for listNum = 1:length(list_of_lists)
     
     low_amplitude_ccs_any   = ~any(enough_bins) & any(h_AMP_cc_pos);
     
-    low_amplitude_ccs_both   = ~any(enough_bins) & all(h_AMP_cc_pos);
+    low_amplitude_ccs_both  = ~any(enough_bins) & all(h_AMP_cc_pos);
     
     % find unit ids and targets with enough R-peak counts
     unit_ids_600    = unit_ids(ids_enough_Rpeaks);

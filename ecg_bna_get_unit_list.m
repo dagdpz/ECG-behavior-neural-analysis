@@ -232,19 +232,19 @@ if compute_unit_subsets
     targets_after_exclusion           = cell(length(unit_ids_after_exclusion), 1);
     targets_after_exclusion(ids_rest) = targets_rest;
     targets_after_exclusion(ids_task) = targets_task;
-    sites_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
-    sites_after_exclusion(ids_rest)  = sites_rest;
-    sites_after_exclusion(ids_task)  = sites_task;
+    sites_after_exclusion             = cell(length(unit_ids_after_exclusion), 1);
+    sites_after_exclusion(ids_rest)   = sites_rest;
+    sites_after_exclusion(ids_task)   = sites_task;
     grid_x_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
     grid_x_after_exclusion(ids_rest)  = grid_x_rest;
     grid_x_after_exclusion(ids_task)  = grid_x_task;
     grid_y_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
     grid_y_after_exclusion(ids_rest)  = grid_y_rest;
     grid_y_after_exclusion(ids_task)  = grid_y_task;
-    depths_after_exclusion           = cell(length(unit_ids_after_exclusion), 1);
-    depths_after_exclusion(ids_rest) = depths_rest;
-    depths_after_exclusion(ids_task) = depths_task;
-    hemispheres_after_exclusion      = cell(length(unit_ids_after_exclusion), 1);
+    depths_after_exclusion            = cell(length(unit_ids_after_exclusion), 1);
+    depths_after_exclusion(ids_rest)  = depths_rest;
+    depths_after_exclusion(ids_task)  = depths_task;
+    hemispheres_after_exclusion       = cell(length(unit_ids_after_exclusion), 1);
     hemispheres_after_exclusion(ids_rest) = hemispheres_rest;
     hemispheres_after_exclusion(ids_task) = hemispheres_task;
     
