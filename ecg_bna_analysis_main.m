@@ -48,6 +48,12 @@ for v = 1:length(versions)
     
     %% per session processing..
     if cfg.process_per_session
+        %% %%%% Important for LFP IBI split! don't Change!
+        if exist(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'),'file')
+            allsessions_IBIsplit = load(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'));
+            allsessions_IBIsplit = allsessions_IBIsplit.allsessions_IBIsplit;
+        end
+        %%
         for i = 1:length(sessions_info)
             java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
             
@@ -63,6 +69,7 @@ for v = 1:length(versions)
                 seed=rng;
                 save(seed_filename,'seed');
             end
+            
             
             if cfg.process_spikes
                 
@@ -98,9 +105,7 @@ for v = 1:length(versions)
                 
             end
             if cfg.process_LFP
-                if exist(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'),'file')
-                    load(fullfile(cfg.results_folder,filesep, 'all_sessions_IBIsplit_numRpeaks.mat'))
-                end
+                
                 [Rpeaks, IBIsplit_concat] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
                 %Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.lfp);
                 
@@ -108,28 +113,50 @@ for v = 1:length(versions)
                 % Rpeak shuffles and save it, rather than compliting the
                 % whole analysis:
                 if isfield(cfg,'produce_List_only') && (cfg.produce_List_only == 1)
-
-                    allsessions_IBIsplit(i).session = sessions_info(i).Date;
-                    allsessions_IBIsplit(i).blockwise_IBIsplit = Rpeaks.IBI_split_Rpeak_list;
-                    allsessions_IBIsplit(i).IBIsplit_concat = IBIsplit_concat;
-                    allsessions_IBIsplit(i).Rest_IBI_low_total = sum(IBIsplit_concat.Rest_IBI_low);
-                    allsessions_IBIsplit(i).Rest_IBI_high_total = sum(IBIsplit_concat.Rest_IBI_high);
-                    allsessions_IBIsplit(i).Task_IBI_low_total = sum(IBIsplit_concat.Task_IBI_low);
-                    allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
                     
+                    allsessions_IBIsplit(i).session = sessions_info(i).Date;
                     
                     if cfg.lfp.IBI==1
                         if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
+                            allsessions_IBIsplit(i).Rest_IBI_low_total = sum(IBIsplit_concat.Rest_IBI_low);
+                            allsessions_IBIsplit(i).Task_IBI_low_total = sum(IBIsplit_concat.Task_IBI_low);
+                            switch length(fieldnames(IBIsplit_concat))
+                                case 2
+                                    allsessions_IBIsplit(i).Rest_IBI_low_total = sum(IBIsplit_concat.Rest_IBI_low);
+                                    allsessions_IBIsplit(i).Task_IBI_low_total = sum(IBIsplit_concat.Task_IBI_low);
+                                case 1 && isfield(IBIsplit_concat,'Rest_IBI_high')
+                                    allsessions_IBIsplit(i).Rest_IBI_low_total = sum(IBIsplit_concat.Rest_IBI_low);
+                                    allsessions_IBIsplit(i).Task_IBI_low_total = [];
+                                case 1 && isfield(IBIsplit_concat,'Task_IBI_high')
+                                    allsessions_IBIsplit(i).Rest_IBI_low_total = [];
+                                    allsessions_IBIsplit(i).Task_IBI_low_total = sum(IBIsplit_concat.Task_IBI_low);
+                                otherwise
+                                    allsessions_IBIsplit(i).Rest_IBI_low_total = [];
+                                    allsessions_IBIsplit(i).Task_IBI_low_total = [];
+                            end
                             % Read LFP data
                             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
                             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
                             
                         elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
+                            switch length(fieldnames(IBIsplit_concat))
+                                case 2
+                                    allsessions_IBIsplit(i).Rest_IBI_high_total = sum(IBIsplit_concat.Rest_IBI_high);
+                                    allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
+                                case 1 && isfield(IBIsplit_concat,'Rest_IBI_high')
+                                    allsessions_IBIsplit(i).Rest_IBI_high_total = sum(IBIsplit_concat.Rest_IBI_high);
+                                    allsessions_IBIsplit(i).Task_IBI_high_total = [];
+                                case 1 && isfield(IBIsplit_concat,'Task_IBI_high')
+                                    allsessions_IBIsplit(i).Rest_IBI_high_total = [];
+                                    allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
+                                otherwise
+                                    allsessions_IBIsplit(i).Rest_IBI_high_total = [];
+                                    allsessions_IBIsplit(i).Task_IBI_high_total = [];
+                            end
                             % Read LFP data
                             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
                             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
                         end
-                        
                     else
                         % Read LFP data
                         cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');

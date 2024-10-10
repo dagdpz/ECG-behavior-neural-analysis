@@ -27,11 +27,12 @@ N=cfg.n_permutations;
 %     IBI_split_Rpeak_list = [];
 %     IBIsplit_concat = [];
 % else
-    IBI_split_Rpeak_list = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
-        'Task_IBI_low' , [], 'Task_IBI_high' , []);
-    IBIsplit_concat = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
-        'Task_IBI_low' , [], 'Task_IBI_high' , []);
+%     IBI_split_Rpeak_list = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
+%         'Task_IBI_low' , [], 'Task_IBI_high' , []);
+%     IBIsplit_concat = struct('Rest_IBI_low', [], 'Rest_IBI_high', [],...
+%         'Task_IBI_low' , [], 'Task_IBI_high' , []);
 % end
+% IBIsplit_concat = struct();
 offset_blocks_Rpeak=0;
 for b=1:numel(out)
     
@@ -48,6 +49,19 @@ for b=1:numel(out)
         Rpeaks(b).shuffled_ts=[];
         Rpeaks(b).offset = NaN;
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
+        
+        low_IBI_name = {'Rest_IBI_low', 'Task_IBI_low'};
+        high_IBI_name = {'Rest_IBI_high', 'Task_IBI_high'};
+        
+        if cfg.IBI_low
+            IBI_split_Rpeak_list(b).Rest_IBI_low = [];
+            IBI_split_Rpeak_list(b).Task_IBI_low = [];
+            IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(low_IBI_name{trial_nBlocks_type}));
+        elseif cfg.IBI_high
+            IBI_split_Rpeak_list(b).Rest_IBI_high = [];
+            IBI_split_Rpeak_list(b).Task_IBI_high = [];
+            IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(high_IBI_name{trial_nBlocks_type}));
+        end
         continue
     end
     
@@ -79,7 +93,7 @@ for b=1:numel(out)
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
             IBI_split_Rpeak_list(b).(low_IBI_name{trial_nBlocks_type}) = numel(idx_valid_R2R_consec);
-            IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = [IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) , IBI_split_Rpeak_list(b).(low_IBI_name{trial_nBlocks_type})];
+            IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(low_IBI_name{trial_nBlocks_type}));
             
 %             out(b).idx_valid_R2R_consec = tmp2;
         elseif cfg.IBI_high == 1 && cfg.IBI_low == 0
@@ -102,7 +116,7 @@ for b=1:numel(out)
             out(b).R2R_t                = R2R_t;
             out(b).idx_valid_R2R_consec = idx_valid_R2R_consec;
             IBI_split_Rpeak_list(b).(high_IBI_name{trial_nBlocks_type}) = numel(idx_valid_R2R_consec);
-            IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = [IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) , IBI_split_Rpeak_list(b).(high_IBI_name{trial_nBlocks_type})];
+            IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(high_IBI_name{trial_nBlocks_type}));
         else
             warning('Both lowIBI and highIBI are chosen or none was chosen, figure out before proceeding')
         end
