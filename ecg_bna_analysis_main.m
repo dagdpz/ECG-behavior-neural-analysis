@@ -151,7 +151,7 @@ for v = 1:length(versions)
                                     allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
                                 otherwise
                                     allsessions_IBIsplit(i).Rest_IBI_high_total = [];
-                                    allsessions_IBIsplit(i).Task_IBI_high_total = [];
+                                    allsessions_IBIspl5it(i).Task_IBI_high_total = [];
                             end
                             % Read LFP data
                             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
