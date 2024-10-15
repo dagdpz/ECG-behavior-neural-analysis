@@ -1,11 +1,11 @@
-function IBI_diff = ecg_bna_compute_IBI_raw_diff(cfg,withunits,type)
+function ecg_bna_compute_IBI_raw_diff(cfg,withunits,type)
 
 
 if cfg.combine_hemispheres
     cfg.targets=unique(cellfun(@(x) x(1:strfind(x,'_')-1),cfg.targets,'uniformoutput',false));
 end
 targets = cfg.targets;%unique({out.target}); %%cfg.monkey
-IBI_diff = struct;
+
 if strcmp(type , 'normalized')
     
     IBIhigh_filepath = fullfile([cfg.LFP_root_results_fldr filesep 'grand_average_IBIhigh']);
@@ -14,13 +14,13 @@ if strcmp(type , 'normalized')
     
     cd(IBIhigh_filepath)
     % read the files
-    all_IBIhigh_data = dir(['*_sites',withunits,'.mat']);
+    all_IBIhigh_data = dir(['*Grand_grand_avg_sessions_sites',withunits,'.mat']);
     load(all_IBIhigh_data.name);
     IBIhigh = grand_avg;
     
     cd(IBIlow_filepath)
     % read the files
-    all_IBIlow_data = dir(['*_sites',withunits,'.mat']);
+    all_IBIlow_data = dir(['*Grand_grand_avg_sessions_sites',withunits,'.mat']);
     load(all_IBIlow_data.name);
     IBIlow = grand_avg;
     clear grand_avg
@@ -60,9 +60,8 @@ if strcmp(type , 'normalized')
             end
         end
     end
-    fileName2save = fullfile([cfg.LFP_root_results_fldr filesep,cfg.monkey,' - ',targets{tr},'-''IBIdifference_grand_avg_sites',withunits,'_',cfg.lfp.IBIdiff_type]);
-    save(fileName2save,'IBIdiff');
-    
+    fileName2save = fullfile([cfg.LFP_root_results_fldr filesep, cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise-','IBIdifference_grand_avg_sites',withunits,'_',cfg.lfp.IBIdiff_type]);
+    save(fileName2save,'IBIdiff', 'tfr_time', 'time');
     
 elseif strcmp(type, 'raw')
     
@@ -181,8 +180,7 @@ elseif strcmp(type, 'raw')
             IBI_raw_diff(tr).target = targets{tr};
             IBI_raw_diff(tr).nSites = length(target_sites);
             IBI_raw_diff(tr).avg = avg;
-            IBI_diff = IBI_raw_diff;
-            clear avg
+            
         else
             IBI_raw_diff(tr).target = targets{tr};
             IBI_raw_diff(tr).nSites = 0;
@@ -192,8 +190,9 @@ elseif strcmp(type, 'raw')
     end
     
     fileName2save = fullfile([cfg.LFP_root_results_fldr filesep, cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise-','IBIdifference_grand_avg_sites',withunits,'_',cfg.lfp.IBIdiff_type]);
-    save(fileName2save,'IBI_raw_diff');
+    save(fileName2save,'IBI_raw_diff', 'tfr_time', 'time');
     IBIdiff = IBI_raw_diff;
+    clear avg
 end
 
 %%
