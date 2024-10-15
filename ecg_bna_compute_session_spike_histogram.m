@@ -602,6 +602,8 @@ function [SD,BINS]=do_statistics(Real,Shuffled,BINS,significance_window)
 definition='max';
 
 SD_mean=Real.mean;
+SDconf(1,:)=abs(prctile(Real.mean,2.5,1)-SD_mean);
+SDconf(2,:)=abs(prctile(Real.mean,97.5,1)-SD_mean);
 
 SDPmean=nanmean(Shuffled.mean,1);
 SDPconf(1,:)=abs(prctile(Shuffled.mean,2.5,1)-SDPmean);
@@ -612,6 +614,7 @@ SD.SD_STD=Real.std;
 SD.SD_SEM=Real.SEM;
 SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
+SD.SDconf = SDconf;
 
 %% signficance
 sig_to_check=BINS>significance_window(1)*1000 & BINS<significance_window(2)*1000;
