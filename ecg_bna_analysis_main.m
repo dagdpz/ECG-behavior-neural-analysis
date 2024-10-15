@@ -151,7 +151,7 @@ for v = 1:length(versions)
                                     allsessions_IBIsplit(i).Task_IBI_high_total = sum(IBIsplit_concat.Task_IBI_high);
                                 otherwise
                                     allsessions_IBIsplit(i).Rest_IBI_high_total = [];
-                                    allsessions_IBIspl5it(i).Task_IBI_high_total = [];
+                                    allsessions_IBIsplit(i).Task_IBI_high_total = [];
                             end
                             % Read LFP data
                             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
@@ -479,16 +479,18 @@ for v = 1:length(versions)
             
             monkeys = unique({cfg.session_info.Monkey});
             cfg.monkey = [monkeys{:}];
-            if contains(fieldnames(cfg.lfp),'IBI') | cfg.lfp.IBI==1
+            if isfield(cfg.lfp,'IBI') && cfg.lfp.IBI==1
                 if cfg.lfp.IBI_low == 1 || cfg.lfp.IBI_high == 0
                     % Read LFP data
                     cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIlow');
                     cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIlow');
+                    cfg.grand_avg_fldr   = fullfile(cfg.analyse_lfp_folder, 'grand_average_IBIlow');
                     
                 elseif cfg.lfp.IBI_high == 1 || cfg.lfp.IBI_low == 0
                     % Read LFP data
                     cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session_IBIhigh');
                     cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site_IBIhigh');
+                    cfg.grand_avg_fldr   = fullfile(cfg.analyse_lfp_folder, 'grand_average_IBIhigh');
                 end
                 
             else
@@ -500,6 +502,23 @@ for v = 1:length(versions)
             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
+            
+            if isfield(cfg.lfp , 'TaskRest_diff') && cfg.lfp.TaskRest_diff==1
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'all');
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'w_units');
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'wo_units');
+            end
+%             
+            IBI_high_grand_avg_results_file = fullfile([cfg.analyse_lfp_folder filesep 'grand_average_IBIhigh' filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Condition_diff_grand_avg_sessions_sites','all','.mat']);
+            IBI_low_grand_avg_results_file = fullfile([cfg.analyse_lfp_folder filesep 'grand_average_IBIlow' filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Condition_diff_grand_avg_sessions_sites','all','.mat']);
+            
+            if isfield(cfg.lfp , 'IBI_diff') && exist(IBI_low_grand_avg_results_file,'file') && exist(IBI_high_grand_avg_results_file,'file')
+               IBI_diff = ecg_bna_compute_IBI_raw_diff(cfg, 'all', cfg.lfp.IBIdiff_type);
+               IBI_diff = ecg_bna_compute_IBI_raw_diff(cfg, 'w_units', cfg.lfp.IBIdiff_type);
+               IBI_diff = ecg_bna_compute_IBI_raw_diff(cfg, 'wo_units', cfg.lfp.IBIdiff_type);
+               
+               
+            end
         end
         
         if cfg.process_spikes
@@ -605,4 +624,3 @@ for i = 1:length(sessions_info)
     end
 end
 end
-
