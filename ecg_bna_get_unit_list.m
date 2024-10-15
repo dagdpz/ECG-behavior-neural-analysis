@@ -58,15 +58,13 @@ if compute_unit_subsets
     % II. Unit list for BOTH task and rest
     % 0. Set up exclusion crtieria
     SNR       = keys.tt.avg_SNR;
-%     stability = keys.tt.avg_stability;
-%     FR        = keys.cal.FR;
-    
+    % return to default keys
     keys.tt.avg_stability = [-Inf Inf]; % drop stability thresholds, we'll implement it from 'criteria' in the neuronal data
     keys.tt.avg_SNR       = [-Inf Inf]; % drop SNR thresholds, we'll implement it from 'criteria' in the neuronal data
     keys.tt.tasktypes     = {''};       % drop conditions here, we'll implement exclusion by those in the next step
-    keys.tt.FR            = [0 Inf];% drop FR, we'll use it on the next step
+    keys.tt.FR            = [0 Inf];    % drop FR, we'll use it on the next step
     keys.tt.n_spikes      = keys.cal.n_spikes;
-    keys.monkey           = ''; %% empty because we ignore which monkey it is basically
+    keys.monkey           = '';         % empty because we ignore which monkey it is basically
     % 1. Start with units with at least 1 spike (non-empty clusters)
     keys.tt.tasktypes     = {'Fsac_opt','Vsac_opt'}; % WE NEED BOTH CONDITIONS HERE
     keys                  = ph_tuning_table_correction(keys);
@@ -146,10 +144,10 @@ if compute_unit_subsets
     write_unit_table(targets, filename);
     clear unit_ids targets sites grid_x grid_y depths hemispheres
     
-    % IV. Unit list for either task or rest
+    % III. Unit list for either task or rest
     % apply exclusion criteria - choose cells that had either a task or a rest
     % block
-    % 1.0. choose units that had a task block
+    % 1.0. choose units that had a rest block
     keys.tt.tasktypes = {'Fsac_opt'}; % fixation saccade - for rest
     keys.tuning_table=ph_load_tuning_table(keys); %% load tuning table
     
@@ -157,7 +155,7 @@ if compute_unit_subsets
     keys.tuning_table(2:end, end+1) = cellfun(@(x) x(end), keys.tuning_table(2:end, target_column_index), 'UniformOutput', false);
     keys.tuning_table(1,end)        = {'hemisphere'};
     hemisphere_column_index         = DAG_find_column_index(keys.tuning_table, 'hemisphere');
-
+    
     % drop hemisphere indices in the 'target' column
     keys.tuning_table(2:end, target_column_index) = cellfun(@(x) x(1:end-2), keys.tuning_table(2:end, target_column_index), 'UniformOutput', false);
     keys = ph_tuning_table_correction(keys);
@@ -168,6 +166,7 @@ if compute_unit_subsets
     grid_y_after_exclusion_rest      = keys.tuning_table(2:end, grid_y_column_index);
     depths_after_exclusion_rest      = keys.tuning_table(2:end, depths_column_index);
     hemispheres_after_exclusion_rest = keys.tuning_table(2:end, hemisphere_column_index);
+    
     % 1.1. exclude by SNR threshold
     % 1.1.0. load criteria from the data
     dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_rest, 'cardioballistic', 'data', {}, 0);
@@ -212,9 +211,7 @@ if compute_unit_subsets
     % 2.1.0. load criteria from the data
     dt = ecg_bna_load_variables(cfg, unit_ids_after_exclusion_task, 'cardioballistic', 'data', {}, 0);
     % 2.1.1. [passed] exclude by SNR
-%     task_SNR_ids  = dt.criteria.SNR_F >= SNR(1) & dt.criteria.SNR_F <= SNR(2);
     rest_SNR_ids  = dt.criteria.SNR_V >= SNR(1) & dt.criteria.SNR_V <= SNR(2);
-%     SNR_ids       = task_SNR_ids & rest_SNR_ids;
     unit_ids_rest    = unit_ids_after_exclusion_task(rest_SNR_ids);
     targets_rest     = targets_after_exclusion_task(rest_SNR_ids);
     sites_rest       = sites_after_exclusion_task(rest_SNR_ids);
@@ -257,9 +254,44 @@ if compute_unit_subsets
     depths      = depths_after_exclusion;
     hemispheres = hemispheres_after_exclusion;
     save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres', 'ids_both')
-    % clear unit_ids_after_exclusion targets_after_exclusion
     write_unit_table(targets, filename);
-    %     clear T unique_areas ic unit_counts unit_ids_excluded targets_after_exclusion
+    
+    % IV. List of units existing in at least in one condition
+    unit_ids_after_condition_exclusion_selected = union(unit_ids_after_exclusion_rest, unit_ids_after_exclusion_task);
+    ids_either_rest = ismember(unit_ids_after_condition_exclusion_selected, unit_ids_after_exclusion_rest);
+    ids_either_task = ismember(unit_ids_after_condition_exclusion_selected, unit_ids_after_exclusion_task);
+    ids_both = ids_either_rest + 2*ids_either_task; % 1 - rest, 2 - task, 3 - both
+    targets_after_condition_exclusion_selected           = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    targets_after_condition_exclusion_selected(ids_either_rest) = targets_after_exclusion_rest;
+    targets_after_condition_exclusion_selected(ids_either_task) = targets_after_exclusion_task;
+    sites_after_condition_exclusion_selected             = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    sites_after_condition_exclusion_selected(ids_either_rest)   = sites_after_exclusion_rest;
+    sites_after_condition_exclusion_selected(ids_either_task)   = sites_after_exclusion_task;
+    grid_x_after_condition_exclusion_selected            = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    grid_x_after_condition_exclusion_selected(ids_either_rest)  = grid_x_after_exclusion_rest;
+    grid_x_after_condition_exclusion_selected(ids_either_task)  = grid_x_after_exclusion_task;
+    grid_y_after_condition_exclusion_selected            = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    grid_y_after_condition_exclusion_selected(ids_either_rest)  = grid_y_after_exclusion_rest;
+    grid_y_after_condition_exclusion_selected(ids_either_task)  = grid_y_after_exclusion_task;
+    depths_after_condition_exclusion_selected            = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    depths_after_condition_exclusion_selected(ids_either_rest)  = depths_after_exclusion_rest;
+    depths_after_condition_exclusion_selected(ids_either_task)  = depths_after_exclusion_task;
+    hemispheres_after_condition_exclusion_selected       = cell(length(unit_ids_after_condition_exclusion_selected), 1);
+    hemispheres_after_condition_exclusion_selected(ids_either_rest) = hemispheres_after_exclusion_rest;
+    hemispheres_after_condition_exclusion_selected(ids_either_task) = hemispheres_after_exclusion_task;
+    
+    unit_ids    = unit_ids_after_condition_exclusion_selected;
+    targets     = targets_after_condition_exclusion_selected;
+    sites       = sites_after_condition_exclusion_selected;
+    grid_x      = grid_x_after_condition_exclusion_selected;
+    grid_y      = grid_y_after_condition_exclusion_selected;
+    depths      = depths_after_condition_exclusion_selected;
+    hemispheres = hemispheres_after_condition_exclusion_selected;
+    filename = [cfg.unit_lists filesep 'unitInfo_after_condition_exclusion_selected'];
+    save(filename, 'unit_ids', 'targets', 'sites', 'grid_x', 'grid_y', 'depths', 'hemispheres', 'ids_both')
+    % 1.4. [excluded] create and save unit count table
+    write_unit_table(targets, filename);
+    clear unit_ids targets sites grid_x grid_y depths hemispheres
     
     % V. Unit list of excluded units (that aren't units existing either task or rest)
     ids_excluded = ~ismember(unit_ids_before_exclusion, unit_ids);
