@@ -3,7 +3,7 @@ function [Rpeaks , IBIsplit_concat] =ecg_bna_compute_session_shuffled_Rpeaks(ses
 load(session_info.Input_ECG);
 load(session_info.Input_trials);
 
-if isfield(cfg,'IBI')
+if isfield(cfg,'IBI') && ~isfield(cfg,'PSTH_binwidth') % I check here for 'PSTH_binwidth' to make sure this is LFP analysis and not spike one
     load(cfg.IBI_thrsh_file);
     thr_idx = contains({all_valid_session_IBIsplit_thr.session},(session_info.Date));
     cfg.IBI_thrsh = [all_valid_session_IBIsplit_thr(thr_idx).rest_median,all_valid_session_IBIsplit_thr(thr_idx).task_median];
