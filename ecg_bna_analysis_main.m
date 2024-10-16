@@ -75,7 +75,7 @@ for v = 1:length(versions)
                 
                 %% do ECG spike analysis and computations related to cardioballistic effect
                 if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase || cfg.spk.compute_correlation
-                    Rpeaks=ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
+                    [ Rpeaks, ~] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
                     %                     sandbox_bb_vs_waveform(cfg, Rpeaks)
                     %                     Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
@@ -498,17 +498,17 @@ for v = 1:length(versions)
                 cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
                 cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             end
-%             
-%             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
-%             grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
-%             grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
-%             
-%             if isfield(cfg.lfp , 'TaskRest_diff') && cfg.lfp.TaskRest_diff==1
-%                 Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'all');
-%                 Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'w_units');
-%                 Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'wo_units');
-%             end
-% %             
+            
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
+            
+            if isfield(cfg.lfp , 'TaskRest_diff') && cfg.lfp.TaskRest_diff==1
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'all');
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'w_units');
+                Task_Rest_raw_diff = ecg_bna_compute_TaskRest_raw_diff(cfg, 'wo_units');
+            end
+            
             IBI_high_grand_avg_results_file = fullfile([cfg.analyse_lfp_folder filesep 'grand_average_IBIhigh' filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Condition_diff_grand_avg_sessions_sites','all','.mat']);
             IBI_low_grand_avg_results_file = fullfile([cfg.analyse_lfp_folder filesep 'grand_average_IBIlow' filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Condition_diff_grand_avg_sessions_sites','all','.mat']);
             
@@ -516,8 +516,10 @@ for v = 1:length(versions)
                ecg_bna_compute_IBI_raw_diff(cfg, 'all', cfg.lfp.IBIdiff_type);
                ecg_bna_compute_IBI_raw_diff(cfg, 'w_units', cfg.lfp.IBIdiff_type);
                ecg_bna_compute_IBI_raw_diff(cfg, 'wo_units', cfg.lfp.IBIdiff_type);
-               
-               
+            end
+            
+            if isfield(cfg.lfp, 'cluster_perm') && cfg.lfp.cluster_perm==1
+               ecg_bna_cluster_perm_condition_diff(cfg,'all','itpc');
             end
         end
         
