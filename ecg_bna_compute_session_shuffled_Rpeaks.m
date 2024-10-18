@@ -45,9 +45,13 @@ for b=1:numel(out)
     b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
     trial_nBlocks_type = unique([trials(b_idx).type]);
     
-    if ~isempty(trial_nBlocks_type) && isempty(out(b).nrblock_combinedFiles) || isempty(out(b).Rpeak_t) || isempty(out(b).R2R_t) || isempty(out(b).idx_valid_R2R_consec) || ...
-       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_low && sum(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))<2) || ...
-       (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_high && sum(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))<2) 
+    % skip a block of data if something went wrong
+    if isempty(trial_nBlocks_type) || isempty(out(b).nrblock_combinedFiles) || ... % unknown block type according to combined file
+            isempty(out(b).Rpeak_t) || ... % not enough R-peaks
+            isempty(out(b).R2R_t) || ...   % not enough RR-intervals
+            isempty(out(b).idx_valid_R2R_consec) || ... % not enough consecutive RR intervals
+            (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_low && sum(out(b).R2R_valid < cfg.IBI_thrsh(trial_nBlocks_type))<2) || ...
+            (isfield(cfg,'IBI') && cfg.IBI==1 && cfg.IBI_high && sum(out(b).R2R_valid > cfg.IBI_thrsh(trial_nBlocks_type))<2) 
         Rpeaks(b).block=NaN;
         Rpeaks(b).RPEAK_ts=[];
         Rpeaks(b).RR_durations = [];
