@@ -42,8 +42,16 @@ offset_blocks_Rpeak=0;
 for b=1:numel(out)
     
     % To get IBI high/low in Task/Rest blocks Separately:
-    b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
-    trial_nBlocks_type = unique([trials(b_idx).type]);
+    if isempty(out(b).nrblock_combinedFiles)
+        trial_nBlocks_type = [];
+    else
+        b_idx = find([trials.block] == out(b).nrblock_combinedFiles);
+        if isempty(b_idx)
+            trial_nBlocks_type = [];
+        else
+            trial_nBlocks_type = unique([trials(b_idx).type]);
+        end
+    end
     
     % skip a block of data if something went wrong
     if isempty(trial_nBlocks_type) || isempty(out(b).nrblock_combinedFiles) || ... % unknown block type according to combined file
