@@ -75,7 +75,7 @@ for v = 1:length(versions)
                 
                 %% do ECG spike analysis and computations related to cardioballistic effect
                 if cfg.spk.compute_spike_histograms || cfg.spk.compute_spike_phase || cfg.spk.compute_correlation
-                    [ Rpeaks, ~] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
+                    Rpeaks = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.time);
                     %                     sandbox_bb_vs_waveform(cfg, Rpeaks)
                     %                     Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.spk);
                     cfg.Input_WC=sessions_info(i).Input_WC;
@@ -105,8 +105,11 @@ for v = 1:length(versions)
                 
             end
             if cfg.process_LFP
-                
-                [Rpeaks, IBIsplit_concat] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
+                if isfield(cfg.lfp,'IBI') && ~isfield(cfg,'PSTH_binwidth') && cfg.lfp.IBI==1
+                    [Rpeaks, IBIsplit_concat] = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
+                elseif isfield(cfg.lfp,'IBI') && ~isfield(cfg,'PSTH_binwidth') && cfg.lfp.IBI==0
+                    Rpeaks= ecg_bna_compute_session_shuffled_Rpeaks(sessions_info(i),cfg.lfp);
+                end
                 %Rpeaks=ecg_bna_jitter(sessions_info(i),cfg.lfp);
                 
                 % new condition to only produce IBI split table in the

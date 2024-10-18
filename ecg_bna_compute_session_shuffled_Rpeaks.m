@@ -68,18 +68,23 @@ for b=1:numel(out)
         offset_blocks_Rpeak(b+1)=offset_blocks_Rpeak(b);
         
         if isfield(cfg,'IBI') && ~isfield(cfg,'PSTH_binwidth') % I check here for 'PSTH_binwidth' to make sure this is LFP analysis and not spike one
-        
-            low_IBI_name = {'Rest_IBI_low', 'Task_IBI_low'};
-            high_IBI_name = {'Rest_IBI_high', 'Task_IBI_high'};
-            
+%         
+%             low_IBI_name = {'Rest_IBI_low', 'Task_IBI_low'};
+%             high_IBI_name = {'Rest_IBI_high', 'Task_IBI_high'};
+%             
             if isfield(cfg,'IBI_low') && cfg.IBI_low
                 IBI_split_Rpeak_list(b).Rest_IBI_low = [];
                 IBI_split_Rpeak_list(b).Task_IBI_low = [];
-                IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(low_IBI_name{trial_nBlocks_type}));
+                IBIsplit_concat.Rest_IBI_low = cat(2,IBI_split_Rpeak_list.Rest_IBI_low);
+                IBIsplit_concat.Task_IBI_low = cat(2,IBI_split_Rpeak_list.Task_IBI_low);
+%                 IBIsplit_concat.(low_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(low_IBI_name{trial_nBlocks_type}));
+
             elseif isfield(cfg,'IBI_high') && cfg.IBI_high
                 IBI_split_Rpeak_list(b).Rest_IBI_high = [];
                 IBI_split_Rpeak_list(b).Task_IBI_high = [];
-                IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(high_IBI_name{trial_nBlocks_type}));
+                IBIsplit_concat.Rest_IBI_high = cat(2,IBI_split_Rpeak_list.Rest_IBI_high);
+                IBIsplit_concat.Task_IBI_high = cat(2,IBI_split_Rpeak_list.Task_IBI_high);
+%                 IBIsplit_concat.(high_IBI_name{trial_nBlocks_type}) = cat(2,IBI_split_Rpeak_list.(high_IBI_name{trial_nBlocks_type}));
             end
         
         end
