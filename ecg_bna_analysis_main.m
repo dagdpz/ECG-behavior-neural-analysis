@@ -85,19 +85,36 @@ for v = 1:length(versions)
                         ecg_bna_sanity_check(by_block,trials,Triggers,blockstart,cfg)
                     end
                     load(sessions_info(i).Input_spikes);
+                    
+                    
+                   ecg_bna_compute_session_phase_response_analysis(trials,population,Rpeaks,cfg)
+
                     if cfg.spk.compute_spike_histograms
                         ecg_bna_PSTH(trials,population,Triggers,blockstart,cfg)
                     end
                     
-%                     if cfg.spk.compute_spike_phase
-%                         ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,cfg)
-%                     end
+                    
+                    if cfg.spk.compute_spike_phase
+                        ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,sessions_info(i),cfg)
+                    end
+                    
+                    if cfg.spk.compute_correlation
+                        ecg_bna_compute_session_correlation_analysis(trials,population,Rpeaks,cfg)
+                    end
                 end
                 
                 if cfg.spk.plot_spike_histograms
                     EPO=ecg_bna_get_plotoptions(cfg,'spk');
                     ecg_bna_plot_PSTH(sessions_info(i),EPO,cfg);
                     %ecg_bna_plot_session_spike_histogram(sessions_info(i),cfg);
+                end
+                
+                
+                if cfg.spk.plot_spike_phase
+                    ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
+                end
+                if cfg.spk.plot_correlation
+                    ecg_bna_plot_session_correlation(sessions_info(i),cfg)
                 end
 %                 if cfg.spk.plot_spike_phase
 %                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)

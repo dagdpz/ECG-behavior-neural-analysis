@@ -1,4 +1,4 @@
-function EPO=ecg_bna_get_plotoptions(cfg,spokorlf)
+function EPO=ecg_bna_get_plotoptions(cfg,spkorlfp)
 nevents=size(cfg.analyse_states,1);
 
 ttickpos={};
@@ -14,7 +14,7 @@ added=0;
 added_hist=0;
 
 for e=1:nevents
-    eventbins=(cfg.analyse_states{e,4}:cfg.(spokorlf).PSTH_binwidth:cfg.analyse_states{e,5})*1000;
+    eventbins=(cfg.analyse_states{e,4}:cfg.(spkorlfp).PSTH_binwidth:cfg.analyse_states{e,5})*1000;
     %tbin=[tbin {eventbins}];
     
     bins=eventbins-eventbins(1)+added;
@@ -25,7 +25,7 @@ for e=1:nevents
     ttickpos=[ttickpos {[bins(1) eventalignment(e) bins(end)]}];
     ttick   =[ttick    {[eventbins(1) 0 eventbins(end)]}];
     
-    histbins=cfg.(spokorlf).histbins;
+    histbins=cfg.(spkorlfp).histbins;
     %histbin=[histbin histbins];
     bins=histbins-histbins(1)+added_hist;
     histbinpos=[histbinpos {bins}];
