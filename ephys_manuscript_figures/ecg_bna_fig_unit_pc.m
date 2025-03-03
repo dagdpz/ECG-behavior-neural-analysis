@@ -9,18 +9,20 @@ condition_names  = {'Rest', 'Task'};
 condition_colors = {[0 0 1], [1 0 0]};
 area_list        = {'VPL', 'dPul', 'MD'};
 
+output_folder='Y:\Manuscripts\2024_Thalamus_ephys_heart_brain\';
+
 for s = 1:2
     
     figure('Name',sprintf(['BarPlot_Pc_' subset_names{s}]),'Position',[728 347 600 466],'PaperPositionMode', 'auto');
     
     for m = 1:2 % loop through monkeys
         
-        % load data
+       % load data
         load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_' monkey_names{m} ...
-            '_TaskRest\Population_time_domain_after_SNR_exclusion_' subset_names{s} '_noLow_amplitude_ccs_any_VPL_dPul_MD\Output.mat'])
+            '_TaskRest_state4\Population_time_domain_per_unit_-0.25-0.25s__after_SNR_exclusion_' subset_names{s} '_noLow_amplitude_ccs_any_VPL_dPul_MD\Output.mat'])
         
-        %     load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_' monkey_names{m} ...
-        %         '_TaskRest\Population_time_domain_after_SNR_exclusion_selected_noLow_amplitude_ccs_any_VPL_dPul_MD\Output.mat'])
+%             load(['Y:\Projects\Pulv_bodysignal\ECG_triggered_spikes\ECG_' monkey_names{m} ...
+%                 '_TaskRest\Population_time_domain_after_SNR_exclusion_selected_noLow_amplitude_ccs_any_VPL_dPul_MD\Output.mat'])
         
         for c=1:N_conditions
             L=condition_names{c};
@@ -55,7 +57,7 @@ for s = 1:2
             % Create text strings
             %txt = compose('%.1f%%',pc_mat');
             for k=1:numel(pc_mat)
-            th = text(xbarCnt(k), ybarCnt(k), [num2str(nb_mat(k)) '/' sprintf('%.1f%', pc_mat(k)) '%'], ...
+            th = text(xbarCnt(k), ybarCnt(k), {num2str(nb_mat(k)); [sprintf('%.1f%', pc_mat(k)) '%']}, ...
                 'HorizontalAlignment', 'center', ....
                 'VerticalAlignment', 'middle', ...
                 'Color', 'w',....
@@ -86,8 +88,11 @@ for s = 1:2
             %         clear Tab
             
         end
-        %     save_figure_as('Pc_CardiacRelatedUnits_Merged',output_folder,savePlot)
     end
+    
+    export_fig([output_folder 'Fig3_' ,subset_names{s}], '-pdf'); %,'-transparent'
+    
+        %     save_figure_as('Pc_CardiacRelatedUnits_Merged',output_folder,savePlot)
 
 end
 
