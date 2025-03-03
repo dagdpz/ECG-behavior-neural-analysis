@@ -111,7 +111,6 @@ for s = 1: numel(w_samples)
     for f=1:numel(FN_in)
         fn=FN{f};
         fni=FN_in{f};
-        
         AA=      reshape(tfs.(fni)(:,t),size(tfs.(fni),1),size(t,1),size(t,2));
         if ismember(fn,{'itpc','itpcbp'})
             BB=abs(mean(AA,3));
@@ -191,22 +190,22 @@ if nargin>3 %% surrogate data,add signficance test here !
         significance.(fn)(sigpixneg)=true;
     end
    
-    if false
-        for f=1:numel(FN_in)
-            fn=FN{f};
-            
-            null_mean=squeeze(triggered.(fn).mean);
-            null_std=squeeze(triggered.(fn).std);
-            actual_tf=squeeze(realD.(fn).mean);
-            alpha=0.05;
-            cluster_thresh=0.05;
-            
-            [~, ~, ~, significance_map] = tfClusterPermTestWithMeanStd(actual_tf, null_mean, null_std, alpha, cluster_thresh);
-            
-            significance.(fn)=zeros(size(realD.(fn).mean));
-            significance.(fn)(1:numel(significance_map))=significance_map;
-        end
-    end
+%     if false
+%         for f=1:numel(FN_in)
+%             fn=FN{f};
+%             
+%             null_mean=squeeze(triggered.(fn).mean);
+%             null_std=squeeze(triggered.(fn).std);
+%             actual_tf=squeeze(realD.(fn).mean);
+%             alpha=0.05;
+%             cluster_thresh=0.05;
+%             
+%             [~, ~, ~, significance_map] = tfClusterPermTestWithMeanStd(actual_tf, null_mean, null_std, alpha, cluster_thresh);
+%             
+%             significance.(fn)=zeros(size(realD.(fn).mean));
+%             significance.(fn)(1:numel(significance_map))=significance_map;
+%         end
+%     end
 end
 
 

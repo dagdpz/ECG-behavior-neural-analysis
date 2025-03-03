@@ -49,7 +49,7 @@ clear out
 
 f1 = figure;
 set(gcf,'Position',[541    42   776   954])
-tiledlayout(6, 3, 'TileSpacing', 'none', 'Padding', 'none');
+%tiledlayout(6, 3, 'TileSpacing', 'none', 'Padding', 'none');
 
 for m = 1:2 % loop through monkeys
     
@@ -61,7 +61,8 @@ for m = 1:2 % loop through monkeys
             data = load([dataFolder{m} dataFiles{m}{a}]);
         end
         
-        nexttile
+%        nexttile
+        subplot(3,2,(a+3*(m-1)));
         for c=1:N_conditions
             L=condition_names{c};
             col=condition_colors{c};
@@ -110,7 +111,7 @@ for m = 1:2 % loop through monkeys
             
             if m == 1 && a == 1 && c == 2
                 
-                yyaxis right
+%                yyaxis right
                 hold on
                 fill([x_times fliplr(x_times) x_times(1)],[ECG_1-ECG_1_SD fliplr(ECG_1+ECG_1_SD) ECG_1_SD(1)],[0 0 0],'FaceAlpha',0.3,'EdgeColor','none')
                 plot(x_times,ECG_1,'k-')
@@ -120,7 +121,7 @@ for m = 1:2 % loop through monkeys
             
             if m == 2 && a == 1 && c == 2
                 
-                yyaxis right
+        %        yyaxis right
                 hold on
                 fill([x_times fliplr(x_times) x_times(1)],[ECG_2-ECG_2_SD fliplr(ECG_2+ECG_2_SD) ECG_2_SD(1)],[0 0 0],'FaceAlpha',0.3,'EdgeColor','none')
                 plot(x_times,ECG_2,'k-')
@@ -173,7 +174,7 @@ for m = 1:2 % loop through monkeys
     end
     
 end
-save_figure_as('Fig2_',dir2save,1)
+%save_figure_as('Fig2_',dir2save,1)
 
 % plot rasters for all R-peaks
 for m = 1:2 % loop through monkeys
@@ -214,13 +215,13 @@ for m = 1:2 % loop through monkeys
             end
             
         end
-        save_figure_as(['FigS2_' monkey_names{m} '_' T],dir2save,1)
+        %save_figure_as(['FigS2_' monkey_names{m} '_' T],dir2save,1)
     end
 end
 
-function save_figure_as(filename,basepath_to_save,savePlot)
-if savePlot
-    export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
-    close(gcf);
-end
-end
+% function save_figure_as(filename,basepath_to_save,savePlot)
+% if savePlot
+%     export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
+%     close(gcf);
+% end
+% end

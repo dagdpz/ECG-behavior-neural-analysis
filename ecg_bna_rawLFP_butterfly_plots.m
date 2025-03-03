@@ -20,7 +20,7 @@ hold off
 legend(legend_list, 'Location','eastoutside','Interpreter','none','FontSize',6);
 legend_list = legend_list';
 
-set(gcf, 'WindowState', 'maximized');
+%set(gcf, 'WindowState', 'maximized');
 figName = fullfile([path2save,filesep,'rawLFP channel Check',filesep,'session_',session,'_RawLFPsample']);
 saveas(h, figName,'fig');
 saveas(h, figName,'png');

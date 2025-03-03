@@ -1,5 +1,6 @@
 function Output=ecg_bna_PSTH(trials,population,Triggers,Blockoffsets,cfg)
-
+%% load list of selected units - won't process all the crap
+% How can we ever know this in advance??
 if cfg.spk.apply_exclusion_criteria
     load([cfg.unit_lists filesep cfg.spk.unit_list], 'unit_ids')
     pop_units  = {population.unit_ID};
@@ -7,10 +8,10 @@ if cfg.spk.apply_exclusion_criteria
     population = population(inc_ids);
 end
 
+%% loop through units
 for u=1:numel(population)
-    tic
     pop=population(u);
-    disp(['Processing ' pop.unit_ID])
+    disp(['Processing ' pop.unit_ID ' ' num2str(u) '/' num2str(numel(population))]);
     T=ph_get_unit_trials(pop,trials);
     
     % preallocate 'Output' structure
@@ -26,41 +27,15 @@ for u=1:numel(population)
         Output.(L).NrTrials=sum(tr);
         
         if sum(tr)==0
-            %         Output.(L).SD                = single(nan(1, length(BINS)));
-            %         Output.(L).SD_STD            = single(nan(1, length(BINS)));
-            %         Output.(L).SD_SEM            = single(nan(1, length(BINS)));
-            %         Output.(L).SDP               = single(nan(1, length(BINS)));
-            %         Output.(L).SDPCL             = single(nan(1, length(BINS)));
-            %         Output.(L).SDPCu             = single(nan(1, length(BINS)));
-            %         Output.(L).sig_all           = single(zeros(1, length(BINS)));
-            %         Output.(L).sig               = single(zeros(1, length(BINS)));
-            %         Output.(L).sig_FR_diff       = single(nan(1));
-            %         Output.(L).sig_time          = single(nan(1));
-            %         Output.(L).sig_n_bins        = single(zeros(1));
-            %         Output.(L).sig_sign          = single(zeros(1));
-            %         Output.(L).NrTrials          = single(nan(1));
-            %         Output.(L).NrEvents          = single(nan(1));
-            %         Output.(L).FR                = single(nan(1));
-            %         Output.(L).raster            = single(nan(1));
-            %         Output.(L).Rts               = single(nan(1)); % RR ends
-            %         Output.(L).Rds               = single(nan(1)); % RR durations
-            %         Output.(L).Rds_perm          = single(nan(1));
-            %         Output.(L).SDsubstractedSDP            = single(nan(1, length(BINS)));
-            %         Output.(L).SDsubstractedSDP_normalized = single(nan(1, length(BINS)));
-            %         Output.(L).FR_ModIndex_SubtrSDP        = single(nan(1));
-            %         Output.(L).FR_ModIndex_PcS             = single(nan(1));
             continue;
         end
-        
-        %         if (~isfield(Rpeaks, 'RPEAK_ts_insp') && cfg.process_Rpeaks_inhalation_exhalation) || (~isfield(Rpeaks, 'RPEAK_ts_exp') && cfg.process_Rpeaks_inhalation_exhalation)
-        %             continue; % out(1).nrblock_combinedFiles might be empty! and even if there is 1 trial we're not processing
-        %         end
         
         popcell=pop.trial(tr);
         trcell=T(tr);
         [O]=ecg_bna_synchronize_with_trigger(Blockoffsets,trcell,popcell);
         
-        %% compute spike density as one continuous vector across all concatenated trials (hmmm there migth be a problem with interleaved trial types here)
+        %% compute spike density as one continuous vector across all concatenated trials 
+        % (hmmm there migth be a problem with interleaved trial types here)
         PSTH_time=O.trial_starts(1):cfg.spk.PSTH_binwidth:O.trial_ends(end);
         [SD_stream, RAST]=ecg_bna_spike_density(O.AT,PSTH_time,cfg.spk);
         
@@ -79,7 +54,6 @@ for u=1:numel(population)
     %% save output
     save([cfg.per_session_folder, filesep, pop.unit_ID, '_', pop.target],'Output')
     clear Output
-    toc
 end
 end
 

@@ -1,4 +1,3 @@
-clear all, close all
 
 %% set up parameters
 N_monkeys        = 2;
@@ -43,20 +42,26 @@ for s = 1:2
                 b(ii).FaceColor = bar_colors_merged(ii,:);
             end
             
+            
+            
             % add percentages to bars
-            xbarCnt = vertcat(b.XEndPoints);
-            ybarTop = vertcat(b.YEndPoints);
+            xbarCnt = [b(1).XData; b(2).XData];
+            ybarTop = [b(1).YData; b(1).YData+b(2).YData];
             ybarCnt = ybarTop - pc_mat'/2;
             
+            pc_mat=round(pc_mat'*10)/10;
+            nb_mat=nb_mat';
+            
             % Create text strings
-            txt = compose('%.1f%%',pc_mat');
-            th = text(xbarCnt(:), ybarCnt(:), txt(:), ...
+            %txt = compose('%.1f%%',pc_mat');
+            for k=1:numel(pc_mat)
+            th = text(xbarCnt(k), ybarCnt(k), [num2str(nb_mat(k)) '/' sprintf('%.1f%', pc_mat(k)) '%'], ...
                 'HorizontalAlignment', 'center', ....
                 'VerticalAlignment', 'middle', ...
                 'Color', 'w',....
                 'FontSize', 8, ...
                 'FontWeight', 'bold');
-            
+            end
             title(['Monkey ' monkey_names{m}(1) ': ' L])
             % create x tick labels
             %         for ii = 1:3

@@ -93,9 +93,9 @@ for v = 1:length(versions)
                         ecg_bna_PSTH(trials,population,Triggers,blockstart,cfg)
                     end
                     
-                    
                     if cfg.spk.compute_spike_phase
-                        ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,sessions_info(i),cfg)
+                        %ecg_bna_compute_session_ECG_related_spikePhase(trials,population,Rpeaks,sessions_info(i),cfg)
+                        ecg_bna_compute_PEPH(trials,population,Triggers,blockstart,cfg)
                     end
                     
                     if cfg.spk.compute_correlation
