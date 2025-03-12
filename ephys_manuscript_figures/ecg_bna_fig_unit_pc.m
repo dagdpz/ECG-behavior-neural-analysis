@@ -50,16 +50,16 @@ for s = 1:2
             
             nb_grand_mat = cat(3,nb_grand_mat,nb_mat);
             
-            % I. compute chi-square test and save statistics
-            if c == 2
-                [chi2_stat, p_val, stats] = DAG_chi_square_test(nb_grand_mat);
-                
-                filename = [monkey_names{m} '_Grand_chi-square_between_areas_' subset_names{s}];
-                TBL = table({'Rest'; 'Task'}, chi2_stat', p_val', ...
-                    'VariableNames', {'Condition', 'Chi^2 Stat.', 'P-values'});
-                writetable(TBL, [output_folder filesep filename '.xls'])
-                clear TBL
-            end
+%             % I. compute chi-square test and save statistics
+%             if c == 2
+%                 [chi2_stat, p_val, stats] = DAG_chi_square_test(nb_grand_mat);
+%                 
+%                 filename = [monkey_names{m} '_Grand_chi-square_between_areas_' subset_names{s}];
+%                 TBL = table({'Rest'; 'Task'}, chi2_stat', p_val', ...
+%                     'VariableNames', {'Condition', 'Chi^2 Stat.', 'P-values'});
+%                 writetable(TBL, [output_folder filesep filename '.xls'])
+%                 clear TBL
+%             end
             
             % II. Compute exact Fisher's test between nuclei
             nuclei_combinations = {};
@@ -84,12 +84,12 @@ for s = 1:2
             % correct for multiple comparisons
             h = fdr_bky(round(p_values,10), 0.05);
             
-            % put stuff into the table
-            filename = [monkey_names{m} '_Fisher_test_between_areas_' subset_names{s} '_' condition_names{c}];
-            TBL = table(nuclei_combinations, p_values, h, odds_ratios, ...
-                'VariableNames', {'Nuclei Conbinations', 'Fisher''s p', 'Fisher''s h (BKY-corrected)', 'Odds Ratios'});
-            writetable(TBL, [output_folder filesep filename '.xls'])
-            clear TBL
+%             % put stuff into the table
+%             filename = [monkey_names{m} '_Fisher_test_between_areas_' subset_names{s} '_' condition_names{c}];
+%             TBL = table(nuclei_combinations, p_values, h, odds_ratios, ...
+%                 'VariableNames', {'Nuclei Conbinations', 'Fisher''s p', 'Fisher''s h (BKY-corrected)', 'Odds Ratios'});
+%             writetable(TBL, [output_folder filesep filename '.xls'])
+%             clear TBL
             
             % plot bar plots
             subplot(2,N_conditions, 2*(m-1) + c);
@@ -97,25 +97,45 @@ for s = 1:2
             for ii = 1:length(b)
                 b(ii).FaceColor = bar_colors_merged(ii,:);
             end
-            
+%             
+%             % add percentages to bars
+%             xbarCnt = vertcat(b.XEndPoints);
+%             ybarTop = vertcat(b.YEndPoints);
+%             ybarCnt = ybarTop - pc_mat'/2;
+%             
+%             % create text strings
+%             data_mat(1:2:5,:) = pc_mat;
+%             data_mat(2:2:6,:) = nb_mat;
+%             txt = compose('%.1f%%\n(%d)',data_mat');
+%             
+%             th = text(xbarCnt(:), ybarCnt(:), txt(:), ...
+%                 'HorizontalAlignment', 'center', ....
+%                 'VerticalAlignment', 'middle', ...
+%                 'Color', 'w',...
+%                 'FontName', figure_font, ...
+%                 'FontSize', 8, ...
+%                 'FontWeight', 'normal');
+%             
+
             % add percentages to bars
-            xbarCnt = vertcat(b.XEndPoints);
-            ybarTop = vertcat(b.YEndPoints);
+            xbarCnt = [b(1).XData; b(2).XData];
+            ybarTop = [b(1).YData; b(1).YData+b(2).YData];
             ybarCnt = ybarTop - pc_mat'/2;
             
-            % create text strings
-            data_mat(1:2:5,:) = pc_mat;
-            data_mat(2:2:6,:) = nb_mat;
-            txt = compose('%.1f%%\n(%d)',data_mat');
+            pc_mat=round(pc_mat'*10)/10;
+            nb_mat=nb_mat';
             
-            th = text(xbarCnt(:), ybarCnt(:), txt(:), ...
+            % Create text strings
+            %txt = compose('%.1f%%',pc_mat');
+            for k=1:numel(pc_mat)
+            th = text(xbarCnt(k), ybarCnt(k), {num2str(nb_mat(k)); [sprintf('%.1f%', pc_mat(k)) '%']}, ...
                 'HorizontalAlignment', 'center', ....
                 'VerticalAlignment', 'middle', ...
-                'Color', 'w',...
-                'FontName', figure_font, ...
+                'Color', 'w',....
                 'FontSize', 8, ...
-                'FontWeight', 'normal');
-            
+                'FontWeight', 'bold');
+            end
+
             title(['Monkey ' monkey_names{m}(1) ': ' L])
             set(gca,'XTickLabel',nuclei_list,'fontsize',font_size);
             ylim([0 100])
@@ -127,7 +147,8 @@ for s = 1:2
             
         end
     end
-    save_figure_as(['Fig3_' subset_names{s}],output_folder,1)
+    %export_fig(gcf, [output_folder,filesep ,'Fig3_' subset_names{s}], '-pdf'); %,'-transparent'
+    %close(gcf);
 end
 
 %% plot legend
@@ -146,12 +167,7 @@ for ii = 1:3
 end
 axis off
 leg = legend({'Rest: Responsive', 'Task: Responsive', 'Non-Responsive'}, 'FontSize', font_size);
-save_figure_as('Fig3_legend',output_folder,1)
+export_fig(gcf, [output_folder,filesep ,'Fig3_legend'], '-pdf'); %,'-transparent'
+%close(gcf);
 
 
-function save_figure_as(filename,basepath_to_save,savePlot)
-if savePlot
-    export_fig(gcf, [basepath_to_save,filesep ,filename], '-pdf'); %,'-transparent'
-    close(gcf);
-end
-end

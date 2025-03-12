@@ -16,7 +16,7 @@ var_list = ...
 %     'highIBI.sig_all', 'highIBI.sig', 'highIBI.sig_FR_diff', 'highIBI.sig_time', 'highIBI.sig_n_bins', 'highIBI.sig_sign', ...
 %     'highIBI.NrEvents', 'highIBI.SDsubstractedSDP', 'highIBI.SDsubstractedSDP_normalized', 'highIBI.FR_ModIndex_SubtrSDP', 'highIBI.FR_ModIndex_PcS'
 
-BINS = linspace(cfg.analyse_states{1}{3},cfg.analyse_states{1}{4}, 101);
+BINS = linspace(cfg.analyse_states{1,3},cfg.analyse_states{1,4}, 101);
 
 for targetGrNum = 1:length(cfg.targets_spike_data)
     
@@ -30,7 +30,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
     for targNum = 1:N_Areas
         targSuff = [targSuff '_' unqTargets{targNum}];
     end
-    output_folder = [cfg.SPK_root_results_fldr filesep 'Population_time_domain' unitList(9:end) targSuff];
+    output_folder = [cfg.SPK_root_results_fldr filesep 'Population_time_domain_per_unit_-0.25-0.25s_' unitList(9:end) targSuff];
     if ~exist(output_folder,'dir')
         mkdir(output_folder)
     end
@@ -92,7 +92,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             [Out.(T).pp_rest_vs_task, Out.(T).cc_rest_vs_task] = deal(nan(length(Out.(T).unit_ID),1));
             for u = 1:length(Out.(T).unit_ID)
                 
-                if ~isnan(Out.(T).Rest.sig_FR_diff(u)) & ~isnan(Out.(T).Task.sig_FR_diff(u))
+                if ~isnan(Out.(T).Rest.sig_FR_diff(u)) && ~isnan(Out.(T).Task.sig_FR_diff(u))
                     
                     [Out.(T).pp_rest_vs_task(u), Out.(T).cc_rest_vs_task(u)] = ...
                         mult_comp_perm_corr(Out.(T).Rest.SD(:,u), Out.(T).Task.SD(:,u), cfg.time.n_shuffles, cfg.time.tail, cfg.time.alpha_level, cfg.time.stat, cfg.time.reports, cfg.time.seed_state);
@@ -110,13 +110,12 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
     bar_colors = [0 0.4470 0.7410; 0.8500 0.3250 0.0980; 1 1 1];
     bar_colors_merged = [0 0 0.5; 0.7 0.7 0.7];
     
-    savePlot = 1;
+    savePlot = 0;
     saveTable= 0;
     OnlyUnits_withRestANDTask = 1;
     Graph_SelectionCriterion = 1;
     % colors = distinguishable_colors(25);
-    curr_analyse_states = cfg.analyse_states{1};
-    PSTH_bins = (curr_analyse_states{1,3}:cfg.time.PSTH_binwidth:curr_analyse_states{1,4})*1000;
+    PSTH_bins = (cfg.analyse_states{1,3}:cfg.time.PSTH_binwidth:cfg.analyse_states{1,4})*1000;
     
     if ~exist(output_folder,'dir')
         mkdir(output_folder);
@@ -272,8 +271,8 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
         
         cond1_num = cfg.spk.compare_conditions{groupNum}(1);
         cond2_num = cfg.spk.compare_conditions{groupNum}(2);
-        L1=cfg.condition(cond1_num).name;
-        L2=cfg.condition(cond2_num).name;
+        L1=con1;
+        L2=con2;
         
         %m=colormap(bluewhitered);
         
@@ -363,7 +362,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             
             disp(T)
             
-            p(a,:) = ecg_bna_fisher_test(Out.(T).(cfg.condition(cond2_num).name).Nb_SignFR([2 1 3]), Out.(T).(cfg.condition(cond1_num).name).Nb_SignFR([2 1 3]));
+            p(a,:) = ecg_bna_fisher_test(Out.(T).(con2).Nb_SignFR([2 1 3]), Out.(T).(con1).Nb_SignFR([2 1 3]));
             
         end
         
@@ -372,7 +371,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
         h = fdr_bky(round(p,10), 0.05);
         
         Tab = table(Ana_TargetBrainArea, p(:,1), p(:,2), h(:,1), h(:,2), 'VariableNames', {'Brain Area', 'p_corr inc', 'p_corr dec', 'h inc', 'h dec'});
-        savename = [output_folder filesep (cfg.condition(cond2_num).name) '_vs_' (cfg.condition(cond1_num).name) 'Table_Prevalences_pvalues_corrected.xlsx'];
+        savename = [output_folder filesep (con2) '_vs_' (con1) 'Table_Prevalences_pvalues_corrected.xlsx'];
         writetable(Tab, savename)
         clear Tab
     end
@@ -1589,233 +1588,155 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
     
     %% below are plots for units having BOTH task and rest - they actually will work out anyway
     if OnlyUnits_withRestANDTask
-        %% modulation index - percent change
         for groupNum = 1:length(cfg.spk.compare_conditions)
             
             cond1_num = cfg.spk.compare_conditions{groupNum}(1);
             cond2_num = cfg.spk.compare_conditions{groupNum}(2);
             
-            cond1_cond2_color = (cfg.condition(1).color + cfg.condition(2).color) / 2;
+            con1 = cfg.condition(cfg.spk.compare_conditions{groupNum}(1)).name ;
+            con2 = cfg.condition(cfg.spk.compare_conditions{groupNum}(2)).name ;
+            con12=[con1 '_' con2];
+            con1col = cfg.condition(cond1_num).color;
+            con2col = cfg.condition(cond2_num).color;
+            con12col = (cfg.condition(1).color + cfg.condition(2).color) / 2;
             
-            figure;
-            set(gcf, 'Position', [2 381 1914 553])
-            for a = 1: N_Areas
-                T = Ana_TargetBrainArea{a};
-                
-                subplot(1,3,a)
-                
-                unit_count = ~isnan([Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS_signed]');
-                unit_count = sum(any(unit_count));
-                sig_cond2_cond1 = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins > n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins > n_sig_bins;
-                sig_cond2      = Out.(T).(cfg.condition(cond2_num).name).sig_n_bins >= n_sig_bins & Out.(T).(cfg.condition(cond1_num).name).sig_n_bins < n_sig_bins; % in condition 2 >= sig_bins, in condition 1 < sig bins
-                sig_cond1      = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins >= n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins < n_sig_bins;
-                %     [cc, pp] = corrcoef(Out.(T).Rest.FR_ModIndex_PcS, Out.(T).Task.FR_ModIndex_PcS,'Rows','complete');
-                hold on
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS_signed, [], [0.7 0.7 0.7], 'filled')
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS_signed(sig_cond2_cond1), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS_signed(sig_cond2_cond1), [], cond1_cond2_color, 'filled')
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS_signed(sig_cond2), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS_signed(sig_cond2), [], cfg.condition(cond1_num).color, 'filled')
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS_signed(sig_cond1), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS_signed(sig_cond1), [], cfg.condition(cond2_num).color, 'filled')
-                %     ls_line = lsline(gca);
-                %     ls_line.Color = 'b';
-                box on
-                grid on
-                axis square
-                xlim([-60 60])
-                ylim([-60 60])
-                %     title({[T ': N = ' num2str(unit_count)], ...
-                %         ['cc = ' num2str(cc(2)) '; p = ' num2str(pp(2))]})
-                title([T ': N = ' num2str(unit_count)])
-                if a == 1
-                    xlabel(['% signal change in ' cfg.condition(cond1_num).name])
-                    ylabel(['% signal change in ' cfg.condition(cond2_num).name])
-                    legend({'non-significant', ['sig. ' cfg.condition(cond2_num).name ' & sig. ' cfg.condition(cond1_num).name], ['sig. only ' cfg.condition(cond2_num).name], ['sig. only ' cfg.condition(cond1_num).name]})
-                end
-                ax = gca;
-                ax.FontSize = 16;
-            end
-            save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_Scatter_Pc_signal_change_signed'],output_folder,savePlot)
-        end
-        
-        %% modulation index - absolute percent change
-        for groupNum = 1:length(cfg.spk.compare_conditions)
-            sig = struct;
-            cond1_num = cfg.spk.compare_conditions{groupNum}(1);
-            cond2_num = cfg.spk.compare_conditions{groupNum}(2);
-            cond1_cond2_color = (cfg.condition(1).color + cfg.condition(2).color) / 2;
             
+            %% modulation index - signed percent change
             figure
             set(gcf, 'Position', [2 332 1914 602])
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
-                subplot(1,3,a)
-                unit_count = ~isnan([Out.(T).((cfg.condition(cond1_num).name)).FR_ModIndex_PcS, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS]');
+                subplot(1,N_Areas,a)
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_PcS_signed, Out.(T).(con2).FR_ModIndex_PcS_signed]');
                 unit_count = sum(any(unit_count));
-                sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins > n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins > n_sig_bins; % both conditions
-                %         sig_task_rest = Out.(T).(c_names{1}).sig_n_bins > n_sig_bins & Out.(T).(c_names{2}).sig_n_bins > n_sig_bins;
-                sig.(cfg.condition(cond1_num).name)                  = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins <= n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins > n_sig_bins;
-                %         sig_task      = Out.(T).(c_names{1}).sig_n_bins <= n_sig_bins & Out.(T).(c_names{2}).sig_n_bins > n_sig_bins;
-                sig.(cfg.condition(cond2_num).name)                  = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins > n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins <= n_sig_bins;
-                %         sig_rest      = Out.(T).(c_names{1}).sig_n_bins > n_sig_bins & Out.(T).(c_names{2}).sig_n_bins <= n_sig_bins;
-                within_range  = Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS < 60 & Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS < 60;
+                sig.(con12) = Out.(T).(con1).sig_n_bins > n_sig_bins  & Out.(T).(con2).sig_n_bins > n_sig_bins; % both conditions
+                sig.(con1)  = Out.(T).(con1).sig_n_bins > n_sig_bins  & Out.(T).(con2).sig_n_bins <= n_sig_bins;
+                sig.(con2)  = Out.(T).(con2).sig_n_bins > n_sig_bins  & Out.(T).(con1).sig_n_bins <= n_sig_bins;
+                sig.any     = (sig.(con12) | sig.(con1) | sig.(con2));
+                % within_range  = Out.(T).(con1).FR_ModIndex_PcS < 60 & Out.(T).(con2).FR_ModIndex_PcS < 60; % ???
                 hold on
-                % plot only responsive for either rest, task, or both and lsline
-                % this scatter
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), [], [0.7 0.7 0.7], 'filled')
-                ls_line = lsline(gca);
-                ls_line.Color = [0.3 0.3 0.3];
-                if sum(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])) + ...
-                        sum(sig.(cfg.condition(cond1_num).name)) + ...
-                        sum(sig.(cfg.condition(cond2_num).name)) < 2
+                
+                s1 = scatter(Out.(T).(con1).FR_ModIndex_PcS_signed(~sig.any),    Out.(T).(con2).FR_ModIndex_PcS_signed(~sig.any),    [], [0.7 0.7 0.7], 'filled');
+                s2 = scatter(Out.(T).(con1).FR_ModIndex_PcS_signed(sig.(con12)),Out.(T).(con2).FR_ModIndex_PcS_signed(sig.(con12)),[], con12col, 'filled');
+                s3 = scatter(Out.(T).(con1).FR_ModIndex_PcS_signed(sig.(con1)), Out.(T).(con2).FR_ModIndex_PcS_signed(sig.(con1)), [], con1col, 'filled');
+                s4 = scatter(Out.(T).(con1).FR_ModIndex_PcS_signed(sig.(con2)), Out.(T).(con2).FR_ModIndex_PcS_signed(sig.(con2)), [], con2col, 'filled');
+                
+                if sum(sig.(con12)) + sum(sig.(con1)) + sum(sig.(con2)) < 2
                     cc = nan(2);
                     pp = nan(2);
-                    
-                    p = nan(1,2);
-                else
-                    [cc, pp] = ...
-                        corrcoef(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        'Rows','complete');
-                    [p,~] = ... % p(1) is linear slope, p(2) is b-member
-                        polyfit(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range),1);
+                    regpars  = nan(1,2);
+                else % correlation and regression for significant only (?)
+                x=Out.(T).(con1).FR_ModIndex_PcS_signed(sig.any); % & within_range);
+                y=Out.(T).(con2).FR_ModIndex_PcS_signed(sig.any); % & within_range);
+                regpars = rmaregress(x,y,[2,2]);
+                y_fit=[regpars(1)+min(x)*regpars(2) regpars(1)+max(x)*regpars(2)];
+                ls_line=plot([min(x) max(x)], y_fit,'LineWidth', 2, 'Color', [0.3 0.3 0.3]);
+                [cc, pp] = corrcoef(x, y, 'rows','complete');                    
                 end
                 
-                fitlm(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range))
-                % plot all in grey and then by group
-                s1 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS, [], [0.7 0.7 0.7], 'filled');
-                s2 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])), [], cond1_cond2_color, 'filled');
-                s3 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond1_num).name)), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond1_num).name)), [], cfg.condition(cond2_num).color, 'filled');
-                s4 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond2_num).name)), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond2_num).name)), [], cfg.condition(cond1_num).color, 'filled');
                 box on
                 axis square
-                xlim([0 60])
-                ylim([0 60])
+%                 xlim([0 60])
+%                 ylim([0 60])
                 if numel(cc) > 1
-                    title({[T ': N = ' num2str(unit_count)], ...
-                        ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ...
-                        ['y = ' num2str(p(1)) '*x + ' num2str(p(2))]})
+                    title({[T ': N = ' num2str(unit_count)], ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ['y = ' num2str(regpars(2)) '*x + ' num2str(regpars(1))]})
                 end
                 if a == 1
-                    xlabel(['% signal change in ' cfg.condition(cond1_num).name])
-                    ylabel(['% signal change in ' cfg.condition(cond2_num).name])
-                    legend([ls_line s1 s2 s3 s4], ...
-                        {'linear fit', 'non-significant', ['sig. ' cfg.condition(cond2_num).name ' & sig. ' cfg.condition(cond1_num).name], ['sig. only ' cfg.condition(cond2_num).name], ['sig. only ' cfg.condition(cond1_num).name]})
+                    xlabel(['% signal change in ' con1])
+                    ylabel(['% signal change in ' con2])
+                    legend([s1 s2 s3 s4], ...
+                        {'non-significant', ['sig. ' con1 ' & sig. ' con2], ['sig. only ' con2], ['sig. only ' con1]})
                 end
                 ax = gca;
                 ax.FontSize = 16;
-                set(gca,'XTick',0:10:60,'XTickLabel',0:10:60)
-                set(gca,'YTick',0:10:60,'YTickLabel',0:10:60)
+%                 set(gca,'XTick',0:10:60,'XTickLabel',0:10:60)
+%                 set(gca,'YTick',0:10:60,'YTickLabel',0:10:60)
             end
-            save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_Scatter_Pc_signal_change'],output_folder,savePlot)
-        end
-        clear cc pp p
-        
-        %% modulation index - absolute percent change - histograms
-        for groupNum = 1:length(cfg.spk.compare_conditions)
-            sig = struct;
-            cond1_num = cfg.spk.compare_conditions{groupNum}(1);
-            cond2_num = cfg.spk.compare_conditions{groupNum}(2);
-            cond1_cond2_color = (cfg.condition(1).color + cfg.condition(2).color) / 2;
+            save_figure_as([con1 '_vs_' con2 '_Scatter_Pc_signal_change_signed'],output_folder,savePlot)
+            clear cc pp p
             
+            %% modulation index - absolute percent change
             figure
             set(gcf, 'Position', [2 332 1914 602])
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
-                subplot(2,3,a)
-                
-                sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins > n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins > n_sig_bins; % both conditions
-                %         sig_task_rest = Out.(T).(c_names{1}).sig_n_bins > n_sig_bins & Out.(T).(c_names{2}).sig_n_bins > n_sig_bins;
-                sig.(cfg.condition(cond1_num).name)                  = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins <= n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins > n_sig_bins;
-                %         sig_task      = Out.(T).(c_names{1}).sig_n_bins <= n_sig_bins & Out.(T).(c_names{2}).sig_n_bins > n_sig_bins;
-                sig.(cfg.condition(cond2_num).name)                  = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins > n_sig_bins & Out.(T).(cfg.condition(cond2_num).name).sig_n_bins <= n_sig_bins;
-                %         sig_rest      = Out.(T).(c_names{1}).sig_n_bins > n_sig_bins & Out.(T).(c_names{2}).sig_n_bins <= n_sig_bins;
-                within_range  = Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS < 60 & Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS < 60;
+                subplot(1,N_Areas,a)
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_PcS, Out.(T).(con2).FR_ModIndex_PcS]');
+                unit_count = sum(any(unit_count));
+                sig.(con12) = Out.(T).(con1).sig_n_bins > n_sig_bins  & Out.(T).(con2).sig_n_bins > n_sig_bins; % both conditions
+                sig.(con1)  = Out.(T).(con1).sig_n_bins > n_sig_bins  & Out.(T).(con2).sig_n_bins <= n_sig_bins;
+                sig.(con2)  = Out.(T).(con2).sig_n_bins > n_sig_bins  & Out.(T).(con1).sig_n_bins <= n_sig_bins;
+                sig.any     = (sig.(con12) | sig.(con1) | sig.(con2));
+                % within_range  = Out.(T).(con1).FR_ModIndex_PcS < 60 & Out.(T).(con2).FR_ModIndex_PcS < 60; % ???
                 hold on
-                % plot only responsive for either rest, task, or both and lsline
-                % this scatter
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), [], [0.7 0.7 0.7], 'filled')
-                ls_line = lsline(gca);
-                ls_line.Color = [0.3 0.3 0.3];
-                if sum(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])) + ...
-                        sum(sig.(cfg.condition(cond1_num).name)) + ...
-                        sum(sig.(cfg.condition(cond2_num).name)) < 2
+                
+                s1 = scatter(Out.(T).(con1).FR_ModIndex_PcS(~sig.any),    Out.(T).(con2).FR_ModIndex_PcS(~sig.any),    [], [0.7 0.7 0.7], 'filled');
+                s2 = scatter(Out.(T).(con1).FR_ModIndex_PcS(sig.(con12)),Out.(T).(con2).FR_ModIndex_PcS(sig.(con12)),[], con12col, 'filled');
+                s3 = scatter(Out.(T).(con1).FR_ModIndex_PcS(sig.(con1)), Out.(T).(con2).FR_ModIndex_PcS(sig.(con1)), [], con1col, 'filled');
+                s4 = scatter(Out.(T).(con1).FR_ModIndex_PcS(sig.(con2)), Out.(T).(con2).FR_ModIndex_PcS(sig.(con2)), [], con2col, 'filled');
+                
+                if sum(sig.(con12)) + sum(sig.(con1)) + sum(sig.(con2)) < 2
                     cc = nan(2);
                     pp = nan(2);
-                    
-                    p = nan(1,2);
-                else
-                    [cc, pp] = ...
-                        corrcoef(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        'Rows','complete');
-                    [p,~] = ... % p(1) is linear slope, p(2) is b-member
-                        polyfit(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), ...
-                        Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range),1);
+                    p  = nan(1,2);
+                else % correlation and regression for significant only (?)
+                x=Out.(T).(con1).FR_ModIndex_PcS(sig.any); % & within_range);
+                y=Out.(T).(con2).FR_ModIndex_PcS(sig.any); % & within_range);
+                regpars = rmaregress(x,y,[2,2]);
+                y_fit=[regpars(1)+min(x)*regpars(2) regpars(1)+max(x)*regpars(2)];
+                ls_line=plot([min(x) max(x)], y_fit,'LineWidth', 2, 'Color', [0.3 0.3 0.3]);
+                [cc, pp] = corrcoef(x, y, 'rows','complete');                    
                 end
                 
-                fitlm(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS((sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name]) | sig.(cfg.condition(cond1_num).name) | sig.(cfg.condition(cond2_num).name)) & within_range))
-                % plot all in grey and then by group
-                s1 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS, [], [0.7 0.7 0.7], 'filled');
-                s2 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.([cfg.condition(cond1_num).name '_' cfg.condition(cond2_num).name])), [], cond1_cond2_color, 'filled');
-                s3 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond1_num).name)), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond1_num).name)), [], cfg.condition(cond2_num).color, 'filled');
-                s4 = scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond2_num).name)), Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_PcS(sig.(cfg.condition(cond2_num).name)), [], cfg.condition(cond1_num).color, 'filled');
                 box on
+                maxlim=max([ylim,xlim]);
+                plot([0 maxlim],[0 maxlim],'k');
+                xlim([0 maxlim])
+                ylim([0 maxlim])
                 axis square
-                xlim([0 60])
-                ylim([0 60])
                 if numel(cc) > 1
-                    title({[T ': N = ' num2str(unit_count)], ...
-                        ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ...
-                        ['y = ' num2str(p(1)) '*x + ' num2str(p(2))]})
+                    title({[T ': N = ' num2str(unit_count)], ['cc = ' num2str(cc(1,2)) '; p = ' num2str(pp(1,2))], ['y = ' num2str(regpars(2)) '*x + ' num2str(regpars(1))]})
                 end
+                    xlabel(['% signal change in ' con1])
                 if a == 1
-                    xlabel(['% signal change in ' cfg.condition(cond1_num).name])
-                    ylabel(['% signal change in ' cfg.condition(cond2_num).name])
-                    legend([ls_line s1 s2 s3 s4], ...
-                        {'linear fit', 'non-significant', ['sig. ' cfg.condition(cond2_num).name ' & sig. ' cfg.condition(cond1_num).name], ['sig. only ' cfg.condition(cond2_num).name], ['sig. only ' cfg.condition(cond1_num).name]})
+                    ylabel(['% signal change in ' con2])
                 end
-                ax = gca;
-                ax.FontSize = 16;
-                set(gca,'XTick',0:10:60,'XTickLabel',0:10:60)
-                set(gca,'YTick',0:10:60,'YTickLabel',0:10:60)
+                if a == 3
+                    legend([s1 s2 s3 s4]', 'non-significant', ['sig. ' con1 ' & sig. ' con2], ['sig. only ' con1], ['sig. only ' con2])
+                end
+%                 ax = gca;
+%                 ax.FontSize = 16;
+%                 set(gca,'XTick',0:10:60,'XTickLabel',0:10:60)
+%                 set(gca,'YTick',0:10:60,'YTickLabel',0:10:60)
             end
+            save_figure_as([con1 '_vs_' con2 '_Scatter_Pc_signal_change'],output_folder,savePlot)
+            clear cc pp p
+                       
             
-            
-        end
-        
-        %% modulation index - FR
-        for groupNum = 1:length(cfg.spk.compare_conditions)
-            cond1_num = cfg.spk.compare_conditions{groupNum}(1);
-            cond2_num = cfg.spk.compare_conditions{groupNum}(2);
+            %% modulation index - FR
             figure
             set(gcf, 'Position', [2 381 1914 553])
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
-                subplot(1,3,a)
-                unit_count = ~isnan([Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_SubtrSDP_signed; Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_SubtrSDP_signed]');
+                subplot(1,N_Areas,a)
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_SubtrSDP_signed; Out.(T).(con2).FR_ModIndex_SubtrSDP_signed]');
                 unit_count = sum(any(unit_count));
-                %     [cc, pp] = corrcoef(Out.(T).Rest.FR_ModIndex_SubtrSDP_signed, Out.(T).Task.FR_ModIndex_SubtrSDP_signed,'Rows','complete');
-                scatter(Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_SubtrSDP_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_SubtrSDP_signed)
-                %     ls_line = lsline(gca);
-                %     ls_line.Color = 'b';
+                scatter(Out.(T).(con1).FR_ModIndex_SubtrSDP_signed, Out.(T).(con2).FR_ModIndex_SubtrSDP_signed)
                 box on
                 axis square
-                xlim([-7 7])
-                ylim([-7 7])
-                %     title({[T ': N = ' num2str(unit_count)], ...
-                %         ['cc = ' num2str(cc(2)) '; p = ' num2str(pp(2))]})
+                
                 title([T ': N = ' num2str(unit_count)])
                 if a == 1
-                    xlabel(['\Delta Firing Rate in ' cfg.condition(cond1_num).name ', Hz'])
-                    ylabel(['\Delta Firing Rate in ' cfg.condition(cond2_num).name ', Hz'])
+                    xlabel(['\Delta Firing Rate in ' con1 ', Hz'])
+                    ylabel(['\Delta Firing Rate in ' con2 ', Hz'])
                     legend({'', '', '', ''})
                 end
                 
             end
-            save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_Scatter_Modulation_Magnitude_signed'],output_folder,savePlot)
+            save_figure_as([con1 '_vs_' con2 '_Scatter_Modulation_Magnitude_signed'],output_folder,savePlot)
         end
         
         %% time of max
@@ -1828,45 +1749,45 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
-                unit_count = ~isnan([Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_SubtrSDP_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_SubtrSDP_signed, ...
-                    Out.(T).(cfg.condition(cond1_num).name).sig_time, Out.(T).(cfg.condition(cond2_num).name).sig_time]');
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_SubtrSDP_signed, Out.(T).(con2).FR_ModIndex_SubtrSDP_signed, ...
+                    Out.(T).(con1).sig_time, Out.(T).(con2).sig_time]');
                 valid_unit_ids = all(unit_count,1);
                 unit_count = sum(valid_unit_ids);
                 
-                valid_cond1_times      = Out.(T).(cfg.condition(cond1_num).name).sig_time(valid_unit_ids);
-                valid_cond2_times      = Out.(T).(cfg.condition(cond2_num).name).sig_time(valid_unit_ids);
+                valid_cond1_times      = Out.(T).(con1).sig_time(valid_unit_ids);
+                valid_cond2_times      = Out.(T).(con2).sig_time(valid_unit_ids);
                 
-                valid_cond1_bins       = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins(valid_unit_ids);
-                valid_cond2_bins       = Out.(T).(cfg.condition(cond2_num).name).sig_n_bins(valid_unit_ids);
+                valid_cond1_bins       = Out.(T).(con1).sig_n_bins(valid_unit_ids);
+                valid_cond2_bins       = Out.(T).(con2).sig_n_bins(valid_unit_ids);
                 
                 non_sig       = valid_cond1_bins <= n_sig_bins & valid_cond2_bins <= n_sig_bins & ...
                     ~isnan(valid_cond1_times) & ~isnan(valid_cond2_times); % I have to search for non-significant explicitly as there are some nan units
-                sig_cond2_cond1 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
+                sig_cond12 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond2      = valid_cond1_bins <= n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond1      = valid_cond1_bins > n_sig_bins & valid_cond2_bins <= n_sig_bins;
                 groups        = zeros(unit_count,1);
                 
                 groups(sig_cond1)      = 1;
                 groups(sig_cond2)      = 2;
-                groups(sig_cond2_cond1) = 3;
+                groups(sig_cond12) = 3;
                 
                 % units counts
                 non_sig_count       = sum(non_sig);
-                sig_cond2_cond1_count = sum(sig_cond2_cond1);
+                sig_cond2_cond1_count = sum(sig_cond12);
                 sig_cond2_count      = sum(sig_cond2);
                 sig_cond1_count      = sum(sig_cond1);
                 
                 % compute histograms - rest
-                [dt.(cfg.condition(cond1_num).name).task_rest_bins, centers] = hist(valid_cond1_times(sig_cond2_cond1), -250:50:250);%/sum(sig_task_rest);
-                dt.(cfg.condition(cond1_num).name).rest_bins      = hist(valid_cond1_times(sig_cond1), -250:50:250);%/sum(sig_rest);
-                dt.(cfg.condition(cond1_num).name).task_bins      = hist(valid_cond1_times(sig_cond2), -250:50:250);%/sum(sig_task);
-                dt.(cfg.condition(cond1_num).name).nonsig_bins    = hist(valid_cond1_times(non_sig), -250:50:250);%/sum(sig_task);
+                [dt.(con1).task_rest_bins, centers] = hist(valid_cond1_times(sig_cond12), -250:50:250);%/sum(sig_task_rest);
+                dt.(con1).rest_bins      = hist(valid_cond1_times(sig_cond1), -250:50:250);%/sum(sig_rest);
+                dt.(con1).task_bins      = hist(valid_cond1_times(sig_cond2), -250:50:250);%/sum(sig_task);
+                dt.(con1).nonsig_bins    = hist(valid_cond1_times(non_sig), -250:50:250);%/sum(sig_task);
                 
                 % compute histograms - task
-                [dt.(cfg.condition(cond2_num).name).task_rest_bins, centers] = hist(valid_cond2_times(sig_cond2_cond1), -250:50:250);%/sum(sig_task_rest);
-                dt.(cfg.condition(cond2_num).name).rest_bins      = hist(valid_cond2_times(sig_cond1), -250:50:250);%/sum(sig_rest);
-                dt.(cfg.condition(cond2_num).name).task_bins      = hist(valid_cond2_times(sig_cond2), -250:50:250);%/sum(sig_task);
-                dt.(cfg.condition(cond2_num).name).nonsig_bins    = hist(valid_cond2_times(non_sig), -250:50:250);%/sum(sig_task);
+                [dt.(con2).task_rest_bins, centers] = hist(valid_cond2_times(sig_cond12), -250:50:250);%/sum(sig_task_rest);
+                dt.(con2).rest_bins      = hist(valid_cond2_times(sig_cond1), -250:50:250);%/sum(sig_rest);
+                dt.(con2).task_bins      = hist(valid_cond2_times(sig_cond2), -250:50:250);%/sum(sig_task);
+                dt.(con2).nonsig_bins    = hist(valid_cond2_times(non_sig), -250:50:250);%/sum(sig_task);
                 
                 if sum(valid_cond1_times) & sum(valid_cond2_times)
                 
@@ -1882,13 +1803,13 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                         'Location', 'SouthWest', ...
                         'Direction', 'out', ...
                         'Color', colors);
-                    legend('Non Significant', [cfg.condition(cond1_num).name ' Sig.'], [cfg.condition(cond2_num).name ' Sig'], [cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'])
+                    legend('Non Significant', [con1 ' Sig.'], [con2 ' Sig'], [con2 ' & ' con1 ' Sig.'])
                     
                     title({[T ': N = ' num2str(unit_count)], ...
-                        ['Non-sig / {\color{blue}' cfg.condition(cond1_num).name ' sig} / {\color{red}' cfg.condition(cond2_num).name ' sig} / {\color{magenta}' cfg.condition(cond2_num).name '&' cfg.condition(cond1_num).name ' sig}'], ...
+                        ['Non-sig / {\color{blue}' con1 ' sig} / {\color{red}' con2 ' sig} / {\color{magenta}' con2 '&' con1 ' sig}'], ...
                         [num2str(non_sig_count) ' / {\color{blue}' num2str(sig_cond1_count) '} / {\color{red}' num2str(sig_cond2_count) '} / {\color{magenta}' num2str(sig_cond2_cond1_count) '}']})
-                    xlabel([cfg.condition(cond1_num).name ': Time of Max \DeltaFR, ms from R-peak'])
-                    ylabel([cfg.condition(cond2_num).name ': Time of Max \DeltaFR, ms from R-peak'])
+                    xlabel([con1 ': Time of Max \DeltaFR, ms from R-peak'])
+                    ylabel([con2 ': Time of Max \DeltaFR, ms from R-peak'])
                     
                     xlim([-250 250])
                     ylim([-250 250])
@@ -1896,7 +1817,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                     box on
                     
                     % plot the bottom marginal histogram
-                    bar_data = [dt.(cfg.condition(cond1_num).name).nonsig_bins; dt.(cfg.condition(cond1_num).name).rest_bins; dt.(cfg.condition(cond1_num).name).task_bins; dt.(cfg.condition(cond1_num).name).task_rest_bins]';
+                    bar_data = [dt.(con1).nonsig_bins; dt.(con1).rest_bins; dt.(con1).task_bins; dt.(con1).task_rest_bins]';
                     st_bar = bar(s(2), centers, bar_data);
                     ylabel(s(2), 'Unit Count')
                     xlim(s(2), [-250 250])
@@ -1906,7 +1827,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                     clear st_bar
                     
                     % plot the side marginal histogram
-                    bar_data = [dt.(cfg.condition(cond2_num).name).nonsig_bins; dt.(cfg.condition(cond2_num).name).rest_bins; dt.(cfg.condition(cond2_num).name).task_bins; dt.(cfg.condition(cond2_num).name).task_rest_bins]';
+                    bar_data = [dt.(con2).nonsig_bins; dt.(con2).rest_bins; dt.(con2).task_bins; dt.(con2).task_rest_bins]';
                     st_bar = barh(s(3), centers, bar_data);
                     xlabel(s(3), 'Unit Count')
                     %     xlim(s(3), [0 max(bar_data, [], 'all')])
@@ -1915,7 +1836,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                         st_bar(ii).FaceColor = colors(ii,:);
                     end
                     clear st_bar
-                    save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name T '_Scatter_Time_Max_Change'],output_folder,savePlot)
+                    save_figure_as([con1 '_vs_' con2 T '_Scatter_Time_Max_Change'],output_folder,savePlot)
             
                 end
             end
@@ -1937,31 +1858,31 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             all_valid_cond1_times              = [];
             all_valid_cond2_times              = [];
             all_unit_counts                    = [];
-            dt.(cfg.condition(cond1_num).name) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
-            dt.(cfg.condition(cond2_num).name) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
+            dt.(con1) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
+            dt.(con2) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
             
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
                 sign_consistent = ...
-                    eq(Out.(T).(cfg.condition(cond1_num).name).sig_sign, Out.(T).(cfg.condition(cond2_num).name).sig_sign);
+                    eq(Out.(T).(con1).sig_sign, Out.(T).(con2).sig_sign);
                 
-                unit_count = ~isnan([Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_SubtrSDP_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_SubtrSDP_signed, ...
-                    Out.(T).(cfg.condition(cond1_num).name).sig_time, Out.(T).(cfg.condition(cond2_num).name).sig_time]');
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_SubtrSDP_signed, Out.(T).(con2).FR_ModIndex_SubtrSDP_signed, ...
+                    Out.(T).(con1).sig_time, Out.(T).(con2).sig_time]');
                 valid_unit_ids = all(unit_count,1);
                 unit_count = sum(valid_unit_ids);
                 
                 % choose only valid units with consistent sign of response
-                valid_cond1_times      = Out.(T).(cfg.condition(cond1_num).name).sig_time(valid_unit_ids);
-                valid_cond2_times      = Out.(T).(cfg.condition(cond2_num).name).sig_time(valid_unit_ids);
+                valid_cond1_times      = Out.(T).(con1).sig_time(valid_unit_ids);
+                valid_cond2_times      = Out.(T).(con2).sig_time(valid_unit_ids);
                 
-                valid_cond1_bins       = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins(valid_unit_ids);
-                valid_cond2_bins       = Out.(T).(cfg.condition(cond2_num).name).sig_n_bins(valid_unit_ids);
+                valid_cond1_bins       = Out.(T).(con1).sig_n_bins(valid_unit_ids);
+                valid_cond2_bins       = Out.(T).(con2).sig_n_bins(valid_unit_ids);
                 
                 % count units
                 non_sig       = valid_cond1_bins <= n_sig_bins & valid_cond2_bins <= n_sig_bins & ...
                     ~isnan(valid_cond1_times) & ~isnan(valid_cond2_times); % I have to search for non-significant explicitly as there are some nan units
-                sig_cond2_cond1 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
+                sig_cond12 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond2      = valid_cond1_bins <= n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond1      = valid_cond1_bins > n_sig_bins & valid_cond2_bins <= n_sig_bins;
                 
@@ -1969,11 +1890,11 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 groups_tmp                  = zeros(unit_count,1); % 0 - nonsig
                 groups_tmp(sig_cond1)       = 1;                   % 1 - sig cond1
                 groups_tmp(sig_cond2)       = 2;                   % 2 - sig cond2
-                groups_tmp(sig_cond2_cond1) = 3;                   % 3 - sig cond2 cond1
+                groups_tmp(sig_cond12) = 3;                   % 3 - sig cond2 cond1
                 
                 % units counts
                 non_sig_count         = sum(non_sig);
-                sig_cond2_cond1_count = sum(sig_cond2_cond1);
+                sig_cond2_cond1_count = sum(sig_cond12);
                 sig_cond2_count       = sum(sig_cond2);
                 sig_cond1_count       = sum(sig_cond1);
                 
@@ -1987,13 +1908,13 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 all_valid_cond2_times = [all_valid_cond2_times; valid_cond2_times];
                 all_unit_counts      = [all_unit_counts; unit_count];
                 
-                if sum(sig_cond2_cond1) < 2
+                if sum(sig_cond12) < 2
                     cc(a) = NaN;
                     pp(a) = NaN;
                     continue
                 end
                 
-                [cc_tmp, pp_tmp] = corrcoef(valid_cond1_times(sig_cond2_cond1), valid_cond2_times(sig_cond2_cond1));
+                [cc_tmp, pp_tmp] = corrcoef(valid_cond1_times(sig_cond12), valid_cond2_times(sig_cond12));
                 cc(a) = cc_tmp(2,1);
                 pp(a) = pp_tmp(2,1);
                 clear cc_tmp pp_tmp
@@ -2010,12 +1931,12 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 'Color', [repmat(colors(1,:), 4, 1); repmat(colors(2,:), 4, 1); repmat(colors(3,:), 4, 1)]);
             hold on
             
-            legend('Non Significant', [cfg.condition(cond1_num).name ' Sig.'], [cfg.condition(cond2_num).name ' Sig'], [cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'])
-%             legend('VPL: Non Significant', ['VPL: ' cfg.condition(cond1_num).name ' Sig.'], ['VPL: ' cfg.condition(cond2_num).name ' Sig'], ['VPL: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
-%                 'dPul: Non Significant', ['dPul: ' cfg.condition(cond1_num).name ' Sig.'], ['dPul: ' cfg.condition(cond2_num).name ' Sig'], ['dPul: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
-%                 'MD: Non Significant', ['MD: ' cfg.condition(cond1_num).name ' Sig.'], ['MD: ' cfg.condition(cond2_num).name ' Sig'], ['MD: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'])
-            xlabel([cfg.condition(cond1_num).name ': Time of Max \DeltaFR, ms from R-peak'])
-            ylabel([cfg.condition(cond2_num).name ': Time of Max \DeltaFR, ms from R-peak'])
+            legend('Non Significant', [con1 ' Sig.'], [con2 ' Sig'], [con2 ' & ' con1 ' Sig.'])
+%             legend('VPL: Non Significant', ['VPL: ' con1 ' Sig.'], ['VPL: ' con2 ' Sig'], ['VPL: ' con2 ' & ' con1 ' Sig.'], ...
+%                 'dPul: Non Significant', ['dPul: ' con1 ' Sig.'], ['dPul: ' con2 ' Sig'], ['dPul: ' con2 ' & ' con1 ' Sig.'], ...
+%                 'MD: Non Significant', ['MD: ' con1 ' Sig.'], ['MD: ' con2 ' Sig'], ['MD: ' con2 ' & ' con1 ' Sig.'])
+            xlabel([con1 ': Time of Max \DeltaFR, ms from R-peak'])
+            ylabel([con2 ': Time of Max \DeltaFR, ms from R-peak'])
             title({'Only Units with Consistent Modulation Sign', ...
                 ...
                 ['\color[rgb]{1.0000 0.5300 0}VPL: N = ' num2str(all_unit_counts(1)) ...
@@ -2057,7 +1978,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             for ii = 1:3
                 st_bar2(ii).FaceColor = colors(ii,:);
             end
-            save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_All_Areas_Scatter_Time_Max_Change'],output_folder,savePlot)
+            save_figure_as([con1 '_vs_' con2 '_All_Areas_Scatter_Time_Max_Change'],output_folder,savePlot)
         end
         
         %% time of max - only for consistent sign of responses
@@ -2076,31 +1997,31 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             all_valid_cond1_times              = [];
             all_valid_cond2_times              = [];
             all_unit_counts                    = [];
-            dt.(cfg.condition(cond1_num).name) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
-            dt.(cfg.condition(cond2_num).name) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
+            dt.(con1) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
+            dt.(con2) = struct('cond2_cond1_bins', [], 'cond1_bins', [], 'cond2_bins', [], 'nonsig_bins', []);
             
             for a = 1: N_Areas
                 T = Ana_TargetBrainArea{a};
                 
                 sign_consistent = ...
-                    eq(Out.(T).(cfg.condition(cond1_num).name).sig_sign, Out.(T).(cfg.condition(cond2_num).name).sig_sign);
+                    eq(Out.(T).(con1).sig_sign, Out.(T).(con2).sig_sign);
                 
-                unit_count = ~isnan([Out.(T).(cfg.condition(cond1_num).name).FR_ModIndex_SubtrSDP_signed, Out.(T).(cfg.condition(cond2_num).name).FR_ModIndex_SubtrSDP_signed, ...
-                    Out.(T).(cfg.condition(cond1_num).name).sig_time, Out.(T).(cfg.condition(cond2_num).name).sig_time]') & sign_consistent';
+                unit_count = ~isnan([Out.(T).(con1).FR_ModIndex_SubtrSDP_signed, Out.(T).(con2).FR_ModIndex_SubtrSDP_signed, ...
+                    Out.(T).(con1).sig_time, Out.(T).(con2).sig_time]') & sign_consistent';
                 valid_unit_ids = all(unit_count,1);
                 unit_count = sum(valid_unit_ids);
                 
                 % choose only valid units with consistent sign of response
-                valid_cond1_times      = Out.(T).(cfg.condition(cond1_num).name).sig_time(valid_unit_ids & sign_consistent');
-                valid_cond2_times      = Out.(T).(cfg.condition(cond2_num).name).sig_time(valid_unit_ids & sign_consistent');
+                valid_cond1_times      = Out.(T).(con1).sig_time(valid_unit_ids & sign_consistent');
+                valid_cond2_times      = Out.(T).(con2).sig_time(valid_unit_ids & sign_consistent');
                 
-                valid_cond1_bins       = Out.(T).(cfg.condition(cond1_num).name).sig_n_bins(valid_unit_ids & sign_consistent');
-                valid_cond2_bins       = Out.(T).(cfg.condition(cond2_num).name).sig_n_bins(valid_unit_ids & sign_consistent');
+                valid_cond1_bins       = Out.(T).(con1).sig_n_bins(valid_unit_ids & sign_consistent');
+                valid_cond2_bins       = Out.(T).(con2).sig_n_bins(valid_unit_ids & sign_consistent');
                 
                 % count units
                 non_sig       = valid_cond1_bins <= n_sig_bins & valid_cond2_bins <= n_sig_bins & ...
                     ~isnan(valid_cond1_times) & ~isnan(valid_cond2_times); % I have to search for non-significant explicitly as there are some nan units
-                sig_cond2_cond1 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
+                sig_cond12 = valid_cond1_bins > n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond2      = valid_cond1_bins <= n_sig_bins & valid_cond2_bins > n_sig_bins;
                 sig_cond1      = valid_cond1_bins > n_sig_bins & valid_cond2_bins <= n_sig_bins;
                 
@@ -2108,11 +2029,11 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 groups_tmp                  = zeros(unit_count,1); % 0 - nonsig
                 groups_tmp(sig_cond1)       = 1;                   % 1 - sig cond1
                 groups_tmp(sig_cond2)       = 2;                   % 2 - sig cond2
-                groups_tmp(sig_cond2_cond1) = 3;                   % 3 - sig cond2 cond1
+                groups_tmp(sig_cond12) = 3;                   % 3 - sig cond2 cond1
                 
                 % units counts
                 non_sig_count         = sum(non_sig);
-                sig_cond2_cond1_count = sum(sig_cond2_cond1);
+                sig_cond2_cond1_count = sum(sig_cond12);
                 sig_cond2_count       = sum(sig_cond2);
                 sig_cond1_count       = sum(sig_cond1);
                 
@@ -2126,13 +2047,13 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 all_valid_cond2_times = [all_valid_cond2_times; valid_cond2_times];
                 all_unit_counts      = [all_unit_counts; unit_count];
                 
-                if sum(sig_cond2_cond1) < 2
+                if sum(sig_cond12) < 2
                     cc(a) = NaN;
                     pp(a) = NaN;
                     continue
                 end
                 
-                [cc_tmp, pp_tmp] = corrcoef(valid_cond1_times(sig_cond2_cond1), valid_cond2_times(sig_cond2_cond1));
+                [cc_tmp, pp_tmp] = corrcoef(valid_cond1_times(sig_cond12), valid_cond2_times(sig_cond12));
                 cc(a) = cc_tmp(2,1);
                 pp(a) = pp_tmp(2,1);
                 clear cc_tmp pp_tmp
@@ -2149,12 +2070,12 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
                 'Color', [repmat(colors(1,:), 4, 1); repmat(colors(2,:), 4, 1); repmat(colors(3,:), 4, 1)]);
             hold on
             
-            legend('Non Significant', [cfg.condition(cond1_num).name ' Sig.'], [cfg.condition(cond2_num).name ' Sig'], [cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'])
-%             legend('VPL: Non Significant', ['VPL: ' cfg.condition(cond1_num).name ' Sig.'], ['VPL: ' cfg.condition(cond2_num).name ' Sig'], ['VPL: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
-%                 'dPul: Non Significant', ['dPul: ' cfg.condition(cond1_num).name ' Sig.'], ['dPul: ' cfg.condition(cond2_num).name ' Sig'], ['dPul: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'], ...
-%                 'MD: Non Significant', ['MD: ' cfg.condition(cond1_num).name ' Sig.'], ['MD: ' cfg.condition(cond2_num).name ' Sig'], ['MD: ' cfg.condition(cond2_num).name ' & ' cfg.condition(cond1_num).name ' Sig.'])
-            xlabel([cfg.condition(cond1_num).name ': Time of Max \DeltaFR, ms from R-peak'])
-            ylabel([cfg.condition(cond2_num).name ': Time of Max \DeltaFR, ms from R-peak'])
+            legend('Non Significant', [con1 ' Sig.'], [con2 ' Sig'], [con2 ' & ' con1 ' Sig.'])
+%             legend('VPL: Non Significant', ['VPL: ' con1 ' Sig.'], ['VPL: ' con2 ' Sig'], ['VPL: ' con2 ' & ' con1 ' Sig.'], ...
+%                 'dPul: Non Significant', ['dPul: ' con1 ' Sig.'], ['dPul: ' con2 ' Sig'], ['dPul: ' con2 ' & ' con1 ' Sig.'], ...
+%                 'MD: Non Significant', ['MD: ' con1 ' Sig.'], ['MD: ' con2 ' Sig'], ['MD: ' con2 ' & ' con1 ' Sig.'])
+            xlabel([con1 ': Time of Max \DeltaFR, ms from R-peak'])
+            ylabel([con2 ': Time of Max \DeltaFR, ms from R-peak'])
             title({'Only Units with Consistent Modulation Sign', ...
                 ...
                 ['\color[rgb]{1.0000 0.5300 0}VPL: N = ' num2str(all_unit_counts(1)) ...
@@ -2196,7 +2117,7 @@ for targetGrNum = 1:length(cfg.targets_spike_data)
             for ii = 1:3
                 st_bar2(ii).FaceColor = colors(ii,:);
             end
-            save_figure_as([cfg.condition(cond1_num).name '_vs_' cfg.condition(cond2_num).name '_All_Areas_Scatter_Time_Max_Change_SignConsistent'],output_folder,savePlot)
+            save_figure_as([con1 '_vs_' con2 '_All_Areas_Scatter_Time_Max_Change_SignConsistent'],output_folder,savePlot)
         end
         
         %% histogram of modulation indices - % signal change
@@ -2318,14 +2239,25 @@ if ~isempty(x) && ~isempty(y)
     
     if onlysignificant && sum(sig)>2
         [coef, pval] = corr(x(sig),y(sig), 'rows','complete') ;
-        [p,S] = polyfit(x(~isnan(y) & sig),y(~isnan(y)  & sig),1); % fit all?
-        [y_fit,delta] = polyval(p,x(~isnan(y) & sig),S);
-        plot(x(~isnan(y)& sig), y_fit,'LineWidth', 2, 'Color', ccol);
+        %[p,S] = polyfit(x(~isnan(y) & sig),y(~isnan(y)  & sig),1); % fit all?
+        s=[2,2];
+        [b_rma,bint,l,ang,r] = rmaregress(x(~isnan(y) & sig),y(~isnan(y)  & sig),s);
+
+        y_fit=[b_rma(1)+min(x)*b_rma(2) b_rma(1)+max(x)*b_rma(2)];
+        
+        plot([min(x) max(x)], y_fit,'LineWidth', 2, 'Color', ccol);
     elseif ~onlysignificant && numel(x)>2
         [coef, pval] = corr(x,y, 'rows','complete') ;
-        [p,S] = polyfit(x(~isnan(y)),y(~isnan(y)),1); % fit all?
-        [y_fit,delta] = polyval(p,x(~isnan(y)),S);
-        plot(x(~isnan(y)), y_fit,'LineWidth', 2, 'Color', ccol);
+        %[p,S] = polyfit(x(~isnan(y)),y(~isnan(y)),1); % fit all?
+        %[y_fit,delta] = polyval(p,x(~isnan(y)),S);
+        
+        
+        s=[2,2];
+        [b_rma,bint,l,ang,r] = rmaregress(x(~isnan(y) & sig),y(~isnan(y)  & sig),s);
+
+        y_fit=[b_rma(1)+min(x)*b_rma(2) b_rma(1)+max(x)*b_rma(2)];
+        
+        plot([min(x) max(x)], y_fit,'LineWidth', 2, 'Color', ccol);
     else
         coef=NaN;pval=NaN;
     end
