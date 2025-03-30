@@ -6,42 +6,43 @@ temp_allSites = struct;
 nSites = length(sitefiles);
 for s = 1: nSites
     load([sitesdir,filesep,sitefiles(s).name],'sites');
-    time2plot = 1:length(sites.LFP);
-    concat_raw = sites.LFP;
-%     [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_and_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
-    [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_or_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
-    zscore_raw = zscore(sites.LFP);
-    zscore_filtered = zscore(concat_raw);
-    diff_raw  = [nan diff(sites.LFP)];
-    diff_filtered = [nan diff(concat_raw)];
-
-    h = figure;
-    sgtitle(sitefiles(s).name(1:end-4), 'Interpreter','none');
-    subplot(2,1,1)
-    plot(time2plot,zscore_raw, 'k'); hold on,
-    plot(time2plot(logical(noisy_smples_lfp_diff)),zscore_raw(logical(noisy_smples_lfp_diff)), 'Marker','*','MarkerEdgeColor','b','LineStyle','none');
-    plot(time2plot(logical(noisy_smples_lfp_zscore)),zscore_raw(logical(noisy_smples_lfp_zscore)), 'Marker','o','MarkerEdgeColor','m','LineStyle','none');
-    yline(6,'b--'); yline(-6,'b--');
-    yline(4,'c--'); yline(-4,'c--');
-    yline(10,'g--'); yline(-10,'g--');
-    plot(time2plot,zscore_filtered, 'r');
-    title('zscored Raw LFP Pre&Pst noie Rejection','Interpreter','none');
-    hold off,
-    
-    subplot(2,1,2)
-    plot(time2plot,diff_raw, 'k'); hold on,
-    plot(time2plot,diff_filtered, 'r');
-    title('derivative Raw LFP Pre&Pst noie Rejection','Interpreter','none');
-    hold off,
-    h.WindowState = 'maximized';
+%     time2plot = 1:length(sites.LFP);
+%     concat_raw = sites.LFP;
+% %     [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_and_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
+%     [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_or_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
+%     zscore_raw = zscore(sites.LFP);
+%     zscore_filtered = zscore(concat_raw);
+%     diff_raw  = [nan diff(sites.LFP)];
+%     diff_filtered = [nan diff(concat_raw)];
+% 
+%     h = figure;
+%     sgtitle(sitefiles(s).name(1:end-4), 'Interpreter','none');
+%     subplot(2,1,1)
+%     plot(time2plot,zscore_raw, 'k'); hold on,
+%     plot(time2plot(logical(noisy_smples_lfp_diff)),zscore_raw(logical(noisy_smples_lfp_diff)), 'Marker','*','MarkerEdgeColor','b','LineStyle','none');
+%     plot(time2plot(logical(noisy_smples_lfp_zscore)),zscore_raw(logical(noisy_smples_lfp_zscore)), 'Marker','o','MarkerEdgeColor','m','LineStyle','none');
+%     yline(6,'b--'); yline(-6,'b--');
+%     yline(4,'c--'); yline(-4,'c--');
+%     yline(10,'g--'); yline(-10,'g--');
+%     plot(time2plot,zscore_filtered, 'r');
+%     title('zscored Raw LFP Pre&Pst noie Rejection','Interpreter','none');
+%     hold off,
+%     
+%     subplot(2,1,2)
+%     plot(time2plot,diff_raw, 'k'); hold on,
+%     plot(time2plot,diff_filtered, 'r');
+%     title('derivative Raw LFP Pre&Pst noie Rejection','Interpreter','none');
+%     hold off,
+%     h.WindowState = 'maximized';
     
     temp_allSites(s).site = sites;
-    temp_allSites(s).site.LFP = concat_raw;
+%     temp_allSites(s).site.LFP = concat_raw;
+    temp_allSites(s).site.LFP = sites.LFP;
     temp_allSites(s).name = sitefiles(s).name;
     temp_allSites(s).inconsistant_ch = 0;
     temp_allSites(s).noisy_site = 0;
-    temp_allSites(s).noisy_smples_lfp_diff   = noisy_smples_lfp_diff;  % idx of bins with noise above deriv_thr = 4;
-    temp_allSites(s).noisy_smples_lfp_zscore = noisy_smples_lfp_zscore;% idx of bins with noise above zscore_thr = 6;
+%     temp_allSites(s).noisy_smples_lfp_diff   = noisy_smples_lfp_diff;  % idx of bins with noise above deriv_thr = 4;
+%     temp_allSites(s).noisy_smples_lfp_zscore = noisy_smples_lfp_zscore;% idx of bins with noise above zscore_thr = 6;
 end
 
 targets = {'VPL_R', 'VPL_L', 'dPul_R', 'dPul_L','MD_L','MD_R'};

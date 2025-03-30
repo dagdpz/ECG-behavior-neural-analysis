@@ -10,6 +10,7 @@ targets = cfg.targets;%unique({sites.target}); %%cfg.monkey
 
 if reprocess
     data_path = cfg.sites_lfp_fldr;
+%     data_path = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_test_generalTrig_Reref_shamim\sample session check';
     cd(data_path)
     % read the files
     all_lfp_data = dir('*.mat');
@@ -50,7 +51,9 @@ if reprocess
                 nTriggers = event.real.ntriggers;
                 time      = event.time;
                 tfr_time  = event.tfr_time;
-                lfp       = squeeze(event.normalized.lfp.mean)';
+%                 lfp       = squeeze(event.real.lfp.mean)';
+                lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
+%                 lfp       = squeeze(event.normalized.lfp.mean)';
                 itpc      = squeeze(event.real.itpc.mean)-squeeze(event.shuffled.itpc.mean);
                 power     = squeeze(event.normalized.pow.mean);
                 itpcbp    = squeeze(event.real.itpcbp.mean)-squeeze(event.shuffled.itpcbp.mean);
@@ -404,7 +407,7 @@ clc
 
 %%
 % ploting the avgogram of the timing of the Max ITPC/POW:
-bins=cfg.analyse_states{1,3}:cfg.lfp.timestep*10:cfg.analyse_states{1,4};
+bins=cfg.analyse_states{1,4}:cfg.lfp.timestep*10:cfg.analyse_states{1,5};
 for tr = 1: length(targets)
     if grand_avg(tr).nSites == 0
         continue;

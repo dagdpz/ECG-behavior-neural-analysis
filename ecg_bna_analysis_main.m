@@ -132,14 +132,20 @@ for v = 1:length(versions)
                 ts_original=1/sr;
                 
                 %% load all sites
-                
-% % % %                 allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original);
-% % % %                 removed_sites = find(~ismember({sitefiles.name},{allSitesData.name}));
-% % % %                 if ~isempty(removed_sites)
-% % % %                     removed_sites_name = sitefiles(removed_sites).name;
-% % % %                 else
-% % % %                     fprintf("\n\n*****  NO site was removed ! *****\n\n");
-% % % %                 end
+                if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
+                    allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original);
+                    removed_sites = find(~ismember({sitefiles.name},{allSitesData.name}));
+                    if ~isempty(removed_sites) 
+                        removed_sites_name = sitefiles(removed_sites).name;
+                        fprintf("\n\n removed_sites: %s\n",removed_sites_name);
+                    else
+                        fprintf("\n\n*****  NO site was removed ! *****\n\n");
+                    end
+                    
+                    
+                    sitefiles = allSitesData;
+                    clear allSitesData;
+                end
 % % % %                 ecg_bna_rawLFP_butterfly_plots(cfg,allSitesData,sr)
                 %% exclude outliars (too many samples with too high/low voltage ? or other criteria)
                    %% threshold = 1V (fixed threshold), more than 1% of bins above that threshold
@@ -151,11 +157,12 @@ for v = 1:length(versions)
                 %% instead of looping through sitefiles and load each of them again
                 
                 for s = 1:length(sitefiles) %% loop only through valid sites
-                    load([sitesdir filesep sitefiles(s).name], 'sites');
-                    %% adress correct site
-                    %% site = ...
-%                     sites = allSitesData(s).site;
-                    site_LFP= ecg_bna_process_LFP(sites, cfg, ts_original);
+                     if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
+                         sites = sitefiles(s).site;
+                     else
+                         load([sitesdir filesep sitefiles(s).name], 'sites');
+                     end
+                    site_LFP = ecg_bna_process_LFP(sites, cfg, ts_original);
                     n_LFP_samples_per_block=site_LFP.tfs.n_samples_per_block;
                     
                     site_triggers     = ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,site_LFP.tfs.sr);                     
@@ -189,8 +196,8 @@ for v = 1:length(versions)
             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             
-            grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
-            grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
+%             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
+%             grand_avg = ecg_bna_compute_grand_avg(cfg,'wo_units');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
         end
         

@@ -164,7 +164,12 @@ for cn = 1:length(cfg.condition)
         
     end
 end
+triggered_site_data = trig;
 
+[ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pow', 'lfp'},cfg.analyse_states(:,1), cfg );
+
+triggered_site_data = out_triggered_site_data;
+clear out_triggered_site_data
 % plots - if we don't shuffle, there will be no shuffled!
 methods= {'real','shuffled','normalized'};
 for mt = 1: numel(methods)
@@ -172,7 +177,21 @@ for mt = 1: numel(methods)
     % Note: ===> last input could be 'real', 'shuffled', or 'normalized'
 end
 
-triggered_site_data = trig;
+FN ={'pow','powbp','lfp','pha','itpc','itpcbp'};
+if cfg.lfp.removeComplete==1
+    for cn = 1:length(cfg.condition)
+        for e = 1:size(cfg.analyse_states, 1)
+            for fin = 1:length(FN)
+                Fin = FN{fin};
+                triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), "complete");
+                triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), "complete");
+            end
+        end
+    end
+end
+
+
 save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data');
+% save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data','-v7.3');
 close all;
 end

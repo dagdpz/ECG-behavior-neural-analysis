@@ -99,8 +99,13 @@ tfs=[site.tfs];
         triggered.(fn).mean        = zeros(1,S2,S3);
         triggered.(fn).std         = zeros(1,S2,S3);
         triggered.(fn).conf95      = zeros(2,S2,S3);
+        if n_shuffles==1
+            S1 = size(trigs,2);
+            triggered.(fn).complete        = zeros(S1,S2,S3);
+        end
     end
-
+    
+    
 %% NOW: loop through window samples to compute shuffled parameters all at once!
 
 for s = 1: numel(w_samples)
@@ -111,22 +116,26 @@ for s = 1: numel(w_samples)
     for f=1:numel(FN_in)
         fn=FN{f};
         fni=FN_in{f};
-        AA=      reshape(tfs.(fni)(:,t),size(tfs.(fni),1),size(t,1),size(t,2));
+        AA=single(reshape(tfs.(fni)(:,t),size(tfs.(fni),1),size(t,1),size(t,2)));
         if ismember(fn,{'itpc','itpcbp'})
-            BB=abs(mean(AA,3));
+            BB=single(abs(mean(AA,3)));
         elseif ismember(fn,{'pha'})
-            BB=angle(mean(AA,3));
+            BB=single(angle(mean(AA,3)));
         else
-            BB=mean(AA,3);
+            BB=single(mean(AA,3));
         end
         
-        triggered.(fn).mean(1,:,s)        = mean(BB,2);
-        triggered.(fn).std(1,:,s)         = std(BB,0,2);
+        triggered.(fn).mean(1,:,s)        = single(mean(BB,2));
+        triggered.(fn).std(1,:,s)         = single(std(BB,0,2));
         
         %% check dimensions
-        triggered.(fn).conf95(1,:,s)      = prctile(BB,97.5,2);
-        triggered.(fn).conf95(2,:,s)      = prctile(BB,2.5,2);
-        %triggered.(fn).complete(:,:,s)    = BB';
+        triggered.(fn).conf95(1,:,s)      = single(prctile(BB,97.5,2));
+        triggered.(fn).conf95(2,:,s)      = single(prctile(BB,2.5,2));
+        if n_shuffles==1
+            triggered.(fn).complete(:,:,s)    = squeeze(AA)';
+        else
+            triggered.(fn).complete(:,:,s)    = BB';
+        end
         complete.(fn)(:,:,s)    = BB';
     end
 end
