@@ -1,11 +1,11 @@
 function [SD,BINS]=ecg_bna_do_statistics(Real,Shuffled,BINS)
 definition='max';
-
+%Real=Real';
 SD_mean=mean(Real);
 
 SDPmean=nanmean(Shuffled,1);
-SDPconf(1,:)=abs(prctile(Shuffled,2.5,1)-SDPmean);
-SDPconf(2,:)=abs(prctile(Shuffled,97.5,1)-SDPmean);
+SDPconf(1,:)=prctile(Shuffled,2.5,1);
+SDPconf(2,:)=prctile(Shuffled,97.5,1);
 
 SD.SD_mean=SD_mean;
 SD.SD_STD=std(Real);
@@ -14,8 +14,8 @@ SD.SDPmean=SDPmean;
 SD.SDPconf=SDPconf;
 
 %% signficance
-sig_above=SD_mean > SDPmean+SDPconf(2,:);
-sig_below=SD_mean < SDPmean-SDPconf(1,:);
+sig_above=SD_mean > SDPconf(2,:);
+sig_below=SD_mean < SDPconf(1,:);
 
 % indices of significance cluster starts and ends
 sig_idx_above_start=find(diff([0 sig_above 0])>0);
@@ -40,8 +40,10 @@ if strcmp(definition,'max')
     
     % find maximum deviation from surrogates
     [~,m_abs_max] = max(abs(SD_mean - SDPmean));
-    [max_pos_diff,max_idx]=max(SD_mean - SDPmean);
-    [max_neg_diff,min_idx]=min(SD_mean - SDPmean);
+%     [max_pos_diff,max_idx]=max(SD_mean - SDPmean);
+%     [max_neg_diff,min_idx]=min(SD_mean - SDPmean);
+    [max_pos_diff,max_idx]=max(SD_mean - SDPconf(2,:));
+    [max_neg_diff,min_idx]=max(SDPconf(1,:)-SD_mean);
     
     % find cluster number which max deviation from jittered mean belongs to
     m_imax=find(sig_idx_above_start<=max_idx & sig_idx_above_end>=max_idx);
@@ -59,7 +61,7 @@ if strcmp(definition,'max')
         if sum([sig_idx_above_end, sig_idx_below_end] == 81)
             % take this into account when computing cluster duration
             
-            if abs(max_pos_diff)>abs(max_neg_diff)
+            if max_pos_diff>max_neg_diff
                 m_i=m_imax;
                 sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1, sig_idx_above_start(end):sig_idx_above_end(end)-1];
             else
@@ -69,7 +71,7 @@ if strcmp(definition,'max')
             
         else
             
-            if abs(max_pos_diff)>abs(max_neg_diff)
+            if max_pos_diff>max_neg_diff
                 m_i=m_imax;
                 sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
             else
@@ -82,7 +84,7 @@ if strcmp(definition,'max')
         
         if sum([sig_idx_above_start sig_idx_below_start] == 1)
         
-            if abs(round(max_pos_diff,2))>abs(round(max_neg_diff,2)) % we round here and if they're equal, it will go into the 'else' statement
+            if max_pos_diff>max_neg_diff
                 m_i=m_imax;
                 sig_start_end=[sig_idx_above_start(1):sig_idx_above_end(1), sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
             else
@@ -92,7 +94,7 @@ if strcmp(definition,'max')
             
         else
             
-            if abs(max_pos_diff)>abs(max_neg_diff)
+            if max_pos_diff>max_neg_diff
                 m_i=m_imax;
                 sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
             else
@@ -104,7 +106,7 @@ if strcmp(definition,'max')
         
     else
         
-        if abs(max_pos_diff)>abs(max_neg_diff)
+        if max_pos_diff>max_neg_diff
             m_i=m_imax;
             sig_start_end=[sig_idx_above_start(m_i):sig_idx_above_end(m_i)-1];
         else
