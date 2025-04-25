@@ -1,5 +1,8 @@
 function allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original,sr,Triggers,blocks,blockstart)
-ts=round(cfg.lfp.timestep/ts_original);
+cfg.ica_sampling_rate = 256;  
+ts=round(sr/cfg.ica_sampling_rate); %% cfg.lfp.timestep is binning used in process_lfp, at the moment it's 10 ms
+
+%% but lfp 
 session = strsplit(sitefiles(1).name,'_');
 session = session{3};
 
@@ -55,14 +58,17 @@ if reprocess==1
                 %samples_past_resampled=be;
                 %%
                 % Here I generate the number of sample per blocks to feed for Triggers:
-                sampling_table.tfs(s).n_samples_per_block(:,b)=[B,be-bs+1];
+                sampling_table.tfs(s).n_ica_samples_per_block(:,b)=[B,be-bs+1];
+                sampling_table.tfs(s).n_samples_per_block(:,b)=[B,be_original-bs_original+1];
                 
                 dummy = dummy+1;
             end
         end
         % Here I generate the triggers to check the ICA epochs later on:
-        n_LFP_samples_per_block = sampling_table.tfs(s).n_samples_per_block;
+        n_LFP_samples_per_block = sampling_table.tfs(s).n_samples_per_block; 
         sampling_table.site_triggers(s)= ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,sr);
+        n_LFP_samples_per_block = sampling_table.tfs(s).n_ica_samples_per_block; 
+        sampling_table.site_triggers_ica(s)= ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,cfg.ica_sampling_rate);
     end
     
     
@@ -113,7 +119,7 @@ if reprocess==1
     % storing the all sites sampling_table and allSitesData
     smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
         cfg.session_info(1).Monkey(1:3),'_', session , '_sampleTble_allSitesdata']);
-    save(smplTblfilename,"sampling_table","allSitesData",'-v7.3');
+    save(smplTblfilename,'sampling_table','allSitesData','-v7.3');
     
 else
     smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
@@ -149,7 +155,7 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         data_orig = data;
         
         cfg_ica              = [];
-        cfg_ica.resamplefs   = 256;
+        cfg_ica.resamplefs   = cfg.ica_sampling_rate;
         cfg_ica.detrend      = 'no';
         data = ft_resampledata(cfg_ica, data_orig);
         
@@ -164,7 +170,7 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         % storing the sites ICA weights
         ICAfilename = fullfile([cfg.analyse_lfp_folder,filesep,'Per_Site_ICAweights',filesep,...
             cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(data_to_plot.label)),'cmp']);
-        save(ICAfilename,"data_to_plot","hemisphere_site_names",'-v7.3');
+        save(ICAfilename,'data_to_plot','hemisphere_site_names','-v7.3');
         
         continue;
         cfg_ica                 = [];
@@ -273,7 +279,7 @@ if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
             %             if (strcmp(cfg.session_info.Monkey  ,'Bacchus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<11)&& length(unique(chan_with_BlockB_idx))>=3)...
             %                     || (strcmp(cfg.session_info.Monkey  ,'Magnus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<33) && length(unique(chan_with_BlockB_idx))>=3)
             if (length(chan_with_BlockB_idx) > length(unique(chan_with_BlockB_idx)))
-                warning("This block has 2 sites from the same channel : Block = %d", B );
+                warning('This block has 2 sites from the same channel : Block = %d', B );
             elseif length(unique(chan_with_BlockB_idx))>=3
                 valid_blocks = [valid_blocks,B];
                 block_lfp_concat = [];
