@@ -137,9 +137,9 @@ for v = 1:length(versions)
                     removed_sites = find(~ismember({sitefiles.name},{allSitesData.name}));
                     if ~isempty(removed_sites) 
                         removed_sites_name = sitefiles(removed_sites).name;
-                        fprintf("\n\n removed_sites: %s\n",removed_sites_name);
+                        fprintf('\n\n removed_sites: %s\n',removed_sites_name);
                     else
-                        fprintf("\n\n*****  NO site was removed ! *****\n\n");
+                        fprintf('\n\n*****  NO site was removed ! *****\n\n');
                     end
                     
                     

@@ -185,8 +185,8 @@ if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
             if ~isempty(triggered_site_data.condition(cn).event)
                 for fin = 1:length(FN)
                     Fin = FN{fin};
-                    triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), "complete");
-                    triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), "complete");
+                    triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), 'complete');
+                    triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), 'complete');
                 end
             else
                 continue;
