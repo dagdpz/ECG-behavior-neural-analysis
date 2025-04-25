@@ -1,267 +1,307 @@
-function allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original)
+function allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original,sr,Triggers,blocks,blockstart)
 ts=round(cfg.lfp.timestep/ts_original);
-allSitesData = [];
+session = strsplit(sitefiles(1).name,'_');
+session = session{3};
 
-temp_allSites = struct;
-nSites = length(sitefiles);
-for s = 1: nSites
-    load([sitesdir,filesep,sitefiles(s).name],'sites');
-%     time2plot = 1:length(sites.LFP);
-%     concat_raw = sites.LFP;
-% %     [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_and_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
-%     [concat_raw, noisy_smples_lfp_diff , noisy_smples_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw,'zscr_or_deriv'); %'zscr_or_deriv' , 'zscr_and_deriv' , 'zscr',  'deriv'
-%     zscore_raw = zscore(sites.LFP);
-%     zscore_filtered = zscore(concat_raw);
-%     diff_raw  = [nan diff(sites.LFP)];
-%     diff_filtered = [nan diff(concat_raw)];
-% 
-%     h = figure;
-%     sgtitle(sitefiles(s).name(1:end-4), 'Interpreter','none');
-%     subplot(2,1,1)
-%     plot(time2plot,zscore_raw, 'k'); hold on,
-%     plot(time2plot(logical(noisy_smples_lfp_diff)),zscore_raw(logical(noisy_smples_lfp_diff)), 'Marker','*','MarkerEdgeColor','b','LineStyle','none');
-%     plot(time2plot(logical(noisy_smples_lfp_zscore)),zscore_raw(logical(noisy_smples_lfp_zscore)), 'Marker','o','MarkerEdgeColor','m','LineStyle','none');
-%     yline(6,'b--'); yline(-6,'b--');
-%     yline(4,'c--'); yline(-4,'c--');
-%     yline(10,'g--'); yline(-10,'g--');
-%     plot(time2plot,zscore_filtered, 'r');
-%     title('zscored Raw LFP Pre&Pst noie Rejection','Interpreter','none');
-%     hold off,
-%     
-%     subplot(2,1,2)
-%     plot(time2plot,diff_raw, 'k'); hold on,
-%     plot(time2plot,diff_filtered, 'r');
-%     title('derivative Raw LFP Pre&Pst noie Rejection','Interpreter','none');
-%     hold off,
-%     h.WindowState = 'maximized';
+reprocess = 0; % to generate the "allSitesData" and removing the noisy channels,
+% and calculating the ICA weights. Otherweise directly load the
+% "sampling_table" and "allSitesData" for each session and go further.
+
+if reprocess==1
+    allSitesData = [];
     
-    temp_allSites(s).site = sites;
-%     temp_allSites(s).site.LFP = concat_raw;
-    temp_allSites(s).site.LFP = sites.LFP;
-    temp_allSites(s).name = sitefiles(s).name;
-    temp_allSites(s).inconsistant_ch = 0;
-    temp_allSites(s).noisy_site = 0;
-%     temp_allSites(s).noisy_smples_lfp_diff   = noisy_smples_lfp_diff;  % idx of bins with noise above deriv_thr = 4;
-%     temp_allSites(s).noisy_smples_lfp_zscore = noisy_smples_lfp_zscore;% idx of bins with noise above zscore_thr = 6;
-end
-
-targets = {'VPL_R', 'VPL_L', 'dPul_R', 'dPul_L','MD_L','MD_R'};
-allSites_targets = arrayfun(@(x) (x.site.target), temp_allSites, 'UniformOutput', false);
-inval_targets = ~ismember(allSites_targets,targets);
-temp_allSites(inval_targets) = [];
-
-trials_block = arrayfun(@(x) unique(x.site.block), temp_allSites, 'UniformOutput', false);
-blocks_with_LFP = unique([trials_block{:}]);
-
-%sampling_table = table;
-dummy = 1;
-for s = 1: length(temp_allSites)
-    samples_past=0;
-    % you are not resampling here :P
-    %samples_past_resampled=0;
-    
-    for b = 1:length(blocks_with_LFP)
-        B = blocks_with_LFP(b);
-        if sum(ismember(unique(temp_allSites(s).site.block),B))>0
-            sampling_table.site(dummy)  = s;
-            sampling_table.block(dummy) = B;
-            
-            b_samples=[temp_allSites(s).site.block ==B];
-            %bs=samples_past_resampled+1;
-            %be=floor(sum(temp_allSites(s).site.LFP_samples(b_samples))/ts)+samples_past_resampled;
-            bs_original=samples_past+1;
-            be_original=sum(temp_allSites(s).site.LFP_samples(b_samples))+samples_past;
-            
-            sampling_table.start_sample(dummy)  = bs_original;
-            sampling_table.end_sample(dummy)    = be_original;
-            
-            samples_past=be_original;
-            %samples_past_resampled=be;
-            dummy = dummy+1;
-            %     tmp_block_idx(b,:) = arrayfun(@(x) ismember(unique(x.site.block),blocks_with_LFP(b)), temp_allSites, 'UniformOutput', false);
-        end
+    temp_allSites = struct;
+    nSites = length(sitefiles);
+    for s = 1: nSites
+        load([sitesdir,filesep,sitefiles(s).name],'sites');
+        
+        temp_allSites(s).site = sites;
+        temp_allSites(s).site.LFP = sites.LFP;
+        temp_allSites(s).name = sitefiles(s).name;
+        temp_allSites(s).inconsistant_ch = 0;
+        temp_allSites(s).noisy_site = 0;
     end
-end
-
-
-lfp_data = arrayfun(@(x) x.site.LFP, temp_allSites, 'UniformOutput', false);
-lfp_sizes = cellfun(@(x) size(x, 2), arrayfun(@(s) s.site.LFP, temp_allSites, 'UniformOutput', false));
-% common_size = mode(lfp_sizes);
-%
-% inconsistent_sites = find(lfp_sizes ~= common_size);
-% lfp_data(inconsistent_sites) = [];
-% lfp_tagets(inconsistent_sites) = [];
-% if ~isempty(inconsistent_sites)
-%     [temp_allSites(inconsistent_sites).inconsistant_ch] = deal(1);
-% end
-
-% idea was not to check across all sites
-all_LFP_concat = horzcat(lfp_data{:});
-all_sites_25perc = prctile(abs(all_LFP_concat),25);
-all_sites_75perc = prctile(abs(all_LFP_concat),75);
-
-% concat_raw_zscored = zscore(concat_raw, 0, 1);
-% extreme_counts = sum(abs(concat_raw_zscored) > extreme_z_threshold, 2);
-% noisy_channels = find(extreme_counts > noise_perc_bin * size(concat_raw, 2)); % More than 5% of timepoints exceed threshold
-noisy_site = [];
-for s = 1:length(temp_allSites)
     
-    % but rather across all sites other than the one you are currently checking
-    site_idx=1:numel(lfp_data);
-    all_LFP_concat = horzcat(lfp_data{site_idx~=s});
+    targets = {'VPL_R', 'VPL_L', 'dPul_R', 'dPul_L','MD_L','MD_R'};
+    allSites_targets = arrayfun(@(x) (x.site.target), temp_allSites, 'UniformOutput', false);
+    inval_targets = ~ismember(allSites_targets,targets);
+    temp_allSites(inval_targets) = [];
+    
+    trials_block = arrayfun(@(x) unique(x.site.block), temp_allSites, 'UniformOutput', false);
+    blocks_with_LFP = unique([trials_block{:}]);
+    
+    dummy = 1;
+    for s = 1: length(temp_allSites)
+        samples_past=0;
+        % you are not resampling here :P --> Now I am :D
+        samples_past_resampled=0;
+        
+        for b = 1:length(blocks_with_LFP)
+            B = blocks_with_LFP(b);
+            if sum(ismember(unique(temp_allSites(s).site.block),B))>0
+                sampling_table.site(dummy)  = s;
+                sampling_table.block(dummy) = B;
+                
+                b_samples=[temp_allSites(s).site.block ==B];
+                bs=samples_past_resampled+1;
+                be=floor(sum(temp_allSites(s).site.LFP_samples(b_samples))/ts)+samples_past_resampled;
+                bs_original=samples_past+1;
+                be_original=sum(temp_allSites(s).site.LFP_samples(b_samples))+samples_past;
+                
+                sampling_table.start_sample(dummy)  = bs_original;
+                sampling_table.end_sample(dummy)    = be_original;
+                
+                samples_past=be_original;
+                %samples_past_resampled=be;
+                %%
+                % Here I generate the number of sample per blocks to feed for Triggers:
+                sampling_table.tfs(s).n_samples_per_block(:,b)=[B,be-bs+1];
+                
+                dummy = dummy+1;
+            end
+        end
+        % Here I generate the triggers to check the ICA epochs later on:
+        n_LFP_samples_per_block = sampling_table.tfs(s).n_samples_per_block;
+        sampling_table.site_triggers(s)= ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,sr);
+    end
+    
+    
+    lfp_data = arrayfun(@(x) x.site.LFP, temp_allSites, 'UniformOutput', false);
+    lfp_sizes = cellfun(@(x) size(x, 2), arrayfun(@(s) s.site.LFP, temp_allSites, 'UniformOutput', false));
+    
+    % idea was not to check across all sites
+    all_LFP_concat = horzcat(lfp_data{:});
     all_sites_25perc = prctile(abs(all_LFP_concat),25);
     all_sites_75perc = prctile(abs(all_LFP_concat),75);
     
-    tmp_site_25perc = prctile(abs(lfp_data{s}),25);
-    tmp_site_75perc = prctile(abs(lfp_data{s}),75);
-    %yline(tmp_site_25perc,'b--','LineWidth',3)
-    if (tmp_site_75perc < all_sites_25perc)||(tmp_site_25perc > all_sites_75perc)
-        noisy_site = [noisy_site, s];
+    noisy_site = [];
+    for s = 1:length(temp_allSites)
+        
+        % but rather across all sites other than the one you are currently checking
+        site_idx=1:numel(lfp_data);
+        all_LFP_concat = horzcat(lfp_data{site_idx~=s});
+        all_sites_25perc = prctile(abs(all_LFP_concat),25);
+        all_sites_75perc = prctile(abs(all_LFP_concat),75);
+        
+        tmp_site_25perc = prctile(abs(lfp_data{s}),25);
+        tmp_site_75perc = prctile(abs(lfp_data{s}),75);
+        if (tmp_site_75perc < all_sites_25perc)||(tmp_site_25perc > all_sites_75perc)
+            noisy_site = [noisy_site, s];
+        end
     end
+    
+    if ~isempty(noisy_site)
+        [temp_allSites(noisy_site).noisy_site] = deal(1);
+    end
+    sites_to_remove=[temp_allSites.noisy_site]==1;
+    allSitesData = temp_allSites(~sites_to_remove);
+    allSitesData = rmfield(allSitesData,{'inconsistant_ch','noisy_site'});
+    
+    
+    %% sites that are removed dont need to be fixed, correct?
+    %% if so, remove them from sampling table immediately
+    %% alternatively, you can do noise detection BEFORE creating the sampling table, so that you do not run into this problem in the first place
+    to_remove_from_sampling_table=ismember(sampling_table.site,find(sites_to_remove)); % please check this line, I'm not sure it does what it supposed to
+    sampling_table.site(to_remove_from_sampling_table)  = [];
+    sampling_table.block(to_remove_from_sampling_table) = [];
+    sampling_table.start_sample(to_remove_from_sampling_table)  = [];
+    sampling_table.end_sample(to_remove_from_sampling_table)    = [];
+    
+    % clear temp_allSites, because it's huge and should not be needed any more ?
+    clear temp_allSites
+    
+    % storing the all sites sampling_table and allSitesData
+    smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
+        cfg.session_info(1).Monkey(1:3),'_', session , '_sampleTble_allSitesdata']);
+    save(smplTblfilename,"sampling_table","allSitesData",'-v7.3');
+    
+else
+    smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
+        cfg.session_info(1).Monkey(1:3),'_', session , '_sampleTble_allSitesdata']);
+    load([smplTblfilename,'.mat']);
 end
+%%
 
-if ~isempty(noisy_site)
-    [temp_allSites(noisy_site).noisy_site] = deal(1);
-end
-sites_to_remove=[temp_allSites.noisy_site]==1;
-allSitesData = temp_allSites(~sites_to_remove);
-allSitesData = rmfield(allSitesData,{'inconsistant_ch','noisy_site'});
-
-
-
-%% sites that are removed dont need to be fixed, correct?
-%% if so, remove them from sampling table immediately
-%% alternatively, you can do noise detection BEFORE creating the sampling table, so that you do not run into this problem in the first place
-to_remove_from_sampling_table=ismember(sampling_table.site,find(sites_to_remove)); % please check this line, I'm not sure it does what it supposed to
-sampling_table.site(to_remove_from_sampling_table)  = [];
-sampling_table.block(to_remove_from_sampling_table) = [];
-sampling_table.start_sample(to_remove_from_sampling_table)  = [];
-sampling_table.end_sample(to_remove_from_sampling_table)    = [];
-
-% clear temp_allSites, because it's huge and should not be needed any more ?
-clear temp_allSites
-
-% trials_block = arrayfun(@(x) unique(x.site.block), temp_allSites, 'UniformOutput', false);
-% blocks_with_LFP = unique([trials_block{:}]);
 lfp_tagets = arrayfun(@(x) x.site.target, allSitesData, 'UniformOutput', false);
 site_names = arrayfun(@(x) x.name, allSitesData, 'UniformOutput', false); %% are these site names?
 target_list = unique(lfp_tagets);
+%%
+lfp_data = arrayfun(@(x) x.site.LFP, allSitesData, 'UniformOutput', false);
+
+if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
+    sites_hemisphere=contains(lfp_tagets,'_L')+2*contains(lfp_tagets,'_R'); %look for the _ as well, because f.e. VPL contains L
+    hemisphere_list = unique(sites_hemisphere);
+    
+    for h = 1: length(hemisphere_list)
+        
+        hemisphere_sites = sites_hemisphere==hemisphere_list(h);
+        lfp_data_concat = vertcat(lfp_data{hemisphere_sites});
+        hemisphere_site_names = site_names(hemisphere_sites);
+        
+        data = [];
+        data.label = arrayfun(@(x) sprintf('LFP%02d', x), 1:size(lfp_data_concat, 1), 'UniformOutput', false);
+        data.fsample = sr;  % Sampling frequency
+        data.time = {(0:size(lfp_data_concat,2)-1) / sr}; % Cell array containing time vector
+        data.trial = {lfp_data_concat}; % Cell array containing LFP data matrix
+        data.sampleinfo = [1 size(lfp_data_concat,2)]; % Start and end sample indices
+        
+        ft_datatype_raw(data) % To Check if the structure is correctly formatted
+        data_orig = data;
+        
+        cfg_ica              = [];
+        cfg_ica.resamplefs   = 256;
+        cfg_ica.detrend      = 'no';
+        data = ft_resampledata(cfg_ica, data_orig);
+        
+        cfg_ica              = [];
+        cfg_ica.method       = 'runica';
+        cfg_ica.numcomponent = size(lfp_data_concat,1);
+        cfg_ica.channel      = {'LFP'};
+        data_comp = ft_componentanalysis(cfg_ica, data);
+        
+        data_to_plot            = rmfield(data_comp,{'topo','topolabel'});
+        
+        % storing the sites ICA weights
+        ICAfilename = fullfile([cfg.analyse_lfp_folder,filesep,'Per_Site_ICAweights',filesep,...
+            cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(data_to_plot.label)),'cmp']);
+        save(ICAfilename,"data_to_plot","hemisphere_site_names",'-v7.3');
+        
+        continue;
+        cfg_ica                 = [];
+        cfg_ica.continuous      = 'yes';
+        cfg_ica.blocksize       = 30;   % show 60 seconds at the time
+        cfg_ica.plotevents      = 'no';
+        cfg_ica.preproc.demean  = 'no';
+        ica_com = ft_databrowser(cfg_ica, data_to_plot);
+        
+        
+        BadICAcomps = inputdlg('Enter space-separated Selected ICA Components to remove:','Sample', [1 64]);
+        BadICAcomps = str2num(BadICAcomps{1});
+        
+        cfg_ica = [];
+        cfg_ica.component = BadICAcomps; % to be removed
+        data_orig_clean = ft_rejectcomponent(cfg_ica, ica_com, data_orig);
+        dummy = arrayfun(@(i) data_orig_clean.trial{1,1}(i,:), 1:size(A,1), 'UniformOutput', false);
+        % % % Another version of ICA, directly from fastICA function:
+        % % addpath('Y:\Projects\_Shamim\fieldtrip-20231130\external\fastica'); % feed the location of fastica from somewhere local!
+        % % % --->> keep the same fieldtrip version for consistency
+        % % % [icasig, A, W] = fastica (1000*lfp_data_concat); % outputs the estimated separating matrix W and the corresponding mixing matrix A.
+        % % [icasig2, A2, W2] = fastica (1000*lfp_data_concat,  'numOfIC',20); % outputs the estimated separating matrix W and the corresponding mixing matrix A.
+        % % % icaplot('complot',icasig,[1:20]);
+        % % % sr = 1.0173e+03;
+        % % icaplot('complot',icasig2);
+        % % set(gca,'xlim',[0 10*sr])
+        % ecg_bna_plot_PSD_LFP(icasig, sr)
+        
+    end
+    
+elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==0)
+    
+    sites_hemisphere=contains(lfp_tagets,'_L')+2*contains(lfp_tagets,'_R');
+    hemisphere_list = unique(sites_hemisphere);
+    
+    for h = 1: length(hemisphere_list)
+        
+        hemisphere_sites = sites_hemisphere==hemisphere_list(h);
+        hemisphere_site_names = site_names(hemisphere_sites);
+        
+        ICAfilename = fullfile([cfg.analyse_lfp_folder,filesep,'Per_Site_ICAweights',filesep,...
+            cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(hemisphere_site_names)),'cmp']);
+        load(ICAfilename);
+        
+        lfp_data_concat = vertcat(lfp_data{hemisphere_sites});
+        
+        data = [];
+        data.label = arrayfun(@(x) sprintf('LFP%02d', x), 1:size(lfp_data_concat, 1), 'UniformOutput', false);
+        data.fsample = sr;  % Sampling frequency
+        data.time = {(0:size(lfp_data_concat,2)-1) / sr}; % Cell array containing time vector
+        data.trial = {lfp_data_concat}; % Cell array containing LFP data matrix
+        data.sampleinfo = [1 size(lfp_data_concat,2)]; % Start and end sample indices
+        
+        ft_datatype_raw(data) % To Check if the structure is correctly formatted
+        data_orig = data;
+        
+        cfg_ica              = [];
+        cfg_ica.resamplefs   = 256;
+        cfg_ica.detrend      = 'no';
+        data = ft_resampledata(cfg_ica, data_orig);
+        
+        cfg_ica                 = [];
+        cfg_ica.continuous      = 'yes';
+        cfg_ica.blocksize       = 30; % show 30 seconds at the time
+        cfg_ica.plotevents      = 'no';
+        cfg_ica.preproc.demean  = 'no';
+        ica_com = ft_databrowser(cfg_ica, data_to_plot);
+        
+        
+        BadICAcomps = inputdlg('Enter space-separated Selected ICA Components to remove:','Sample', [1 64]);
+        BadICAcomps = str2num(BadICAcomps{1});
+        
+        cfg_ica = [];
+        cfg_ica.component = BadICAcomps; % to be removed
+        data_orig_clean = ft_rejectcomponent(cfg_ica, ica_com, data_orig);
+        dummy = arrayfun(@(i) data_orig_clean.trial{1,1}(i,:), 1:size(A,1), 'UniformOutput', false);
+    end
+    
+end
 
 %% okay here the point was to average across all sites in one hemisphere, not in one target only..
 
-% i have never used contains, bu ti guess i would do something like this:
-% sites_hemisphere is supposed to be 1 for left hemispheres and 2 for
-% right hemispheres
-sites_hemisphere=contains(lfp_tagets,'_L')+2*contains(lfp_tagets,'_R'); %look for the _ as well, because f.e. VPL contains L
-hemisphere_list = unique(sites_hemisphere);
-
-% if (sum(contains(target_list,'L'))>0 && sum(contains(target_list,'L'))<length(target_list))...
-%         || (sum(contains(target_list,'R'))>0 && sum(contains(target_list,'R'))<length(target_list))
-
-for h = 1: length(hemisphere_list)
-    %target = target_list{tr};
-    hemisphere_sites = find(sites_hemisphere==hemisphere_list(h));
+if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
+    % i have never used contains, bu ti guess i would do something like this:
+    % sites_hemisphere is supposed to be 1 for left hemispheres and 2 for
+    % right hemispheres
+    sites_hemisphere=contains(lfp_tagets,'_L')+2*contains(lfp_tagets,'_R'); %look for the _ as well, because f.e. VPL contains L
+    hemisphere_list = unique(sites_hemisphere);
     
-    valid_blocks = [];
-    invalid_blocks = [];
-    for b=1:numel(blocks_with_LFP)
-        B=blocks_with_LFP(b);
-        %% thing is i dont trust this as it is im afraid (sampling table and temp_allSites have very different indexing i believe?)
-        %% -> hence the removing noise sites from sampling table beforehand
+    for h = 1: length(hemisphere_list)
+        %target = target_list{tr};
+        hemisphere_sites = find(sites_hemisphere==hemisphere_list(h));
         
-        %% i tend to create the indexes i will need inside this loop at the start so it doesnt get confusing
-        block_idx=ismember(sampling_table.block,B) & ismember(sampling_table.site,hemisphere_sites);
-        site_with_blockB_idx = sampling_table.site(block_idx);
-        chan_with_BlockB_idx = cell2mat(arrayfun(@(x) x.site.channel, allSitesData(site_with_blockB_idx), 'UniformOutput', false));
-        %site_with_blockB_idx = site_with_blockB_idx([temp_allSites(site_with_blockB_idx).noisy_site]==0);
-        %             if (strcmp(cfg.session_info.Monkey  ,'Bacchus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<11)&& length(unique(chan_with_BlockB_idx))>=3)...
-        %                     || (strcmp(cfg.session_info.Monkey  ,'Magnus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<33) && length(unique(chan_with_BlockB_idx))>=3)
-        if (length(chan_with_BlockB_idx) > length(unique(chan_with_BlockB_idx)))
-            warning("This block has 2 sites from the same channel : Block = %d", B );
-        elseif length(unique(chan_with_BlockB_idx))>=3
-            valid_blocks = [valid_blocks,B];
-            block_lfp_concat = [];
-            for s = 1: length(site_with_blockB_idx)
-                allSitesData(site_with_blockB_idx(s)).valid_blocks = valid_blocks;
-                allSitesData(site_with_blockB_idx(s)).block_with_not_enough_ref_elec = invalid_blocks;
-                %% i believe its easier to track like this (just a matter of taste i guess)
-                idx=block_idx & sampling_table.site==site_with_blockB_idx(s);
-                start_sample = sampling_table.start_sample(idx);
-                end_sample   = sampling_table.end_sample(idx);
-                block_lfp_concat = [block_lfp_concat; allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample)];
-            end
-            block_lfp_concat_mean = squeeze(mean(block_lfp_concat,1));
+        valid_blocks = [];
+        invalid_blocks = [];
+        for b=1:numel(blocks_with_LFP)
+            B=blocks_with_LFP(b);
+            %% thing is i dont trust this as it is im afraid (sampling table and temp_allSites have very different indexing i believe?)
+            %% -> hence the removing noise sites from sampling table beforehand
             
-            for s = 1: length(site_with_blockB_idx)
-                %% i believe its easier to track like this (just a matter of taste i guess)
-                idx=block_idx & sampling_table.site==site_with_blockB_idx(s);
-                start_sample = sampling_table.start_sample(idx);
-                end_sample   = sampling_table.end_sample(idx);
-                allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) = allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) - block_lfp_concat_mean;
+            %% i tend to create the indexes i will need inside this loop at the start so it doesnt get confusing
+            block_idx=ismember(sampling_table.block,B) & ismember(sampling_table.site,hemisphere_sites);
+            site_with_blockB_idx = sampling_table.site(block_idx);
+            chan_with_BlockB_idx = cell2mat(arrayfun(@(x) x.site.channel, allSitesData(site_with_blockB_idx), 'UniformOutput', false));
+            %site_with_blockB_idx = site_with_blockB_idx([temp_allSites(site_with_blockB_idx).noisy_site]==0);
+            %             if (strcmp(cfg.session_info.Monkey  ,'Bacchus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<11)&& length(unique(chan_with_BlockB_idx))>=3)...
+            %                     || (strcmp(cfg.session_info.Monkey  ,'Magnus') && length(site_with_blockB_idx)>2 && (length(site_with_blockB_idx)<33) && length(unique(chan_with_BlockB_idx))>=3)
+            if (length(chan_with_BlockB_idx) > length(unique(chan_with_BlockB_idx)))
+                warning("This block has 2 sites from the same channel : Block = %d", B );
+            elseif length(unique(chan_with_BlockB_idx))>=3
+                valid_blocks = [valid_blocks,B];
+                block_lfp_concat = [];
+                for s = 1: length(site_with_blockB_idx)
+                    allSitesData(site_with_blockB_idx(s)).valid_blocks = valid_blocks;
+                    allSitesData(site_with_blockB_idx(s)).block_with_not_enough_ref_elec = invalid_blocks;
+                    %% i believe its easier to track like this (just a matter of taste i guess)
+                    idx=block_idx & sampling_table.site==site_with_blockB_idx(s);
+                    start_sample = sampling_table.start_sample(idx);
+                    end_sample   = sampling_table.end_sample(idx);
+                    block_lfp_concat = [block_lfp_concat; allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample)];
+                end
+                block_lfp_concat_mean = squeeze(mean(block_lfp_concat,1));
+                
+                for s = 1: length(site_with_blockB_idx)
+                    %% i believe its easier to track like this (just a matter of taste i guess)
+                    idx=block_idx & sampling_table.site==site_with_blockB_idx(s);
+                    start_sample = sampling_table.start_sample(idx);
+                    end_sample   = sampling_table.end_sample(idx);
+                    allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) = allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) - block_lfp_concat_mean;
+                end
+            elseif length(unique(chan_with_BlockB_idx))<3
+                invalid_blocks = [invalid_blocks ,B];
+                for s = 1: length(site_with_blockB_idx)
+                    allSitesData(site_with_blockB_idx(s)).block_with_not_enough_ref_elec = invalid_blocks;
+                end
+                continue;
             end
-        elseif length(unique(chan_with_BlockB_idx))<3
-            invalid_blocks = [invalid_blocks ,B];
-            for s = 1: length(site_with_blockB_idx)
-                allSitesData(site_with_blockB_idx(s)).block_with_not_enough_ref_elec = invalid_blocks;
-            end
-            continue;
         end
     end
 end
-
-% else
-%     for b=1:numel(blocks_with_LFP)
-%         B=blocks_with_LFP(b);
-%         site_with_blockB_idx = sampling_table.site(ismember(sampling_table.block,B));
-%         site_with_blockB_idx = site_with_blockB_idx([temp_allSites(site_with_blockB_idx).noisy_site]==0);
-%         block_lfp_concat = [];
-%         for s = 1: length(site_with_blockB_idx)
-%             start_sample = sampling_table.start_sample(ismember(sampling_table.block,B)& sampling_table.site==site_with_blockB_idx(s));
-%             end_sample   = sampling_table.end_sample(ismember(sampling_table.block,B)& sampling_table.site==site_with_blockB_idx(s));
-%             block_lfp_concat = [block_lfp_concat; temp_allSites(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample)];
-%         end
-%         block_lfp_concat_mean = squeeze(mean(block_lfp_concat,1));
-%
-%         for s = 1: length(site_with_blockB_idx)
-%             start_sample = sampling_table.start_sample(ismember(sampling_table.block,B)& sampling_table.site==site_with_blockB_idx(s));
-%             end_sample   = sampling_table.end_sample(ismember(sampling_table.block,B)& sampling_table.site==site_with_blockB_idx(s));
-%             allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) = allSitesData(site_with_blockB_idx(s)).site.LFP(start_sample:end_sample) - block_lfp_concat_mean;
-%         end
-%     end
-%
-% end
-
-
-% if (sum(contains(target_list,'L'))>0 && sum(contains(target_list,'L'))<length(target_list))...
-%         || (sum(contains(target_list,'R'))>0 && sum(contains(target_list,'R'))<length(target_list))
-%
-%     concat_site_lfp_mean = nan(length(target_list),size(concat_raw,2));
-%
-%     for tr = 1: length(target_list)
-%         target = target_list{tr};
-%         site_idx = (ismember(lfp_tagets, target));
-%         concat_site_lfp_mean(tr,:) = squeeze(mean(concat_raw(site_idx,:),1));
-%
-%         site_to_use = find(~([temp_allSites.inconsistant_ch] ==1 ...
-%             | [temp_allSites.noisy_site] ==1 )...
-%             & ismember(arrayfun(@(x) x.site.target, temp_allSites, 'UniformOutput', false), target));
-%
-%         for s = 1: length(site_to_use)
-%             allSitesData(end+1).site = temp_allSites(site_to_use(s)).site;
-%             allSitesData(end).site.LFP = allSitesData(s).site.LFP - concat_site_lfp_mean(tr,:);
-%             allSitesData(end).name = temp_allSites(site_to_use(s)).name;
-%         end
-%     end
-% else
-%     concat_site_lfp_mean =  squeeze(mean(concat_raw,1));
-%
-%     site_to_use = find(~([temp_allSites.inconsistant_ch] ==1 | [temp_allSites.noisy_site] ==1 ));
-%
-%     for s = 1: length(site_to_use)
-%         allSitesData(end+1).site = temp_allSites(site_to_use(s)).site;
-%         allSitesData(end).site.LFP = allSitesData(s).site.LFP - concat_site_lfp_mean;
-%         allSitesData(end).name = temp_allSites(site_to_use(s)).name;
-%     end
-%
-% end
-% end

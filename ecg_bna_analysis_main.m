@@ -132,8 +132,8 @@ for v = 1:length(versions)
                 ts_original=1/sr;
                 
                 %% load all sites
-                if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
-                    allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original);
+                if (isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1)|| (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
+                    allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original,sr,Triggers,blocks,blockstart);
                     removed_sites = find(~ismember({sitefiles.name},{allSitesData.name}));
                     if ~isempty(removed_sites) 
                         removed_sites_name = sitefiles(removed_sites).name;
@@ -155,9 +155,10 @@ for v = 1:length(versions)
 
                 %% create corrected site LFP data for each valid site, and loop through that
                 %% instead of looping through sitefiles and load each of them again
+                continue; % just for saving the ICA weights now
                 
                 for s = 1:length(sitefiles) %% loop only through valid sites
-                     if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1
+                     if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1 || (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
                          sites = sitefiles(s).site;
                      else
                          load([sitesdir filesep sitefiles(s).name], 'sites');

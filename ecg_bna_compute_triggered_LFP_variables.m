@@ -1,4 +1,4 @@
-function [ triggered_site_data ] = ecg_bna_compute_triggered_LFP_variables( site , triggers, trials,cfg )
+function [ triggered_site_data ] = ecg_bna_compute_triggered_LFP_variables( site , triggers, trials,cfg)
 % ecg_bna_compute_session_Rpeak_triggered_variables  - compute evoked_LFP,
 % Powspctrm, ITPC, and phaseBP variables for different conditions for each site of a session.
 % A condition is a combination of
@@ -165,11 +165,12 @@ for cn = 1:length(cfg.condition)
     end
 end
 triggered_site_data = trig;
-
-[ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pow', 'lfp'},cfg.analyse_states(:,1), cfg );
-
-triggered_site_data = out_triggered_site_data;
-clear out_triggered_site_data
+if isfield(cfg.lfp, 'TaskRest_SigClust') && cfg.lfp.TaskRest_SigClust == 1
+    [ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pow', 'lfp'},cfg.analyse_states(:,1), cfg );
+    
+    triggered_site_data = out_triggered_site_data;
+    clear out_triggered_site_data
+end
 % plots - if we don't shuffle, there will be no shuffled!
 methods= {'real','shuffled','normalized'};
 for mt = 1: numel(methods)
@@ -178,13 +179,17 @@ for mt = 1: numel(methods)
 end
 
 FN ={'pow','powbp','lfp','pha','itpc','itpcbp'};
-if cfg.lfp.removeComplete==1
+if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
     for cn = 1:length(cfg.condition)
         for e = 1:size(cfg.analyse_states, 1)
-            for fin = 1:length(FN)
-                Fin = FN{fin};
-                triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), "complete");
-                triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), "complete");
+            if ~isempty(triggered_site_data.condition(cn).event)
+                for fin = 1:length(FN)
+                    Fin = FN{fin};
+                    triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), "complete");
+                    triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), "complete");
+                end
+            else
+                continue;
             end
         end
     end
