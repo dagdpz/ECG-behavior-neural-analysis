@@ -1,6 +1,5 @@
 function Event=ecg_bna_get_events(session_info,trials,event,block_anchors,varargin)
 
-%ecg_bna_get_triggers(session_info
 eventtype=strrep(event{1,2}, ' ',''); %??
 
 %% load respective file
@@ -63,28 +62,19 @@ switch eventtype
             
             %% use trial information to get INI length
             %% for a given block, this is what it is (?) -> do we have a global offset (?)
-            %trials
             block=out(b).nrblock_combinedFiles;
-            %offset=offset+max(max(Event.ts))+max(intervals);%onset of recording relative to state 2
-            offset=block_anchors(block); %%%%
+            offset=block_anchors(block); 
             
             Event.valid_ts        = [Event.valid_ts valid_idx+numel(Event.ts) ]; % +numel(ts)
             Event.ts              = [Event.ts out(b).Rpeak_t+offset ]; %+offset
             Event.intervals       = [Event.intervals intervals];
-            Event.blocks          = [Event.blocks repmat(block,size(intervals))];
+            Event.blocks          = [Event.blocks repmat(block,size(out(b).Rpeak_t))];
             
             tmp_before=-diff([0 out(b).Rpeak_t]);
             tmp_after=diff([out(b).Rpeak_t inf]);
             Event.interval_starts  = [Event.interval_starts tmp_before/2];
             Event.interval_ends    = [Event.interval_ends tmp_after/2];
-%         
-%           % now we define
-%         next_invalid=diff(valid_idx)~=1;                               % is the next Rpeak invalid (i.e. followed by invalid R2R interval)
-%         iv_starts  =[0  ts(valid_idx([next_invalid true]))];     % start of invalid intervals: Timestamps of valid Rpeaks followed by invalid ones
-%         % First Segment (for 0 to first valid Rpeak) and last segment
-%         % (everything after last valid Rpeak) are always invalid
-%         iv_ends    =[ts(valid_idx([true next_invalid]))   inf];  % end of invalid intervals: Timestamps of valid Rpeaks PRECEDED by invalid ones
-      
+            
         end
     case 'microstim'
     case 'state'

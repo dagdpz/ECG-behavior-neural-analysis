@@ -21,10 +21,10 @@ for fi = 1:length(data_label)
             data_rest = triggered_site_data.condition(1).event(e).real.(Fin).complete;
             data_task =  triggered_site_data.condition(2).event(e).real.(Fin).complete;
             % ================================================================
-% % %             % removing the field here??
-% % %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(1).event(e).real.(Fin), "complete");
-% % %             triggered_site_data.condition(2).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
-% % %             
+            % % %             % removing the field here??
+            % % %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(1).event(e).real.(Fin), "complete");
+            % % %             triggered_site_data.condition(2).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
+            % % %
             
             tfr_freq = cfg.lfp.foi; %logspace(log10(2),log10(120),60);
             tfr_time = triggered_site_data.condition(1).event(e).tfr_time;
@@ -57,7 +57,7 @@ for fi = 1:length(data_label)
             cfg_perm.alpha            = 0.05;                     % Alpha level for the permutation test
             cfg_perm.correcttail      = 'alpha';                  % FDR correction for two-tailed T-test
             cfg_perm.numrandomization = 1000;                     % Number of randomizations
-            cfg_perm.neighbours            = [];
+            cfg_perm.neighbours       = [];
             
             % a dummy connectivity matrix for the frequencies
             num_freqs = length(tfr_freq);  % Number of frequency bins
@@ -70,7 +70,7 @@ for fi = 1:length(data_label)
             design = zeros(2, nTaskTrials + nRestTrials);
             
             % First row: Condition (1 = Task, 2 = Rest)
-            design(1, 1:nTaskTrials) = 1;  % Task condition
+            design(1, 1:nTaskTrials)     = 1;  % Task condition
             design(1, nTaskTrials+1:end) = 2;  % Rest condition
             
             % Second row: Trial index
@@ -104,7 +104,7 @@ for fi = 1:length(data_label)
             fbandstart_idx = zeros(size(fbandstart));
             for f = fbandstart
                 f_idx = find(abs(stat_tfs.freq - f) == min(abs(stat_tfs.freq - f)), 1, 'first');
-                yline(f_idx, 'color', 'k', 'linestyle', '--');
+                line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
                 fbandstart_idx(fbandstart == f) = f_idx;
             end
             set(gca,'TickDir','out')
@@ -113,7 +113,7 @@ for fi = 1:length(data_label)
             set(gca, 'ylim', [0.5,numel(stat_tfs.freq) + 0.5]);
             hold on
             contour(stat_tfs.time, 1:numel(stat_tfs.freq), stat_tfs.mask, [0.5, 0.5], 'LineColor', 'k', 'LineWidth', 2); % Overlay significant clusters
-            if isfield(stat_tfs,"posclusterslabelmat") || ~isempty(stat_tfs.posclusterslabelmat)
+            if isfield(stat_tfs,'posclusterslabelmat') || ~isempty(stat_tfs.posclusterslabelmat)
                 contour(stat_tfs.time, 1:numel(stat_tfs.freq), stat_tfs.posclusterslabelmat, [0.5, 0.5], 'LineColor', 'k', 'LineWidth', 2); % Overlay significant clusters
             end
             % clabel(C, h);
@@ -133,10 +133,10 @@ for fi = 1:length(data_label)
             data_rest = triggered_site_data.condition(1).event(e).real.(Fin).complete;
             data_task =  triggered_site_data.condition(2).event(e).real.(Fin).complete;
             % ================================================================================
-% %             % removing the field here??
-% %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
-% %             triggered_site_data.condition(2).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
-% %             
+            % %             % removing the field here??
+            % %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
+            % %             triggered_site_data.condition(2).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
+            % %
             time = triggered_site_data.condition(1).event(e).time;
             
             data_task = squeeze(data_task); % Convert to (Trials × Time)
@@ -196,8 +196,8 @@ for fi = 1:length(data_label)
             triggered_site_data.condition(1).event(e).stats.(Fin).cfg_perm = cfg_perm;
             triggered_site_data.condition(2).event(e).stats.(Fin).cfg_perm = cfg_perm;
             
-%             pos_cluster_pvals = [stat_lfp.posclusters(:).prob];
-%             neg_cluster_pvals = [stat_lfp.negclusters(:).prob];
+            %             pos_cluster_pvals = [stat_lfp.posclusters(:).prob];
+            %             neg_cluster_pvals = [stat_lfp.negclusters(:).prob];
             
         end
     end

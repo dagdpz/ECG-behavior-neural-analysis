@@ -9,7 +9,48 @@ blocks=IN.blocks;
 td=diff(ts); % These are the ACTUAL distances of our Rpeaks
 
 %% shuffling the VALID R2R intervals to append at the end of our jittered intervals,
-switch cfg.jitter_method
+switch cfg.jitter_method    
+    case 'interval shuffling'
+        td_jit=[];
+        ts_jit=[];
+        blocks_jit=[];
+        for b= unique(blocks)
+            %% here we SHUFFLE intervals - do we need to do this per block ??
+            ts_b=ts(blocks==b);
+            td_b=diff(ts_b);            
+            randnumbers=rand(N,size(td_b,2));
+            [~,ix]=sort(randnumbers,2);
+            ix=ix'+repmat(0:(N-1),numel(td_b),1)*numel(td_b);
+            td_jit_b   = repmat(td_b',1,N);
+            td_jit_b   = [repmat(ts_b(1),1,N); td_jit_b(ix)]';
+            ts_jit_b   = cumsum(td_jit_b,2);
+            td_jit=[td_jit td_jit_b];
+            ts_jit=[ts_jit ts_jit_b];
+            blocks_jit=[blocks_jit repmat(b,size(ts_b))];
+        end
+        
+        %now we define invalid intervals
+        next_invalid=diff(valid_idx)~=1;                         % is the next Rpeak invalid (i.e. followed by invalid R2R interval)
+        iv_starts  =[0  ts(valid_idx([next_invalid true]))];     % start of invalid intervals: Timestamps of valid Rpeaks followed by invalid ones
+        % First Segment (for 0 to first valid Rpeak) and last segment(everything after last valid Rpeak) are always invalid
+        iv_ends    =[ts(valid_idx([true next_invalid]))   inf];  % end of invalid intervals: Timestamps of valid Rpeaks PRECEDED by invalid ones
+        % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid
+        grace_window=mean(intervals)/2;                          % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
+        
+        
+        %% remove jittered Rpeaks and corresponding durations that fell into invalid segments      
+        for iv=1:numel(iv_starts)
+            idx2exclude_2 = ts_jit>iv_starts(iv)+grace_window & ts_jit<iv_ends(iv)-grace_window;
+            ts_jit (idx2exclude_2) = 0;
+            td_jit (idx2exclude_2) = NaN;
+        end
+        jitter_range = 2*std(intervals);
+        idx2exclude_3 = ts_jit>max(ts)+jitter_range;
+        ts_jit (idx2exclude_3) = 0;
+        td_jit (idx2exclude_3) = NaN;
+        blocks_jit(all(ts_jit==0,1)) = [];
+        ts_jit (:,all(ts_jit==0,1)) = [];
+        td_jit (:,all(isnan(td_jit),1)) = [];
     case 'interval_jitter'
         %  just in case we randomly end up not covering the entire time window
         %  Don't worry, most (typically all) of it is going to be removed
@@ -175,13 +216,16 @@ if ismember(cfg.jitter_method,{'uniform dithering','train_jitter','jisi ditherin
     V   = repmat(ismember(1:size(ts_jit,2),valid_idx),N,1);       % logical index to reduce
     Triggers.shuffled_ts  =reshape(ts_jit(V),N,numel(ts));
     Triggers.shuffled_intervals = reshape(td_jit(V),N,numel(ts)); % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
+    Triggers.shuffled_blocks    =blocks(valid_idx);
 else
+    ts  = ts(valid_idx);                                          % take only Rpeaks surrounded by valid R2R
     Triggers.shuffled_ts  =ts_jit;
     Triggers.shuffled_intervals = td_jit; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
+    Triggers.shuffled_blocks    =blocks_jit;
 end
 
 %% put the data together
-Triggers.blocks       =blocks;
+Triggers.blocks       =blocks(valid_idx);
 Triggers.ts           =ts;
 Triggers.intervals    =intervals; %% all intervals deemed valid (see outside function)
 

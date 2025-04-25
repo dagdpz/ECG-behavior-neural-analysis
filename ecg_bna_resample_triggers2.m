@@ -30,18 +30,19 @@ for f=events
         S(S<=0)=0;
         S(S>LFP_samples(BS))=0;
         S=S+sum(LFP_samples(ismember(LFP_blocks,past_blocks)));
-        S(S==LFP_samples(BS))=0;
+        S(S==sum(LFP_samples(ismember(LFP_blocks,past_blocks))))=0;
         
         Real_ts=[Real_ts S];
         
         %% not shuffled, but surrogate!
         
+        idx=Triggers.(f{:}).shuffled_blocks==b;
         R=ts_surrogate(:,idx)-trigger_offset(BT);%+t_offset_per_block(2,BT);
         S=round(R*sr);
         S(S<=0)=0;
         S(S>LFP_samples(BS))=0;
         S=S+sum(LFP_samples(ismember(LFP_blocks,past_blocks)));
-        S(S==LFP_samples(BS))=0;
+        S(S==sum(LFP_samples(ismember(LFP_blocks,past_blocks))))=0;
         
         Surrogate_ts=[Surrogate_ts S];
 %         
