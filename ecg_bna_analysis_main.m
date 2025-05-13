@@ -155,7 +155,7 @@ for v = 1:length(versions)
 
                 %% create corrected site LFP data for each valid site, and loop through that
                 %% instead of looping through sitefiles and load each of them again
-                continue; % just for saving the ICA weights now
+% % % % % % % % % %                 continue; % just for saving the ICA weights now
                 
                 for s = 1:length(sitefiles) %% loop only through valid sites
                      if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1 || (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
