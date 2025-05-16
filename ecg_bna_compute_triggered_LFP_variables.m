@@ -1,58 +1,4 @@
 function [ triggered_site_data ] = ecg_bna_compute_triggered_LFP_variables( site , triggers, trials,cfg)
-% ecg_bna_compute_session_Rpeak_triggered_variables  - compute evoked_LFP,
-% Powspctrm, ITPC, and phaseBP variables for different conditions for each site of a session.
-% A condition is a combination of
-% possibly hand-space tuning (for consitency with LFP analysis),
-% control/inactivation, choice/instructed, type-effector values.
-%
-% USAGE:
-%	[ session_data ] = ecg_bna_compute_session_Rpeak_triggered_variables(
-%	site_proc, events, cfg )
-%
-% INPUTS:
-%		site_proc  	- 1xN struct containing raw LFP data for a
-%		session,  output from ecg_bna_process_combined_LFP_ECG
-%       events  - cell array containing states to be
-%       analysed and corresponding time windows
-%       cfg     - struct containing configuration settings
-%           Required fields:
-%               random_seed                 - random seed for
-%               reproducibility of random shuffling of Rpeaks
-%               session_results_fldr        - folder to which the
-%               results of the session should be saved
-%               mintrials_percondition          - minimum number of trials
-%               required per condition for considering the site for
-%               averaging
-%               diff_condition      - conditions to compare, the plot
-%               for compared conditions would be shown one on top of the
-%               other
-%               ref_hemisphere      - reference hemisphere for ipsi- and
-%               contra- hand and space labeling
-%           Optional Fields:
-%               diff_color          - color to be used for plotting the
-%               compared conditions
-%               diff_legend         - legend to be used while plotting the
-%               compared conditions
-%               random_permute_triggers     - flag indicating whether to
-%               randomly permute the Rpeak triggers
-%               n_shuffles                  - integer which specifies how
-%               many times the Rpeaks need to be randomly shuffled to
-%               compute statistics
-%
-%
-% OUTPUTS:
-%		session_data	- output structure which saves the average
-%       evoked LFP in a time window around Rpeak for trials of given
-%       conditions
-%
-% REQUIRES:	lfp_tfa_compare_conditions, lfp_tfa_get_condition_trials,
-% ecg_bna_get_Rpeak_evoked_LFP, ecg_bna_get_shuffled_Rpeak_evoked_LFP,
-% ecg_bna_plot_evoked_lfp, ecg_bna_compute_diff_condition_average
-%
-% See also ecg_bna_compute_session_evoked_ECG,
-% ecg_bna_compute_session_Rpeak_evoked_TFS,
-% ecg_bna_compute_session_evoked_ECG_R2Rt,
-% ecg_bna_compute_session_Rpeak_evoked_state_onsets
 
 % suppress warning for xticklabel
 warning ('off', 'MATLAB:hg:willberemoved');
@@ -101,14 +47,6 @@ for cn = 1:length(cfg.condition)
     % get trial indices for the given condition
     cond_trials = ecg_bna_get_condition_trials(sitetrials, cfg.condition(cn));
     
-    %         %% FIX THIS BS
-    %         trig.condition(cn).ntrials(hs)     = sum(cond_trials);
-    %         trig.condition(cn).noisytrials(hs) = sum(cond_trials & [site_proc.trials.noisy]);
-    %         fprintf('Condition %s - %s\n', site_conditions(cn).label, hs_labels{hs});
-    %         fprintf('Total number of trials %g\n', sum(cond_trials));
-    %         fprintf('Number of noisy trials %g\n', sum(cond_trials & [site_proc.trials.noisy]));
-    %         cond_trials = cond_trials & ~[site_proc.trials.noisy];
-    
     if sum(cond_trials) == 0
         continue;
     end
@@ -141,6 +79,7 @@ for cn = 1:length(cfg.condition)
         trig_con_s(inbetween)=0;
         
         realD = ecg_bna_get_triggered_parameters(site,trig_con_s, width_in_samples);
+        
         %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
         trig_con_s=triggers.([event_name '_shuffled']);
         trig_con_s(trig_con_s<LFP_samples_start_con(1)-width_in_samples(1))=0;
@@ -166,7 +105,7 @@ for cn = 1:length(cfg.condition)
 end
 triggered_site_data = trig;
 if isfield(cfg.lfp, 'TaskRest_SigClust') && cfg.lfp.TaskRest_SigClust == 1
-    [ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pow', 'lfp'},cfg.analyse_states(:,1), cfg );
+    [ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pha','pow','lfp'},cfg.analyse_states(:,1), cfg );
     
     triggered_site_data = out_triggered_site_data;
     clear out_triggered_site_data

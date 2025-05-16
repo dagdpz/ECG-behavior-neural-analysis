@@ -18,8 +18,19 @@ for fi = 1:length(data_label)
             continue
         end
         if strcmp(Fin,'pow') ||strcmp(Fin,'itpc')
+            s1=size(triggered_site_data.condition(1).event(e).real.(Fin).complete,1);
+            s2=size(triggered_site_data.condition(2).event(e).real.(Fin).complete,1);
+            data_rest = triggered_site_data.condition(1).event(e).real.(Fin).complete - repmat(triggered_site_data.condition(1).event(e).shuffled.(Fin).mean,s1,1,1); 
+            data_task = triggered_site_data.condition(2).event(e).real.(Fin).complete - repmat(triggered_site_data.condition(2).event(e).shuffled.(Fin).mean,s2,1,1); 
+            
+        elseif strcmp(Fin,'lfp') 
             data_rest = triggered_site_data.condition(1).event(e).real.(Fin).complete;
-            data_task =  triggered_site_data.condition(2).event(e).real.(Fin).complete;
+            data_task = triggered_site_data.condition(2).event(e).real.(Fin).complete;
+        elseif strcmp(Fin,'pha')
+            data_rest = angle(triggered_site_data.condition(1).event(e).real.(Fin).complete);
+            data_task =  angle(triggered_site_data.condition(2).event(e).real.(Fin).complete);
+        end
+        if strcmp(Fin,'pow') ||strcmp(Fin,'itpc') || strcmp(Fin,'pha')
             % ================================================================
             % % %             % removing the field here??
             % % %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(1).event(e).real.(Fin), "complete");
@@ -130,8 +141,6 @@ for fi = 1:length(data_label)
             close all,
             
         elseif strcmp(Fin,'lfp')
-            data_rest = triggered_site_data.condition(1).event(e).real.(Fin).complete;
-            data_task =  triggered_site_data.condition(2).event(e).real.(Fin).complete;
             % ================================================================================
             % %             % removing the field here??
             % %             triggered_site_data.condition(1).event(e).real.(Fin) = rmfield(triggered_site_data.condition(2).event(e).real.(Fin), "complete");
