@@ -33,7 +33,8 @@ fprintf('=============================================================\n');
 fprintf('Processing site, %s\n', sites.site_ID);
 site_lfp.session = sites.site_ID(1:12);
 site_lfp.recorded_hemisphere = upper(sites.target(end));
-
+%filtering the LFP file
+sites.LFP = eegfilt(sites.LFP,1/ts_original,4,[]);
 
 N_cycles=cfg.lfp.n_cycles;
 frequencies = cfg.lfp.foi;
@@ -120,8 +121,9 @@ for b=1:numel(blocks_with_LFP)
         %% think about how to use good filters without causing errors for short periods
         %  fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
         %  fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
-        [u, v]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
-        dat = filtfilt(u,v,concat_raw);
+        dat = eegfilt(concat_raw, 1/ts_original, frequency_bands(f,1), frequency_bands(f,2));
+%         [u, v]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
+%         dat = filtfilt(u,v,concat_raw);
         H=hilbert(dat);
         H = mean(reshape(H(1:end-mod(size(H,2), ts)),ts,[]),1);
         absH=abs(H);

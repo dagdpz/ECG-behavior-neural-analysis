@@ -18,10 +18,10 @@ function ecg_bna_analysis_main(project,versions)
 
 %% INITIALIZATION
 % loop through settings file
-
+% addpath(genpath_exclude('/home/shamim/fileserver/Projects/_Shamim/rework_LS_SS','.git'));
 cfg = [];
 cfg.project = project;
-cfg.results_folder = ['Y:\Projects\' cfg.project];
+cfg.results_folder = ['Y:',filesep,'Projects',filesep,cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 
@@ -141,10 +141,16 @@ for v = 1:length(versions)
                     else
                         fprintf('\n\n*****  NO site was removed ! *****\n\n');
                     end
-                    
-                    
                     sitefiles = allSitesData;
                     clear allSitesData;
+%                 elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==0)
+                    
+%                     smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
+%                         cfg.session_info(i).Monkey(1:3),'_', cfg.session_info(i).Date , '_sampleTble_allSitesdata']);
+%                     load([smplTblfilename,'.mat']);
+%                     
+%                     sitefiles = allSitesData;
+%                     clear allSitesData;
                 end
 % % % %                 ecg_bna_rawLFP_butterfly_plots(cfg,allSitesData,sr)
                 %% exclude outliars (too many samples with too high/low voltage ? or other criteria)
@@ -160,6 +166,8 @@ for v = 1:length(versions)
                 for s = 1:length(sitefiles) %% loop only through valid sites
                      if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1 || (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
                          sites = sitefiles(s).site;
+%                      elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==0)
+%                          sites = sitefiles(s).site;
                      else
                          load([sitesdir filesep sitefiles(s).name], 'sites');
                      end

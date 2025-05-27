@@ -1,8 +1,8 @@
 function allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original,sr,Triggers,blocks,blockstart)
-cfg.ica_sampling_rate = 256;  
+cfg.ica_sampling_rate = 256;
 ts=round(sr/cfg.ica_sampling_rate); %% cfg.lfp.timestep is binning used in process_lfp, at the moment it's 10 ms
 
-%% but lfp 
+%% but lfp
 session = strsplit(sitefiles(1).name,'_');
 session = session{3};
 
@@ -65,9 +65,9 @@ if reprocess==1
             end
         end
         % Here I generate the triggers to check the ICA epochs later on:
-        n_LFP_samples_per_block = sampling_table.tfs(s).n_samples_per_block; 
+        n_LFP_samples_per_block = sampling_table.tfs(s).n_samples_per_block;
         sampling_table.site_triggers(s)= ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,sr);
-        n_LFP_samples_per_block = sampling_table.tfs(s).n_ica_samples_per_block; 
+        n_LFP_samples_per_block = sampling_table.tfs(s).n_ica_samples_per_block;
         sampling_table.site_triggers_ica(s)= ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,cfg.ica_sampling_rate);
     end
     
@@ -143,7 +143,7 @@ allICAweights = dir([icaw_path,filesep,'*.mat']);
 if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
     sites_hemisphere=contains(lfp_tagets,'_L')+2*contains(lfp_tagets,'_R'); %look for the _ as well, because f.e. VPL contains L
     hemisphere_list = unique(sites_hemisphere);
-
+    
     for h = 1: length(hemisphere_list)
         
         hemisphere_sites = sites_hemisphere==hemisphere_list(h);
@@ -172,14 +172,14 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         data_comp = ft_componentanalysis(cfg_ica, data);
         data_to_plot = data_comp;
         
-%         data_to_plot            = rmfield(data_comp,{'topo','topolabel'});
+        %         data_to_plot            = rmfield(data_comp,{'topo','topolabel'});
         
         % storing the sites ICA weights
         icawfile = [cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(hemisphere_site_names)),'cmp'];
         ICAfilename = fullfile([icaw_path,filesep,icawfile]);
         save(ICAfilename,'data_to_plot','hemisphere_site_names','-v7.3');
         
-        fprintf("\n ============================================ \n investigating %s\n",session)
+        fprintf('\n ============================================ \n investigating %s\n',session)
         triggers = sampling_table.site_triggers_ica(1).R_real;
         [ica_epochs, ica_avg] = ecg_bna_epochICAaroundTriggers([cfg.analyse_lfp_folder,filesep,'Per_Site_ICAweights'],session,data_to_plot, triggers, 0.25, 0.25, true,true);
         
@@ -192,10 +192,10 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         fig1 = figure;
         for cmp = 1:n_channels
             
-            comp_index = cmp;  
+            comp_index = cmp;
             weights = data_to_plot.unmixing(comp_index,:)';
             % Normalize for color mapping
-            weights_norm = (weights - min(weights)) / (max(weights) - min(weights)); 
+            weights_norm = (weights - min(weights)) / (max(weights) - min(weights));
             subplot(6,6,cmp)
             scatter(weights, -depths, 100, weights_norm, 'filled');  % invert Y for depth
             colormap(jet);
@@ -217,18 +217,18 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         fig2 = figure;
         for cmp = 1:n_channels
             
-            comp_index = cmp;          
+            comp_index = cmp;
             weights_inv_2plot = weights_inv(:,comp_index)';
             weights_inv_norm = (weights_inv_2plot - min(weights_inv_2plot)) / (max(weights_inv_2plot) - min(weights_inv_2plot));
             
             subplot(6,6,cmp)
-            scatter(weights_inv_2plot, -depths, 100, weights_inv_norm, 'filled');  % invert Y for depth 
+            scatter(weights_inv_2plot, -depths, 100, weights_inv_norm, 'filled');  % invert Y for depth
             colormap(jet);
             colorbar;
             xlabel('ICA Inverse weight');
             ylabel('Electrode Depth');
-%             ylabel('ICA cmp');
-%             title(sprintf('Inverse ICA Component in Site: %d ', comp_index),'FontSize',7);
+            %             ylabel('ICA cmp');
+            %             title(sprintf('Inverse ICA Component in Site: %d ', comp_index),'FontSize',7);
             title(sprintf('Inv ICA Component %d ', comp_index),'FontSize',7);
             set(gca, 'YDir', 'normal');
             grid on;
@@ -261,7 +261,7 @@ if (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==1)
         
         for sitei = 1:length(find(hemisphere_sites))
             site_idx = find(hemisphere_sites);
-            allSitesData(site_idx(sitei)).site.LFP = data_orig_clean.trial{1, 1}(site_idx(sitei),:);
+            allSitesData(site_idx(sitei)).site.LFP = data_orig_clean.trial{1, 1}(sitei,:);
         end
         
         % % % Another version of ICA, directly from fastICA function:
@@ -287,7 +287,7 @@ elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==0)
         icaw_fileidx = contains({allICAweights.name},[session,'_',target_list{h}]);
         hemisphere_sites = sites_hemisphere==hemisphere_list(h);
         hemisphere_site_names = site_names(hemisphere_sites);
-%         icawfile = [cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(hemisphere_site_names)),'cmp'];
+        %         icawfile = [cfg.session_info(1).Monkey(1:3),'_', session , '_',target_list{h},'_ICAweigths_w ',num2str(length(hemisphere_site_names)),'cmp'];
         icawfile = allICAweights(icaw_fileidx).name;
         ICAfilename = fullfile([icaw_path,filesep,icawfile]);
         load(ICAfilename);
@@ -305,99 +305,126 @@ elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1) && (reprocess==0)
         ft_datatype_raw(data) % To Check if the structure is correctly formatted
         data_orig = data;
         
-%         cfg_ica              = [];
-%         cfg_ica.resamplefs   = 256;
-%         cfg_ica.detrend      = 'no';
-%         data = ft_resampledata(cfg_ica, data_orig);
-        fprintf("\n ============================================ \n investigating %s\n",session)
-        triggers = sampling_table.site_triggers_ica(1).R_real;
-        [ica_epochs, ica_avg] = ecg_bna_epochICAaroundTriggers(icaw_path,icawfile(1:end-12),data_to_plot, triggers, 0.25, 0.25, true,true);
-       
-        site_depth_idx = ismember({allSitesData.name},hemisphere_site_names');
-        site_depth = arrayfun(@(x) x.site.electrode_depth, allSitesData(site_depth_idx), 'UniformOutput', false);
-        site_depth = horzcat(site_depth{:});
-        depths = site_depth;
-        n_channels = length(data_to_plot.label);
-        % ICA weight per Site plots
-        fig1 = figure;
-        for cmp = 1:n_channels
+        %         cfg_ica              = [];
+        %         cfg_ica.resamplefs   = 256;
+        %         cfg_ica.detrend      = 'no';
+        %         data = ft_resampledata(cfg_ica, data_orig);
+        if exist([cfg.analyse_lfp_folder,filesep, 'allSessions_BadICAcmp.txt'],'file')
+            allSessionBadICA = readtable('Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_generalTrig\allSessions_BadICAcmp.txt','Delimiter',';','ReadVariableNames',false);
             
-            comp_index = cmp;  
-            weights = data_to_plot.unmixing(comp_index,:)';
-            % Normalize for color mapping
-            weights_norm = (weights - min(weights)) / (max(weights) - min(weights)); 
-            subplot(6,6,cmp)
-            scatter(weights, -depths, 100, weights_norm, 'filled');  % invert Y for depth
-            colormap(jet);
-            colorbar;
-            xlabel('ICA weight');
-            ylabel('Electrode Depth');
-            title(sprintf('ICA Component %d Spatial Weights (LFP Channels)', comp_index),'FontSize',7);
-            set(gca, 'YDir', 'normal');
-            grid on;
-        end
-        fig1.WindowState = 'maximized';
-        sgtitle(icawfile(1:end-12),'interpreter','none')
-        figname2save = fullfile([icaw_path,filesep,icawfile(1:end-4)]);
-        saveas(fig1,figname2save,'fig');
-        saveas(fig1,figname2save,'png');
-        
-        % ICA Inv weight per Site plots
-        weights_inv = pinv(data_to_plot.unmixing);
-        fig2 = figure;
-        for cmp = 1:n_channels
             
-            comp_index = cmp;          
-            weights_inv_2plot = weights_inv(:,comp_index)';
-            weights_inv_norm = (weights_inv_2plot - min(weights_inv_2plot)) / (max(weights_inv_2plot) - min(weights_inv_2plot));
-            
-            subplot(6,6,cmp)
-            scatter(weights_inv_2plot, -depths, 100, weights_inv_norm, 'filled');  % invert Y for depth 
-            colormap(jet);
-            colorbar;
-            xlabel('ICA Inverse weight');
-            ylabel('Electrode Depth');
-%             ylabel('ICA cmp');
-%             title(sprintf('Inverse ICA Component in Site: %d ', comp_index),'FontSize',7);
-            title(sprintf('Inv ICA Component %d ', comp_index),'FontSize',7);
-            set(gca, 'YDir', 'normal');
-            grid on;
-        end
-        fig2.WindowState = 'maximized';
-        sgtitle([icawfile(1:end-12),'_Inv'],'interpreter','none')
-        figname2save = fullfile([icaw_path,filesep,icawfile(1:end-4),'_Inv2']);
-        saveas(fig2,figname2save,'fig');
-        saveas(fig2,figname2save,'png');
-        
-        
-        if doTimecourse ==1
-            cfg_ica                 = [];
-            cfg_ica.continuous      = 'yes';
-            cfg_ica.blocksize       = 30; % show 30 seconds at the time
-            cfg_ica.plotevents      = 'no';
-            cfg_ica.preproc.demean  = 'no';
-            ica_com = ft_databrowser(cfg_ica, data_to_plot);
-        else
             ica_com = data_to_plot;
             ica_com.topolabel = data_to_plot.cfg.channel';
             ica_com.topo = pinv(data_to_plot.unmixing);
+            
+            idx2check = strsplit(icawfile,'_ICAweigths_');
+            idx2check = idx2check{1};
+            BadICAcomps = allSessionBadICA.Var2(ismember(allSessionBadICA.Var1,idx2check));
+            
+            
+            if ~isempty(BadICAcomps)
+                BadICAcomps = str2double(strsplit(BadICAcomps{1},','));
+                cfg_ica = [];
+                cfg_ica.component = BadICAcomps; % to be removed
+                data_orig_clean = ft_rejectcomponent(cfg_ica, ica_com, data_orig);
+                
+                for sitei = 1:length(find(hemisphere_sites))
+                    site_idx = find(hemisphere_sites);
+                    allSitesData(site_idx(sitei)).site.LFP = data_orig_clean.trial{1, 1}(sitei,:);
+                end
+            end
+        else
+            fprintf('\n ============================================ \n investigating %s\n\',session)
+            triggers = sampling_table.site_triggers_ica(1).R_real;
+            [ica_epochs, ica_avg] = ecg_bna_epochICAaroundTriggers(icaw_path,icawfile(1:end-12),data_to_plot, triggers, 0.25, 0.25, true,true);
+            
+            site_depth_idx = ismember({allSitesData.name},hemisphere_site_names');
+            site_depth = arrayfun(@(x) x.site.electrode_depth, allSitesData(site_depth_idx), 'UniformOutput', false);
+            site_depth = horzcat(site_depth{:});
+            depths = site_depth;
+            n_channels = length(data_to_plot.label);
+            % ICA weight per Site plots
+            fig1 = figure;
+            for cmp = 1:n_channels
+                
+                comp_index = cmp;
+                weights = data_to_plot.unmixing(comp_index,:)';
+                % Normalize for color mapping
+                weights_norm = (weights - min(weights)) / (max(weights) - min(weights));
+                subplot(6,6,cmp)
+                scatter(weights, -depths, 100, weights_norm, 'filled');  % invert Y for depth
+                colormap(jet);
+                colorbar;
+                xlabel('ICA weight');
+                ylabel('Electrode Depth');
+                title(sprintf('ICA Component %d Spatial Weights (LFP Channels)', comp_index),'FontSize',7);
+                set(gca, 'YDir', 'normal');
+                grid on;
+            end
+            fig1.WindowState = 'maximized';
+            sgtitle(icawfile(1:end-12),'interpreter','none')
+            figname2save = fullfile([icaw_path,filesep,icawfile(1:end-4)]);
+            saveas(fig1,figname2save,'fig');
+            saveas(fig1,figname2save,'png');
+            
+            % ICA Inv weight per Site plots
+            weights_inv = pinv(data_to_plot.unmixing);
+            fig2 = figure;
+            for cmp = 1:n_channels
+                
+                comp_index = cmp;
+                weights_inv_2plot = weights_inv(:,comp_index)';
+                weights_inv_norm = (weights_inv_2plot - min(weights_inv_2plot)) / (max(weights_inv_2plot) - min(weights_inv_2plot));
+                
+                subplot(6,6,cmp)
+                scatter(weights_inv_2plot, -depths, 100, weights_inv_norm, 'filled');  % invert Y for depth
+                colormap(jet);
+                colorbar;
+                xlabel('ICA Inverse weight');
+                ylabel('Electrode Depth');
+                %             ylabel('ICA cmp');
+                %             title(sprintf('Inverse ICA Component in Site: %d ', comp_index),'FontSize',7);
+                title(sprintf('Inv ICA Component %d ', comp_index),'FontSize',7);
+                set(gca, 'YDir', 'normal');
+                grid on;
+            end
+            fig2.WindowState = 'maximized';
+            sgtitle([icawfile(1:end-12),'_Inv'],'interpreter','none')
+            figname2save = fullfile([icaw_path,filesep,icawfile(1:end-4),'_Inv2']);
+            saveas(fig2,figname2save,'fig');
+            saveas(fig2,figname2save,'png');
+            
+            
+            if doTimecourse ==1
+                cfg_ica                 = [];
+                cfg_ica.continuous      = 'yes';
+                cfg_ica.blocksize       = 30; % show 30 seconds at the time
+                cfg_ica.plotevents      = 'no';
+                cfg_ica.preproc.demean  = 'no';
+                ica_com = ft_databrowser(cfg_ica, data_to_plot);
+            else
+                ica_com = data_to_plot;
+                ica_com.topolabel = data_to_plot.cfg.channel';
+                ica_com.topo = pinv(data_to_plot.unmixing);
+            end
+            
+            BadICAcomps = inputdlg('Enter space-separated Selected ICA Components to remove:','Sample', [1 64]);
+            BadICAcomps = str2num(BadICAcomps{1});
+            close all
+            
+            if ~isempty(BadICAcomps)
+                cfg_ica = [];
+                cfg_ica.component = BadICAcomps; % to be removed
+                data_orig_clean = ft_rejectcomponent(cfg_ica, ica_com, data_orig);
+                
+                for sitei = 1:length(find(hemisphere_sites))
+                    site_idx = find(hemisphere_sites);
+                    allSitesData(site_idx(sitei)).site.LFP = data_orig_clean.trial{1, 1}(sitei,:);
+                end
+            end
+            
         end
-        
-        BadICAcomps = inputdlg('Enter space-separated Selected ICA Components to remove:','Sample', [1 64]);
-        BadICAcomps = str2num(BadICAcomps{1});
-        close all
-        
-        cfg_ica = [];
-        cfg_ica.component = BadICAcomps; % to be removed
-        data_orig_clean = ft_rejectcomponent(cfg_ica, ica_com, data_orig);
-        
-        for sitei = 1:length(find(hemisphere_sites))
-            site_idx = find(hemisphere_sites);
-            allSitesData(site_idx(sitei)).site.LFP = data_orig_clean.trial{1, 1}(site_idx(sitei),:);
-        end
-        
     end
-    
 end
 
 %% okay here the point was to average across all sites in one hemisphere, not in one target only..
