@@ -51,8 +51,8 @@ if reprocess
                 nTriggers = event.real.ntriggers;
                 time      = event.time;
                 tfr_time  = event.tfr_time;
-%                 lfp       = squeeze(event.real.lfp.mean)';
-                lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
+                lfp       = squeeze(event.real.lfp.mean)';
+%                 lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
 %                 lfp       = squeeze(event.normalized.lfp.mean)';
                 itpc      = squeeze(event.real.itpc.mean)-squeeze(event.shuffled.itpc.mean);
                 power     = squeeze(event.normalized.pow.mean);
@@ -356,6 +356,8 @@ clc
 %%
 freqb = {'delta 2-4 Hz','theta 4-8 Hz','alpha 8-14 Hz','beta 14-30 Hz','lowgamma 30-50 Hz','highgamma 70-150 Hz'};
 freqName = {'delta','theta','alpha','beta','lowGamma','highGamma'};
+% freqb = {'theta 4-8 Hz','alpha 8-14 Hz','beta 14-30 Hz','lowgamma 30-50 Hz','highgamma 70-150 Hz'};
+% freqName = {'theta','alpha','beta','lowGamma','highGamma'};
 color = jet(length(frequency_bands));
 
 for tr = 1:length(targets)
@@ -463,20 +465,20 @@ for tr = 1: length(targets)
         for fb = 1: length(freqb)
             % itpcbp
             sp1=subplot(3,2,c);
-            plot(bins,squeeze(grand_avg(tr).avg(c).itpcbp_sig_avg(fb,:)),'-','Color',color(fb,:));
+            plot(bins,squeeze(grand_avg(tr).avg(c).itpcbpsig(fb,:)),'-','Color',color(fb,:));
             hold on
             title([' fraction significant itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).max_itpcbp,2)),...
-                ' sites,',num2str(grand_avg(tr).avg(c).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+                ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
             xlabel('Significant ITPC times','Interpreter','latex');
             set(gca,'xlim',[-0.25,0.25])
 %             xlim([bins(1) bins(end)]);
             
             % powbp
             sp2=subplot(3,2,c+2);
-            plot(bins,squeeze(grand_avg(tr).avg(c).powbp_sig_avg(fb,:)),'-','Color',color(fb,:));
+            plot(bins,squeeze(grand_avg(tr).avg(c).powbpsig(fb,:)),'-','Color',color(fb,:));
             hold on
             title([' fraction significant power-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).max_powbp,2)),...
-                ' sites,',num2str(grand_avg(tr).avg(c).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+                ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
             xlabel('Significant POWER times','Interpreter','latex');
             set(gca,'xlim',[-0.25,0.25])
 %             xlim([bins(1) bins(end)]);            
@@ -487,10 +489,10 @@ for tr = 1: length(targets)
         
         % evoked lfp
         sp3=subplot(3,2,c+4);
-        plot(bins,grand_avg(tr).avg(c).lfp_sig_avg,'-','Color',[0 0 1]);
+        plot(bins,grand_avg(tr).avg(c).lfpsig,'-','Color',[0 0 1]);
         hold on
-        title([' fraction significant evoked lfp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).lfp_sig_avg,2)),...
-            ' sites,',num2str(grand_avg(tr).avg(c).nTriggers_avg),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+        title([' fraction significant evoked lfp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).lfpsig,2)),...
+            ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
         xlabel('Significant evoked LFP times','Interpreter','latex');
         set(gca,'xlim',[-0.25,0.25])
 %         xlim([bins(1) bins(end)]);
