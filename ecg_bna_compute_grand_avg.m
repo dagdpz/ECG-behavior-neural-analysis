@@ -201,7 +201,10 @@ for t = 1: length(targets)
             E.max_powbp_time=[events(:,e).max_powbp_time];
             
             
-            %(fbx:end,:)
+            E.max_itpcbp=E.max_itpcbp(fbx:end,:);
+            E.max_powbp=E.max_powbp(fbx:end,:);
+            E.max_itpcbp_time=E.max_itpcbp_time(fbx:end,:);
+            E.max_powbp_time=E.max_powbp_time(fbx:end,:);
             
             
             NaNseparator=100/25;
