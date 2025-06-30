@@ -19,9 +19,11 @@ function ecg_bna_analysis_main(project,versions)
 %% INITIALIZATION
 % loop through settings file
 % addpath(genpath_exclude('/home/shamim/fileserver/Projects/_Shamim/rework_LS_SS','.git'));
+driver_path = 'Y:';%'/home/shamim/fileserver';
+
 cfg = [];
 cfg.project = project;
-cfg.results_folder = ['Y:',filesep,'Projects',filesep,cfg.project];
+cfg.results_folder = [driver_path,filesep,'Projects',filesep,cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 
@@ -55,7 +57,7 @@ for v = 1:length(versions)
             
             % reading in actual TDT clock block starts (in seconds - inprecise, but that is irrelevant)
             blocks=unique([trials.block]);
-            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks); 
+            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,driver_path); 
                         
             cfg.event_types=cfg.analyse_states(:,2);
             cfg.events=cfg.analyse_states(:,1);
