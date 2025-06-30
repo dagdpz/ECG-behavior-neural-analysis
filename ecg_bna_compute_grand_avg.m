@@ -426,7 +426,7 @@ for e=1:size(cfg.analyse_states,1)
     for t = 1: length(targets)
         for c = 1:length(cond)
             k=t+(c-1)*length(targets);
-            bins=tar(t).con(c).(E).tfr_time;
+            %bins=tar(t).con(c).(E).tfr_time;
             % create figure
             h(c,t) = figure('units','normalized','position',[0 0 1 1]);
             if tar(t).nSites == 0
