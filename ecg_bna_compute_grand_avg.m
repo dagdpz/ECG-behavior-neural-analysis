@@ -616,31 +616,6 @@ for e=1:size(cfg.analyse_states,1)
             if tar(t).nSites == 0
                 continue;
             end
-% =======
-% %%
-% freqb = {'delta 2-4 Hz','theta 4-8 Hz','alpha 8-14 Hz','beta 14-30 Hz','lowgamma 30-50 Hz','highgamma 70-150 Hz'};
-% freqName = {'delta','theta','alpha','beta','lowGamma','highGamma'};
-% % freqb = {'theta 4-8 Hz','alpha 8-14 Hz','beta 14-30 Hz','lowgamma 30-50 Hz','highgamma 70-150 Hz'};
-% % freqName = {'theta','alpha','beta','lowGamma','highGamma'};
-% color = jet(length(frequency_bands));
-% 
-% for tr = 1:length(targets)
-%     if grand_avg(tr).nSites == 0
-%         continue;
-%     end
-%     h = figure('Name',['Max ITPCbp/POWbp of Target=',grand_avg(tr).target],'NumberTitle','off');
-%     for c = 1:length(cond)
-%         for fb = 1: length(freqb)
-%             % itpcbp
-%             subplot(2,2,2*c-1)
-%             scatter(grand_avg(tr).avg(c).max_itpcbp_time(fb,:),grand_avg(tr).avg(c).max_itpcbp(fb,:),15,color(fb,:))
-%             hold on
-%             title([' max itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(grand_avg(tr).nSites),...
-%                 ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('time (s)','Interpreter','latex'), ylabel('Max ITPC value','Interpreter','latex');
-% %             set(gca,'xlim',[-0.5,0.5],'ylim',[0,1])
-%             set(gca,'xlim',[-0.25,0.25],'ylim',[0,1])
-% >>>>>>> 86fc46a25bdc94ee94288cf71ea552db2eba85fa
             
             % tfr_time not defined well!
             tfr_time=tar(t).con(c).(E).tfr_time;
@@ -1043,52 +1018,6 @@ for e=1:size(cfg.analyse_states,1)
     clc    
 end
 
-% for t = 1:length(targets)
-%     if tar(t).nSites == 0
-%         continue;
-%     end
-%     h = figure('Name',['Max ITPCbp/POWbp of Target=',tar(t).target],'NumberTitle','off');
-%     for c = 1:length(cond)
-%         for fb = 1: length(freqb)
-%             % itpcbp
-%             subplot(2,2,2*c-1)
-%             scatter(tar(t).con(c).concat.max_itpcbp_time(fb,:),tar(t).con(c).concat.max_itpcbp(fb,:),15,colsbp(fb,:))
-%             hold on
-%             title([' max itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(tar(t).nSites),...
-%                 ' sites,',num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('time (s)','Interpreter','latex'), ylabel('Max ITPC value','Interpreter','latex');
-% %             set(gca,'xlim',[-0.5,0.5],'ylim',[0,1])
-%             set(gca,'xlim',[-0.25,0.25],'ylim',[0,1])
-%             
-%             % powbp
-%             subplot(2,2,2*c)
-%             scatter(tar(t).con(c).concat.max_powbp_time(fb,:),tar(t).con(c).concat.max_powbp(fb,:),15,colsbp(fb,:))
-%             hold on
-%             title([' max power-bp in ', strrep(cond{c},'_',' '),' for ',num2str(tar(t).nSites),...
-%                 ' sites,',num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('time (s)','Interpreter','latex'), ylabel('Max POWER value','Interpreter','latex');
-% %             set(gca,'xlim',[-0.5,0.5])
-%             set(gca,'xlim',[-0.25,0.25])
-%             
-%         end
-%         
-%         subplot(2,2,2*c-1)
-%         plot([0,0],get(gca,'ylim'),'k--')
-%         %
-%         subplot(2,2,2*c)
-%         plot([0,0],get(gca,'ylim'),'k--')
-%         legend(freqb,'FontSize',5)
-%         legend('boxoff')
-%         
-%     end
-%     mtit(['Target=',strrep(tar(t).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-%     results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},' - ','Max_ITPCbp_POWbp_of ',num2str(tar(t).nSites),' sites ', withunits]);
-%     %     mtit([ ecg_bna_cfg.monkey,'-',targets{t},'-avg of ',num2str(tar(t).nSites),' sites in all sessions - ',tar(t).con(c).cond_name],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
-%     export_fig(h,[results_file,'.pdf']);
-% %     saveas(h,[results_file]);
-% end
-% close all,
-% clc
 
 %%
 % ploting the avgogram of the timing of the Max ITPC/POW:
@@ -1136,123 +1065,6 @@ end
 close all,
 clc
 
-
-%<<<<<<< HEAD
-% % ploting number of significant sites in each bin for ITPC/POW/evoked lfp:
-% for e=1:size(cfg.analyse_states,1)
-%     h = figure;
-%     E=cfg.analyse_states{e,1};
-%     for t = 1: length(targets)
-%         if tar(t).nSites == 0
-%             continue;
-%         end
-%         
-%         for c = 1:length(cond)   
-%             bins=tar(t).con(c).(E).tfr_time;
-%             nsites=num2str(tar(t).nSites);
-%             ntrigs=num2str(round(tar(t).con(c).(E).nTriggers));
-%             
-%             % itpcbp
-%             sp1=subplot(3,2,c);
-%             hold on
-%             title([' fraction significant itpc-bp in ', strrep(cond{c},'_',' '),' for ',nsites,...
-%                 ' sites,',ntrigs,' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant ITPC times','Interpreter','latex');
-%             xlim([bins(1) bins(end)]);
-%             
-%             % powbp
-%             sp2=subplot(3,2,c+2);
-%             hold on
-%             title([' fraction significant power-bp in ', strrep(cond{c},'_',' '),' for ',nsites,...
-%                 ' sites,',ntrigs,' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant POWER times','Interpreter','latex');
-%             xlim([bins(1) bins(end)]);
-%             
-%             for fb = 1: length(freqb)
-%                 plot(sp1,bins,squeeze(tar(t).con(c).(E).itpcbp_sig(fb,:)),'-','Color',colsbp(fb,:));
-%                 plot(sp2,bins,squeeze(tar(t).con(c).(E).powbp_sig(fb,:)),'-','Color',colsbp(fb,:));
-%             end   
-%             plot(sp1,[0,0],get(sp1,'ylim'),'k--')
-%             plot(sp2,[0,0],get(sp2,'ylim'),'k--')         
-%             legend(freqb,'FontSize',5)
-%             legend('boxoff')
-%             
-%             % evoked lfp
-%             sp3=subplot(3,2,c+4);
-%             plot(bins,tar(t).con(c).(E).lfp_sig,'-','Color',[0 0 1]);
-%             hold on
-%             title([' fraction significant evoked lfp in ', strrep(cond{c},'_',' '),' for ',nsites,...
-%                 ' sites,',ntrigs,' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant evoked LFP times','Interpreter','latex');
-%             xlim([bins(1) bins(end)]);
-%         end
-%         
-%         %% adjust y scales so that they are the same across conditions        
-%         mtit(['Target=',strrep(tar(t).target,'_','-'), ', ' E],'Interpreter','latex','Color','red', 'fontsize', 12);
-%         %sgtitle(['Target=',strrep(tar(t).target,'_','-'), ' ,' E],'interpreter','none','Color','red', 'fontsize', 12);
-%         results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},' ',E,'-','Significant_bins_for ',nsites,' sites ', withunits]);
-%         export_fig(h,[results_file,'.pdf']);
-%     end
-% end
-% close all,
-% clc
-% =======
-% % ploting number of significant sites in each bin for ITPC/POW/evoked lfp:
-% bins=tfr_time;
-% for tr = 1: length(targets)
-%     if grand_avg(tr).nSites == 0
-%         continue;
-%     end
-%     h = figure;
-%     for c = 1:length(cond)
-%         for fb = 1: length(freqb)
-%             % itpcbp
-%             sp1=subplot(3,2,c);
-%             plot(bins,squeeze(grand_avg(tr).avg(c).itpcbpsig(fb,:)),'-','Color',color(fb,:));
-%             hold on
-%             title([' fraction significant itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).max_itpcbp,2)),...
-%                 ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant ITPC times','Interpreter','latex');
-%             set(gca,'xlim',[-0.25,0.25])
-% %             xlim([bins(1) bins(end)]);
-%             
-%             % powbp
-%             sp2=subplot(3,2,c+2);
-%             plot(bins,squeeze(grand_avg(tr).avg(c).powbpsig(fb,:)),'-','Color',color(fb,:));
-%             hold on
-%             title([' fraction significant power-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).max_powbp,2)),...
-%                 ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%             xlabel('Significant POWER times','Interpreter','latex');
-%             set(gca,'xlim',[-0.25,0.25])
-% %             xlim([bins(1) bins(end)]);            
-%         end
-%         
-%         legend(freqb,'FontSize',5)
-%         legend('boxoff')
-%         
-%         % evoked lfp
-%         sp3=subplot(3,2,c+4);
-%         plot(bins,grand_avg(tr).avg(c).lfpsig,'-','Color',[0 0 1]);
-%         hold on
-%         title([' fraction significant evoked lfp in ', strrep(cond{c},'_',' '),' for ',num2str(size(grand_avg(tr).avg(c).lfpsig,2)),...
-%             ' sites,',num2str(grand_avg(tr).avg(c).nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
-%         xlabel('Significant evoked LFP times','Interpreter','latex');
-%         set(gca,'xlim',[-0.25,0.25])
-% %         xlim([bins(1) bins(end)]);
-%         
-%         
-%         plot(sp1,[0,0],get(sp1,'ylim'),'k--')
-%         plot(sp2,[0,0],get(sp2,'ylim'),'k--')
-%     end
-%     mtit(['Target=',strrep(grand_avg(tr).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-%     results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{tr},' - ','Significant_bins_for ',num2str(grand_avg(tr).nSites),' sites ', withunits]);
-%     export_fig(h,[results_file,'.pdf']);
-% %     saveas(h,[results_file]);
-% end
-% 
-% close all,
-% clc
-% >>>>>>> 86fc46a25bdc94ee94288cf71ea552db2eba85fa
 
 
 end
