@@ -10,7 +10,7 @@ targets = cfg.targets;%unique({sites.target}); %%cfg.monkey
 
 if reprocess
     data_path = cfg.sites_lfp_fldr;
-%     data_path = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_test_generalTrig_Reref_shamim\sample session check';
+    %     data_path = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_test_generalTrig_Reref_shamim\sample session check';
     cd(data_path)
     % read the files
     all_lfp_data = dir('*.mat');
@@ -33,7 +33,7 @@ if reprocess
             case 'all_sites'
         end
         s=s+1;
-        sites(s).all_conditions_present = 1;        
+        sites(s).all_conditions_present = 1;
         sites(s).site_ID = site_ID;
         sites(s).target = triggered_site_data.target;
         
@@ -46,14 +46,14 @@ if reprocess
             sites(s).condition(c).condition_name = con.label;
             for e=1:size(cfg.analyse_states,1)
                 event=con.event(e);
-                %% think about event present?
+                % think about event present?
                 
                 nTriggers = event.real.ntriggers;
                 time      = event.time;
                 tfr_time  = event.tfr_time;
                 lfp       = squeeze(event.real.lfp.mean)';
-%                 lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
-%                 lfp       = squeeze(event.normalized.lfp.mean)';
+                % lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
+                % lfp       = squeeze(event.normalized.lfp.mean)';
                 itpc      = squeeze(event.real.itpc.mean)-squeeze(event.shuffled.itpc.mean);
                 power     = squeeze(event.normalized.pow.mean);
                 itpcbp    = squeeze(event.real.itpcbp.mean)-squeeze(event.shuffled.itpcbp.mean);
@@ -74,7 +74,7 @@ if reprocess
                 pow_sig     =squeeze(event.significance.pow);
                 itpcbp_sig  =squeeze(event.significance.itpcbp);
                 powbp_sig   =squeeze(event.significance.powbp);
-                                
+                
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
                 sites(s).condition(c).event(e).lfp = lfp;
                 sites(s).condition(c).event(e).itpc = itpc;
@@ -87,7 +87,7 @@ if reprocess
                 sites(s).condition(c).event(e).max_powbp = max_powbp;
                 sites(s).condition(c).event(e).lfp_sig = lfp_sig;
                 sites(s).condition(c).event(e).itpc_sig = itpc_sig;
-                sites(s).condition(c).event(e).pow_sig = pow_sig;                
+                sites(s).condition(c).event(e).pow_sig = pow_sig;
                 
                 sites(s).condition(c).event(e).itpcbp_sig = itpcbp_sig;
                 sites(s).condition(c).event(e).powbp_sig = powbp_sig;
@@ -107,19 +107,20 @@ else
     load(fileName);
 end
 
+%% Computing the Target-wise averaging of total available sites
+
+% potential cutoff -> probably startfreq should go into settings at somepoint
 startfreq=3.5;
-colsbp=jet(length(cfg.lfp.freqb));
+colsbp=jet(length(cfg.lfp.frequency_bands));
 fbx=find(cfg.lfp.frequency_bands(:,1)>=startfreq,1,'first');
 frequency_bands=cfg.lfp.frequency_bands(fbx:end,:);
-freqb = cfg.lfp.freqb(fbx:end);
 %freqName = cfg.lfp.freqName(fbx:end);
 colsbp=colsbp(fbx:end,:);
-
+freqb=num2cell(strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz'),2);
 fx=find(cfg.lfp.foi>=startfreq,1,'first');
 freq = cfg.lfp.foi(fx:end);
 
 
-%% Computing the Target-wise averaging of total available sites
 for t = 1: length(targets)
     sites_for_this_target=arrayfun(@(x) any(strfind(x.target,targets{t})),sites);
     target_sites = sites(sites_for_this_target);
@@ -163,7 +164,7 @@ for t = 1: length(targets)
             E.tfr_time    = events(1,e).tfr_time;
             E.lfp_time    = events(1,e).time;
             E.lfp_std     = std(cat(3,events(:,e).lfp),0,3);
-                        
+            
             E.pow_sig     = mean(cat(3,events(:,e).pow_sig),3);
             E.itpc_sig    = mean(cat(3,events(:,e).itpc_sig),3);
             E.powbp_sig   = mean(cat(3,events(:,e).powbp_sig),3);
@@ -175,7 +176,7 @@ for t = 1: length(targets)
             E.powbp_sig_signed   = mean(cat(3,events(:,e).powbp_sig).*sign(cat(3,events(:,e).powbp)),3);
             E.itpcbp_sig_signed  = mean(cat(3,events(:,e).itpcbp_sig).*sign(cat(3,events(:,e).itpcbp)),3);
             E.lfp_sig_signed     = mean(cat(3,events(:,e).lfp_sig).*sign(cat(3,events(:,e).lfp)),3);
-                        
+            
             
             E.pow       = E.pow(fx:end,:);
             E.itpc       = E.itpc(fx:end,:);
@@ -183,16 +184,16 @@ for t = 1: length(targets)
             E.powbp =E.powbp(fbx:end,:);
             
             E.pow_sig    = E.pow_sig(fx:end,:)*100;
-            E.itpc_sig   = E.itpc_sig(fx:end,:)*100;  
+            E.itpc_sig   = E.itpc_sig(fx:end,:)*100;
             E.powbp_sig  = E.powbp_sig(fbx:end,:)*100;
-            E.itpcbp_sig = E.itpcbp_sig(fbx:end,:)*100;            
+            E.itpcbp_sig = E.itpcbp_sig(fbx:end,:)*100;
             E.lfp_sig    = E.lfp_sig*100;
             
             E.pow_sig_signed    = E.pow_sig_signed(fx:end,:)*100;
-            E.itpc_sig_signed   = E.itpc_sig_signed(fx:end,:)*100;  
+            E.itpc_sig_signed   = E.itpc_sig_signed(fx:end,:)*100;
             E.powbp_sig_signed  = E.powbp_sig_signed(fbx:end,:)*100;
-            E.itpcbp_sig_signed = E.itpcbp_sig_signed(fbx:end,:)*100;            
-            E.lfp_sig_signed    = E.lfp_sig_signed*100;            
+            E.itpcbp_sig_signed = E.itpcbp_sig_signed(fbx:end,:)*100;
+            E.lfp_sig_signed    = E.lfp_sig_signed*100;
             
             
             E.max_itpcbp=[events(:,e).max_itpcbp];
@@ -239,6 +240,7 @@ end
 %% plotting the results:
 cond = {cfg.condition.name};
 plot_names={'POW','ITPC','Power_BP','ITPC_BP','LFP_Evoked'};
+mtitsettings={'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none'};
 
 % Smoothing Kernel here:
 win = 1:cfg.lfp.smoothWin; win=win-(numel(win)+1)/2;
@@ -246,24 +248,19 @@ half_win = ceil(size(win,2)/2)-1;
 gaussian_kernel=normpdf(win,0,numel(win)/6);
 gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
 
-% figure 1 - overview
+%% figure 1 - overview
 for t = 1: length(targets)
     if tar(t).nSites == 0
         continue;
     end
     for c = 1:length(cond)
         tfr_time=tar(t).con(c).concat.tfr_time;
-        tfr_events.onset        = find(tfr_time == 0);
-        tfr_events.name         = cfg.analyse_states(:,1);
-        tfr_events.ticksamples  = sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff(~isnan(tfr_time))==-1)]);
-        tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
-        tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-        tfr_events.ticks        = round(tfr_time(tfr_events.ticksamples)*100)/100;
+        tfr_events=get_ticks_and_labels(tfr_time,cfg.analyse_states(:,1));
         
-        powbp=tar(t).con(c).concat.powbp;
-        itpcbp=tar(t).con(c).concat.itpcbp;
-        lfp=tar(t).con(c).concat.lfp;
-        lfp_std=tar(t).con(c).concat.lfp_std;
+        powbp   =tar(t).con(c).concat.powbp;
+        itpcbp  =tar(t).con(c).concat.itpcbp;
+        lfp     =tar(t).con(c).concat.lfp;
+        lfp_std =tar(t).con(c).concat.lfp_std;
         %lfp_se=sterr(lfp,3,0);
         percentile25=tar(t).con(c).concat.lfp_25;
         percentile75=tar(t).con(c).concat.lfp_75;
@@ -298,92 +295,45 @@ for t = 1: length(targets)
             collim{c,sp}=[min(nonnan(:)) max(nonnan(:))];
             add_ticks_and_labels(ax,tfr_events,[0.5,numel(freq) + 0.5],8)
         end
-                
-        %========================== Bandpassed POWER ==================== %
-        % Smoothing of the POWbp here:
-        jnk = [];
-        concat_input = cat(2,(powbp(:,half_win:-1:1)),(powbp(:,:)));
-        concat_input = cat(2,concat_input, (powbp(:,end:-1:end-half_win+1)));
-        for k=1:size(powbp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed = jnk(:,half_win+1:end-half_win);
         
+        %========================== Bandpassed POWER ==================== %        
         sp=3;
         sph(c,sp,t)=subplot(3,2,sp);
         ax=sph(c,sp,t);
         hold on;
         set(ax,'ColorOrder',colsbp);
+        smoothed=smoothit(powbp,half_win,gaussian_kernel);
         plot(squeeze(smoothed)')
         xlabel('Time(s)'); ylabel('Power (W)');
-        legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        legend(freqb,'fontsize',3);
         title(plot_names{sp},'fontsize',10,'interpreter','none');
         add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
         
         %========================== Bandpassed ITPC ==================== %
-        % Smoothing of the ITPCbp here:
-        jnk = [];
-        concat_input = cat(2,(itpcbp(:,half_win:-1:1)),(itpcbp(:,:)));
-        concat_input = cat(2,concat_input, (itpcbp(:,end:-1:end-half_win+1)));
-        for k=1:size(itpcbp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed = jnk(:,half_win+1:end-half_win);
-        
         sp=4;
         sph(c,sp,t)=subplot(3,2,sp);
         ax=sph(c,sp,t);
         hold on;
         set(ax,'ColorOrder',colsbp);
+        smoothed=smoothit(itpcbp,half_win,gaussian_kernel);
         plot(squeeze(smoothed)')
         xlabel('Time(s)'); ylabel('ITPC');
-        legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        legend(freqb,'fontsize',3);
         title(plot_names{sp},'fontsize',10,'interpreter','none');
         add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
         
         %========================== LFP evoked Potential ==================== %
-        % Smoothing of the  LFP evoked Potential here:
-        jnk = [];
-        concat_input = cat(2,(lfp(:,half_win:-1:1)),(lfp(:,:)));
-        concat_input = cat(2,concat_input, (lfp(:,end:-1:end-half_win+1)));
-        for k=1:size(lfp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed_mean = jnk(:,half_win+1:end-half_win);
-        concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
-        concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
-        for k=1:size(lfp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed_std = jnk(:,half_win+1:end-half_win);
-        concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
-        concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-        for k=1:size(lfp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed_25 = jnk(:,half_win+1:end-half_win);
-        concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
-        concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-        for k=1:size(lfp,1)
-            jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-        end
-        clear concat_input
-        smoothed_75 = jnk(:,half_win+1:end-half_win);
-        
         sp=5;
         sph(c,sp,t)=subplot(3,2,sp);
         ax=sph(c,sp,t);
         hold on;
-        %set(ax,'ColorOrder',jet(size(lfp,1)));
         lineProps={'color',[0 0 1]};
-        %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);        
+        smoothed_mean=smoothit(lfp,half_win,gaussian_kernel);
+        smoothed_std=smoothit(lfp_std,half_win,gaussian_kernel);
         shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-        %plot(repmat(time,size(tar(t).con(c).lfp_avg,1),1)', squeeze(smoothed_mean)')
+        % smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
+        % smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
+        % shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);
         
         xlabel('Time(s)'); ylabel(' LFP evoked Potential');
         title(plot_names{sp},'fontsize',10,'interpreter','none');
@@ -402,7 +352,7 @@ for t = 1: length(targets)
         end
         
         results_file{c} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
-        mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+        mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],mtitsettings{:})
         
     end
     
@@ -415,18 +365,16 @@ for t = 1: length(targets)
         export_fig(h(c,t),[results_file{c},'.pdf']);
     end
 end
-close all,
-clear results_file sph h collim
+clearall
 
 
-% same as figure 1, but separately for each event
+%% figure 2: same as figure 1, but separately for each event
 for e=1:size(cfg.analyse_states,1)
     E=cfg.analyse_states{e,1};
     
     for t = 1: length(targets)
         for c = 1:length(cond)
             k=t+(c-1)*length(targets);
-            %bins=tar(t).con(c).(E).tfr_time;
             % create figure
             h(c,t) = figure('units','normalized','position',[0 0 1 1]);
             if tar(t).nSites == 0
@@ -434,12 +382,7 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             tfr_time=tar(t).con(c).(E).tfr_time;
-            tfr_events.onset        = find(tfr_time == 0);
-            tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(tfr_time)]; 
-            tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
-            tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(tfr_time(tfr_events.ticksamples)*100)/100;
+            tfr_events=get_ticks_and_labels(tfr_time,cfg.analyse_states(e,1));
             
             powbp=tar(t).con(c).(E).powbp;
             itpcbp=tar(t).con(c).(E).itpcbp;
@@ -481,97 +424,49 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             %========================== Bandpassed POWER ==================== %
-            % Smoothing of the POWbp here:
-            jnk = [];
-            concat_input = cat(2,(powbp(:,half_win:-1:1)),(powbp(:,:)));
-            concat_input = cat(2,concat_input, (powbp(:,end:-1:end-half_win+1)));
-            for k=1:size(powbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=3;
             sph(c,sp,t)=subplot(3,2,sp);
-                ax=sph(c,sp,t);
+            ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(powbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('Power (W)');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
             %========================== Bandpassed ITPC ==================== %
-            % Smoothing of the ITPCbp here:
-            jnk = [];
-            concat_input = cat(2,(itpcbp(:,half_win:-1:1)),(itpcbp(:,:)));
-            concat_input = cat(2,concat_input, (itpcbp(:,end:-1:end-half_win+1)));
-            for k=1:size(itpcbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=4;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(itpcbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('ITPC');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
-            %========================== LFP evoked Potential ==================== %
-            % Smoothing of the  LFP evoked Potential here:
-            jnk = [];
-            concat_input = cat(2,(lfp(:,half_win:-1:1)),(lfp(:,:)));
-            concat_input = cat(2,concat_input, (lfp(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_mean = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
-            concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_std = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
-            concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_25 = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
-            concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_75 = jnk(:,half_win+1:end-half_win);
-            
+            %========================== LFP evoked Potential ==================== %            
             sp=5;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
-            %set(ax,'ColorOrder',jet(size(lfp,1)));
             lineProps={'color',[0 0 1]};
-            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);
-            
+            smoothed_mean=smoothit(lfp,half_win,gaussian_kernel);
+            smoothed_std=smoothit(lfp_std,half_win,gaussian_kernel);
             shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            %smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
+            %smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
+            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);
             %plot(repmat(time,size(tar(t).con(c).lfp_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel(' LFP evoked Potential');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
-            %=================================================================%
-            %% format spectra colors
+            % format spectra colors
             cbtitle = {'(P - \mu) / std','P - \mu'};
             for sp=1:2
                 subplot(3,2,sp);
@@ -583,7 +478,7 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             results_file{c,t} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
-            mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+            mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],mtitsettings{:})
             
         end
         
@@ -591,58 +486,40 @@ for e=1:size(cfg.analyse_states,1)
     
     for c = 1:length(cond)
         for t=1:length(targets)
-        figure(h(c,t));
-        for sp=1:2
-            subplot(sph(c,sp,t));
-            set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
-        end
-        export_fig(h(c,t),[results_file{c,t},'.pdf']);
+            figure(h(c,t));
+            for sp=1:2
+                subplot(sph(c,sp,t));
+                set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
+            end
+            export_fig(h(c,t),[results_file{c,t},'.pdf']);
         end
     end
 end
-close all,
+clearall
 
-clear results_file sph h collim
-clc
-
-%<<<<<<< HEAD
-% same as figure 1, but now for significances
+%% same as figure 2, but now for significances
 for e=1:size(cfg.analyse_states,1)
     E=cfg.analyse_states{e,1};
     
     for t = 1: length(targets)
         for c = 1:length(cond)
             k=t+(c-1)*length(targets);
-            bins=tar(t).con(c).(E).tfr_time;
+            
             % create figure
             h(c,t) = figure('units','normalized','position',[0 0 1 1]);
             if tar(t).nSites == 0
                 continue;
             end
             
-            % tfr_time not defined well!
             tfr_time=tar(t).con(c).(E).tfr_time;
-            %lfp_time=tar(t).con(c).concat.lfp_time;
-            tfr_events.onset        = find(tfr_time == 0);
-            tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(tfr_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
-            tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
-            tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(tfr_time(tfr_events.ticksamples)*100)/100;
-            
+            tfr_events=get_ticks_and_labels(tfr_time,cfg.analyse_states(:,1));
             powbp=tar(t).con(c).(E).powbp_sig;
             itpcbp=tar(t).con(c).(E).itpcbp_sig;
             lfp=tar(t).con(c).(E).lfp_sig;
-            lfp_std=tar(t).con(c).(E).lfp_std;
-            %lfp_se=sterr(lfp,3,0);
-            percentile25=tar(t).con(c).(E).lfp_25;
-            percentile75=tar(t).con(c).(E).lfp_75;
-            percentile25(isnan(percentile25))=0;
-            percentile75(isnan(percentile75))=0;
             
+            % =========================== Power & ITPC ============================= %
             toplot={tar(t).con(c).(E).pow_sig,tar(t).con(c).(E).itpc_sig};
             for sp=1:2
-                % =========================== Power & ITPC ============================= %
                 sph(c,sp,t)=subplot(3,2,sp);
                 ax=sph(c,sp,t);
                 hold on
@@ -670,94 +547,43 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             %========================== Bandpassed POWER ==================== %
-            % Smoothing of the POWbp here:
-            jnk = [];
-            concat_input = cat(2,(powbp(:,half_win:-1:1)),(powbp(:,:)));
-            concat_input = cat(2,concat_input, (powbp(:,end:-1:end-half_win+1)));
-            for k=1:size(powbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=3;
             sph(c,sp,t)=subplot(3,2,sp);
-                ax=sph(c,sp,t);
+            ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(powbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('sig. Power [% of sites]');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
             %========================== Bandpassed ITPC ==================== %
-            % Smoothing of the ITPCbp here:
-            jnk = [];
-            concat_input = cat(2,(itpcbp(:,half_win:-1:1)),(itpcbp(:,:)));
-            concat_input = cat(2,concat_input, (itpcbp(:,end:-1:end-half_win+1)));
-            for k=1:size(itpcbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=4;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(itpcbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('sig. ITPC [% of sites]');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
-            %========================== LFP evoked Potential ==================== %
-            % Smoothing of the  LFP evoked Potential here:
-            jnk = [];
-            concat_input = cat(2,(lfp(:,half_win:-1:1)),(lfp(:,:)));
-            concat_input = cat(2,concat_input, (lfp(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_mean = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
-            concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_std = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
-            concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_25 = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
-            concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_75 = jnk(:,half_win+1:end-half_win);
-            
+            %========================== LFP evoked Potential ==================== %            
             sp=5;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
-            plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
-            
-            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).lfp_avg,1),1)', squeeze(smoothed_mean)')
+            smoothed_mean=smoothit(lfp,half_win,gaussian_kernel);
+            plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);            
             xlabel('Time(s)'); ylabel('sig. LFP [% of sites]');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
-            %% format spectra colors
+            % format spectra colors
             cbtitle = {'% sig','% sig'};
             for sp=1:2
                 subplot(3,2,sp);
@@ -769,72 +595,53 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             results_file{c,t} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
-            mtit(h(c,t),[cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-sig% of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
-            
+            mtit(h(c,t),[cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-sig% of ',num2str(tar(t).nSites),' sites ' ,withunits],mtitsettings{:})
         end
-        
     end
     
     for c = 1:length(cond)
         for t=1:length(targets)
-        figure(h(c,t));
-        for sp=1:2
-            subplot(sph(c,sp,t));
-            set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
-        end
-        export_fig(h(c,t),[results_file{c,t},'.pdf']);
+            figure(h(c,t));
+            for sp=1:2
+                subplot(sph(c,sp,t));
+                set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
+            end
+            export_fig(h(c,t),[results_file{c,t},'.pdf']);
         end
     end
 end
-close all,
+clearall
 
-clear results_file sph h collim
-clc
-
-
-% same as figure 1, but now for SIGNED significances
+%% same as figure 2, but now for SIGNED significances
 for e=1:size(cfg.analyse_states,1)
     E=cfg.analyse_states{e,1};
-    
     for t = 1: length(targets)
         for c = 1:length(cond)
             k=t+(c-1)*length(targets);
-            bins=tar(t).con(c).(E).tfr_time;
+            nsites=[' of ',num2str(size(tar(t).con(c).concat.max_itpcbp,2)),' sites,'];
+            ntriggers=[num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'];
+            ncond=['-' strrep(cond{c},'_',' ') '-'];
+            
             % create figure
             h(c,t) = figure('units','normalized','position',[0 0 1 1]);
             if tar(t).nSites == 0
                 continue;
             end
             
-            % tfr_time not defined well!
             tfr_time=tar(t).con(c).(E).tfr_time;
-            %lfp_time=tar(t).con(c).concat.lfp_time;
-            tfr_events.onset        = find(tfr_time == 0);
-            tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(tfr_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
-            tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
-            tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(tfr_time(tfr_events.ticksamples)*100)/100;
-            
+            tfr_events=get_ticks_and_labels(tfr_time,cfg.analyse_states(:,1));
             powbp=tar(t).con(c).(E).powbp_sig_signed;
             itpcbp=tar(t).con(c).(E).itpcbp_sig_signed;
             lfp=tar(t).con(c).(E).lfp_sig_signed;
-            lfp_std=tar(t).con(c).(E).lfp_std;
-            %lfp_se=sterr(lfp,3,0);
-            percentile25=tar(t).con(c).(E).lfp_25;
-            percentile75=tar(t).con(c).(E).lfp_75;
-            percentile25(isnan(percentile25))=0;
-            percentile75(isnan(percentile75))=0;
             
+            % =========================== Power & ITPC ============================= %
             toplot={tar(t).con(c).(E).pow_sig_signed,tar(t).con(c).(E).itpc_sig_signed};
             for sp=1:2
-                % =========================== Power & ITPC ============================= %
                 sph(c,sp,t)=subplot(3,2,sp);
                 ax=sph(c,sp,t);
                 hold on
                 image(toplot{sp},'CDataMapping','scaled');
                 set(gca,'YDir','normal');
-                %line([0 0], ylim, 'color', 'k');
                 
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
@@ -856,89 +663,38 @@ for e=1:size(cfg.analyse_states,1)
             end
             
             %========================== Bandpassed POWER ==================== %
-            % Smoothing of the POWbp here:
-            jnk = [];
-            concat_input = cat(2,(powbp(:,half_win:-1:1)),(powbp(:,:)));
-            concat_input = cat(2,concat_input, (powbp(:,end:-1:end-half_win+1)));
-            for k=1:size(powbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=3;
             sph(c,sp,t)=subplot(3,2,sp);
-                ax=sph(c,sp,t);
+            ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(powbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('sig. Power [% of sites]');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
             %========================== Bandpassed ITPC ==================== %
-            % Smoothing of the ITPCbp here:
-            jnk = [];
-            concat_input = cat(2,(itpcbp(:,half_win:-1:1)),(itpcbp(:,:)));
-            concat_input = cat(2,concat_input, (itpcbp(:,end:-1:end-half_win+1)));
-            for k=1:size(itpcbp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed = jnk(:,half_win+1:end-half_win);
-            
             sp=4;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
             set(ax,'ColorOrder',colsbp);
+            smoothed=smoothit(itpcbp,half_win,gaussian_kernel);
             plot(squeeze(smoothed)')
             xlabel('Time(s)'); ylabel('sig. ITPC [% of sites]');
-            legend({strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz')},'fontsize',3);
+            legend(freqb,'fontsize',3);
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
             
             %========================== LFP evoked Potential ==================== %
-            % Smoothing of the  LFP evoked Potential here:
-            jnk = [];
-            concat_input = cat(2,(lfp(:,half_win:-1:1)),(lfp(:,:)));
-            concat_input = cat(2,concat_input, (lfp(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_mean = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(lfp_std(:,half_win:-1:1)),(lfp_std(:,:)));
-            concat_input = cat(2,concat_input, (lfp_std(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_std = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
-            concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_25 = jnk(:,half_win+1:end-half_win);
-            concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
-            concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-            for k=1:size(lfp,1)
-                jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
-            end
-            clear concat_input
-            smoothed_75 = jnk(:,half_win+1:end-half_win);
-            
             sp=5;
             sph(c,sp,t)=subplot(3,2,sp);
             ax=sph(c,sp,t);
             hold on;
+            smoothed_mean=smoothit(lfp,half_win,gaussian_kernel);
             plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
-            
-            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).lfp_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('sig. LFP [% of sites]');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
@@ -954,29 +710,25 @@ for e=1:size(cfg.analyse_states,1)
                 colormap(cm);
             end
             
-            results_file{c,t} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','signed sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
-            mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'- (signed) sig% of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
-            
+            results_file{c,t} = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},ncond,E,'-','signed sig%',nsites,withunits]);
+            mtit(h(c,t),[ cfg.monkey,'-',targets{t},ncond,E,'- (signed) sig%',nsites,withunits],mtitsettings{:})
         end
-        
     end
     
     for c = 1:length(cond)
         for t=1:length(targets)
-        figure(h(c,t));
-        for sp=1:2
-            subplot(sph(c,sp,t));
-            set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
-        end
-        export_fig(h(c,t),[results_file{c,t},'.pdf']);
+            figure(h(c,t));
+            for sp=1:2
+                subplot(sph(c,sp,t));
+                set(gca,'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
+            end
+            export_fig(h(c,t),[results_file{c,t},'.pdf']);
         end
     end
 end
-close all,
+clearall
 
-clear results_file sph h collim
-clc
-
+%% plotting max values versus time of max for ITPC/POW:
 for e=1:size(cfg.analyse_states,1)
     E=cfg.analyse_states{e,1};
     for t = 1:length(targets)
@@ -1013,17 +765,16 @@ for e=1:size(cfg.analyse_states,1)
             legend('boxoff')
             
         end
-        mtit([strrep(tar(t).target,'_','-') '-' E],'xoff', 0, 'yoff', 0.05, 'fontsize', 12,'Interpreter', 'none');
+        mtit([strrep(tar(t).target,'_','-') '-' E],mtitsettings{:});
         results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',E,'-Max_ITPCbp_POWbp_of ',num2str(tar(t).nSites),' sites ', withunits]);
         export_fig(h,[results_file,'.pdf']);
     end
     close all,
-    clc    
+    clc
 end
+clearall
 
-
-%%
-% ploting the avgogram of the timing of the Max ITPC/POW:
+%% plotting the avgogram of the timing of the Max ITPC/POW:
 bins=cfg.analyse_states{1,4}:cfg.lfp.timestep*10:cfg.analyse_states{1,5};
 for t = 1: length(targets)
     if tar(t).nSites == 0
@@ -1031,14 +782,17 @@ for t = 1: length(targets)
     end
     h = figure;
     for c = 1:length(cond)
+        nsites=[' for ',num2str(size(tar(t).con(c).concat.max_itpcbp,2)),' sites,'];
+        ntriggers=[num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'];
+        ncond=strrep(cond{c},'_',' ');
         for fb = 1: length(freqb)
+            
             % itpcbp
             sp1=subplot(2,2,2*c-1);
             [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_itpcbp_time(fb,:)),bins);
             plot(centers,nelements,'-','Color',colsbp(fb,:));
             hold on
-            title([' max itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(tar(t).con(c).concat.max_itpcbp,2)),...
-                ' sites,',num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            title([' max itpc-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
             xlabel('Max ITPC times','Interpreter','latex');
             set(gca,'xlim',[-0.25,0.25])
             
@@ -1047,31 +801,50 @@ for t = 1: length(targets)
             [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_powbp_time(fb,:)),bins);
             plot(centers,nelements,'-','Color',colsbp(fb,:));
             hold on
-            title([' max power-bp in ', strrep(cond{c},'_',' '),' for ',num2str(size(tar(t).con(c).concat.max_powbp,2)),...
-                ' sites,',num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'],'FontSize',6,'Interpreter','latex');
+            title([' max power-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
             xlabel('Max POWER times','Interpreter','latex');
-            set(gca,'xlim',[-0.25,0.25])
-            
+            set(gca,'xlim',[-0.25,0.25])            
         end
         legend(freqb,'FontSize',5)
-        legend('boxoff')
-        
+        legend('boxoff')        
         plot(sp1,[0,0],get(sp1,'ylim'),'k--')
         plot(sp2,[0,0],get(sp2,'ylim'),'k--')
     end
-    mtit(['Target=',strrep(tar(t).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-    results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp_for ',num2str(tar(t).nSites),' sites ', withunits]);
+    mtit(['Target=',strrep(tar(t).target,'_','-')],mtitsettings{:});
+    results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp',nsites,withunits]);
     export_fig(h,[results_file,'.pdf']);
-%     saveas(h,[results_file]);
+end
+clearall
+
+
+
 end
 
+function clearall
 close all,
+clear results_file sph h collim
 clc
-
-
-
 end
 
+function out=smoothit(in,half_win,gaussian_kernel)
+jnk=[];
+concat_input = cat(2,(in(:,half_win:-1:1)),in);
+concat_input = cat(2,concat_input, (in(:,end:-1:end-half_win+1)));
+for k=1:size(concat_input,1)
+    jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');
+end
+out = jnk(:,half_win+1:end-half_win);
+end
+
+function tfr_events=get_ticks_and_labels(time,eventnames)
+tfr_events.onset        = find(time == 0);
+tfr_events.name         = eventnames;
+tfr_events.ticksamples  = [1,numel(time)];
+%sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
+tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
+tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
+tfr_events.ticks        = round(time(tfr_events.ticksamples)*100)/100;
+end
 
 function add_ticks_and_labels(ax,events,ylm,stp)
 

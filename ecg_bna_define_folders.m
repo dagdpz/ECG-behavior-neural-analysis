@@ -32,6 +32,8 @@ function cfg = ecg_bna_define_folders(cfg)
 
 cfg.ECG_root_results_fldr      = fullfile(cfg.results_folder, 'ECG', num2str(cfg.version));
 cfg.LFP_root_results_fldr      = fullfile(cfg.results_folder, 'LFP', num2str(cfg.version));
+cfg.MUA_root_results_fldr      = fullfile(cfg.results_folder, 'MUA', num2str(cfg.version));
+
 cfg.SPK_root_results_fldr      = fullfile(cfg.results_folder, 'ECG_triggered_spikes', num2str(cfg.version));
 cfg.unit_lists                 = fullfile(cfg.SPK_root_results_fldr, 'unit_lists'); % store unit lists before and after exclusion criteria
 cfg.per_session_folder         = fullfile(cfg.SPK_root_results_fldr, 'per_unit'); % r-peak triggered psths per unit (data and plots)

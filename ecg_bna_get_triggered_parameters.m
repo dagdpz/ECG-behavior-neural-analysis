@@ -1,5 +1,16 @@
-function [triggered, significance] = ecg_bna_get_triggered_parameters(site,triggers, width_in_samples,realD,cfg)
+function [triggered, significance] = ecg_bna_get_triggered_parameters(site,triggers, width_in_samples,cfg,realD)
 significance=struct;
+
+switch cfg.to_trigger
+    case 'LFP';
+        FN_in={'pow','powbp','lfp','pha','pha','phabp'};
+        FN={'pow','powbp','lfp','pha','itpc','itpcbp'};
+    case 'MUA';
+        FN ={'mua'};
+        FN_in={'mua'};
+        FN={'mua'};
+end
+
 % ecg_bna_get_triggered_split_shuffled - gets the time-frequency
 % pow,phs spectrogram and phsBP for a specified time window around all shuffled Rpeak onset for a single site for
 % given trials (usually trials belonging to a condition) in a session
@@ -86,9 +97,6 @@ trigs=trigs';
 
 tfs=[site.tfs];
 %% check pre-allocation time saving (?)
-% 
-    FN_in={'pow','powbp','lfp','pha','pha','phabp'};
-    FN={'pow','powbp','lfp','pha','itpc','itpcbp'};
 
     for f=1:numel(FN_in)  
         fn=FN{f};      
@@ -140,7 +148,7 @@ for s = 1: numel(w_samples)
     end
 end
 
-if nargin>3 %% surrogate data,add signficance test here !
+if nargin>4 %% surrogate data,add signficance test here !
     pthreshold=0.05;
     clusterthreshold=0.20;
     for f=1:numel(FN_in)

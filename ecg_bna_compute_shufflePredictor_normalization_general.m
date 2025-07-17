@@ -1,4 +1,4 @@
-function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,ecg_bna_cfg)
+function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(real,shuffled,cfg)
 % ecg_bna_compute_shufflePredictor_normalization_general - normalizing the real tfs
 % and evoked data based on the shuffle predictor results
 %
@@ -16,8 +16,15 @@ function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(r
 % ======================================================================= %
 
 
-method = ecg_bna_cfg.lfp.normalization;
-parameters={'pow','itpc','lfp','itpcbp','powbp','pha'};
+method = cfg.lfp.normalization;
+
+switch cfg.to_trigger
+    case 'LFP';
+        parameters={'pow','itpc','lfp','itpcbp','powbp','pha'};
+    case 'MUA';
+        parameters ={'mua'};
+end
+
 for p=1:numel(parameters)
     parameter=parameters{p};
     realmean=real.(parameter).mean;

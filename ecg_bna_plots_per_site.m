@@ -1,51 +1,6 @@
 function ecg_bna_plots_per_site( data, cfg, PlotMethod,varargin )
 
 
-%lfp_tfa_plot_hs_tuned_tfr_multiple_img  - Plots the LFP time frequency spectrogram
-%averages for different hand-space conditions to be compared
-%
-% USAGE:
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file )
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file, cm )
-%   lfp_tfa_plot_hs_tuned_tfr_multiple_img( avg_tfr, cfg, plottitle, results_file, cm, plot_significant )
-%
-%
-% INPUTS:
-%       avg_tfr         - average LFP time frequency response for different
-%       hand-space conditions to be compared
-%		cfg     - struct containing the required settings
-%           Required Fields: see settings/lfp_tfa_settings_example
-%               1. baseline_method             - method used for baseline
-%               normalization
-%               2. compare.reach_hands          - hand labels to compare
-%               3. compare.reach_spaces         - space labels to compare
-%       plottitle       - title for the plot
-%       results_file    - path to filename to store the resulting image
-%       varargin        - colormap to be used (default = 'jet', can be any
-%                       standard colormap additionally supported is 'bluewhitered')
-%                       - flag to indicate if only significant difference
-%                       bins should be plotted
-%
-% REQUIRES:	bluewhitered, export_fig
-%
-% See also settings/lfp_tfa_settings_example, lfp_tfa_plot_site_average_tfr,
-% lfp_tfa_avg_tfr_across_sessions, lfp_tfa_avg_tfr_across_sites,
-% bluewhitered, colormap, lfp_tfa_compute_difference_condition_tfr
-%
-% Author(s):	S.Nair, DAG, DPZ
-% URL:		http://www.dpz.eu/dag
-%
-% Change log:
-% 2019-02-15:	Created function (Sarath Nair)
-% 2019-03-05:	First Revision
-% ...
-% $Revision: 1.0 $  $Date: 2019-03-05 17:18:00 $
-
-% ADDITIONAL INFO:
-% ...
-%%%%%%%%%%%%%%%%%%%%%%%%%[DAG mfile header version 1]%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 plot_significant = 0;
 if nargin > 3
     plot_significant = varargin{2};
@@ -96,10 +51,6 @@ for cn= 1:numel(data.condition)
     collim{2}=[];
     collim{6}=[];
     
-    %for hs = 1:size(con_data, 2)
-%     if isempty(cat(3, con_data(:, hs).(PlotMethod).pow_mean)) % this is a strange break condition to be honest
-%         continue;
-%     end
     % concatenate tfs for different state windows for plotting
     concat.pow = [];
     concat.pha = [];
@@ -198,15 +149,6 @@ for cn= 1:numel(data.condition)
     lfp_events.ticksamples  = sort(ticksamples_lfp);
     lfp_events.ticks        =round(concat.lfp_time(lfp_events.ticksamples)*10)/10;
     
-%     
-%     if isfield(con_data, 'nsessions')
-%         plottitle = [plottitle ' (nsessions = ' num2str(con_data(1, hs).nsessions) ')'];
-%     elseif isfield(con_data, 'nsites')
-%         plottitle = [plottitle ' (nsites = ' num2str(con_data(1, hs).nsites) ')'];
-%     elseif isfield(con_data, 'ntrials') && ~isempty(con_data(1, hs).ntrials)
-%         plottitle = [plottitle ' (ntrials = ' num2str(con_data(1, hs).ntrials) ')'];
-%     end
-%     
     
     %% POW and ITPC
     toplot={concat.pow,concat.itpc,concat.powbp,concat.itpcbp};
