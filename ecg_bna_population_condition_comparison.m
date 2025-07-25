@@ -1,3 +1,4 @@
+function ecg_bna_population_condition_comparison
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This file is updated on 23.07.25
 % based on the configurations of the data that was generated for:
@@ -11,7 +12,7 @@ clc
 %%
 filtered = true;
 monkey ='Magnus';%'Bacchus';
-%
+
 if strcmp(monkey,'Bacchus')
     path_to_save = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Bacchus_TaskRest_generalTrig_finalRun\not filtered\grand_average_wo combine_hemispheres_LFP real_New GrandAvg version\';
     if filtered
@@ -27,6 +28,8 @@ elseif strcmp(monkey,'Magnus')
         load('Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_generalTrig_finalRun\not filtered\grand_average_wo combine_hemispheres_LFP real_New GrandAvg version\Magnus_Rpeak_Triggered_target_wise_Grand_grand_avg_sessions_sitesall.mat')
     end
 end
+
+
 %%
 targets = {'VPL', 'dPul', 'MD'};% unique({sites.target});
 cond = {'Rest','Task'};
@@ -131,6 +134,9 @@ for t = 1: length(targets)
             rest_R = permute(data_rest, [3, 2, 1]);  % [trials x  time x frequencies]
             task_R = permute(data_task, [3, 2, 1]);  % [trials x  time x frequencies]
             
+            nonnan1=mean(rest_R,1);nonnan1(isnan(nonnan1))=[];
+            nonnan2=mean(task_R,1);nonnan2(isnan(nonnan2))=[];
+            collim=max(abs([min(nonnan1(:)) max(nonnan1(:)) min(nonnan2(:)) max(nonnan2(:))]));
             
             % generating the shuffled files :
             tic
@@ -210,6 +216,7 @@ for t = 1: length(targets)
             set(gca, 'ytick', fbandstart_idx);
             set(gca, 'yticklabel', fbandstart);
             set(gca, 'ylim', [0.5,numel(tfr_freq) + 0.5]);
+            set(gca,'CLim',[-collim collim]);
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
@@ -234,6 +241,7 @@ for t = 1: length(targets)
             set(gca, 'ytick', fbandstart_idx);
             set(gca, 'yticklabel', fbandstart);
             set(gca, 'ylim', [0.5,numel(tfr_freq) + 0.5]);
+            set(gca,'CLim',[-collim collim]);
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
@@ -260,6 +268,9 @@ for t = 1: length(targets)
             set(gca, 'ytick', fbandstart_idx);
             set(gca, 'yticklabel', fbandstart);
             set(gca, 'ylim', [0.5,numel(tfr_freq) + 0.5]);
+            nonnan2=mean(data_task,3)- mean(data_rest,3);nonnan2(isnan(nonnan2))=[];
+            collim=max(abs([min(nonnan2(:)) max(nonnan2(:))]));
+            set(gca,'CLim',[-collim collim]);
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
@@ -363,10 +374,10 @@ for t = 1: length(targets)
             linePropsT ={'color',[1 0 0]};
             linePropsR ={'color',[0 0 1]};
             
-            smoothed_meanT = smoothit(mean(task_R,1),half_win,gaussian_kernel);    
+            smoothed_meanT = smoothit(mean(task_R,1),half_win,gaussian_kernel);
             smoothed_stdT = smoothit(std(task_R,1),half_win,gaussian_kernel);
             
-            smoothed_meanR = smoothit(mean(rest_R,1),half_win,gaussian_kernel);     
+            smoothed_meanR = smoothit(mean(rest_R,1),half_win,gaussian_kernel);
             smoothed_stdR = smoothit(std(rest_R,1),half_win,gaussian_kernel);
             
             shadedErrorBar(tfr_time,smoothed_meanT,smoothed_stdT,linePropsT,1); hold on;
@@ -376,7 +387,7 @@ for t = 1: length(targets)
                 y1 = [-3 3];
             else
                 y1 = [-15 10];
-%             yl = ylim;  % get current y-limits of the plot
+                %             yl = ylim;  % get current y-limits of the plot
             end
             
             for i = 1:CCpos.NumObjects
@@ -406,10 +417,10 @@ for t = 1: length(targets)
             end
             
             set(gca,'ylim',y1);
-            xlabel('Time(s)'); 
+            xlabel('Time(s)');
             line([0 0], yl, 'color', 'k');
             title([monkey,'-',targets{t},'-',Fin{fin},' - nSite: ', num2str(size(data_task,2)),'-',cond{2},'-',cond{1},'- Significant difference - numPerm =',...
-                    num2str(numPermutation)],'fontsize', 12,'Interpreter', 'none');
+                num2str(numPermutation)],'fontsize', 12,'Interpreter', 'none');
             if filtered
                 ylabel('LFP evoked Potential (4Hz filtered)');
                 results_file = fullfile([path_to_save,filesep,monkey,'-',targets{t},'-',Fin{fin},'-',cond{2},' vs. ',cond{1},'_Significant difference_4Hzfiltered']);
@@ -424,7 +435,7 @@ for t = 1: length(targets)
 end
 close all
 % >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+end
 
 function out=smoothit(in,half_win,gaussian_kernel)
 concat_input = cat(2,(in(:,half_win:-1:1)),in);
