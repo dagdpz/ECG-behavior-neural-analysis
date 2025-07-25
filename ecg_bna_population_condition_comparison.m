@@ -268,9 +268,6 @@ for t = 1: length(targets)
             set(gca, 'ytick', fbandstart_idx);
             set(gca, 'yticklabel', fbandstart);
             set(gca, 'ylim', [0.5,numel(tfr_freq) + 0.5]);
-            nonnan2=mean(data_task,3)- mean(data_rest,3);nonnan2(isnan(nonnan2))=[];
-            collim=max(abs([min(nonnan2(:)) max(nonnan2(:))]));
-            set(gca,'CLim',[-collim collim]);
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
@@ -280,8 +277,10 @@ for t = 1: length(targets)
             %         contour(stat_tfs.time, 1:numel(stat_tfs.freq), stat_tfs.mask, [0.5, 0.5], 'LineColor', 'k', 'LineWidth', 2); % Overlay significant clusters
             contour(tfr_time, 1:numel(tfr_freq), significance_pos',  1.5 , 'k'); % Overlay significant clusters
             contour(tfr_time, 1:numel(tfr_freq), significance_neg',  1.5 , 'k'); % Overlay significant clusters
-            data_diff = (mean(data_task,3)- mean(data_rest,3));
-            set(gca,'clim', [min(min(data_diff)) max(max(data_diff))])
+           
+            nonnan2=mean(data_task,3)- mean(data_rest,3);nonnan2(isnan(nonnan2))=[];
+            collim=max(abs([min(nonnan2(:)) max(nonnan2(:))]));
+            set(gca,'CLim',[-collim collim]);
             
             sgtitle([monkey,'-',targets{t},'-',Fin{fin},'-',cond{2},'-',cond{1},'- Significant difference - numPerm =',...
                 num2str(numPermutation)],'fontsize', 12,'Interpreter', 'none');
