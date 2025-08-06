@@ -1,6 +1,6 @@
 function tar = ecg_bna_compute_grand_avg(cfg,withunits)
 
-reprocess=0;
+reprocess=1;
 fileName = fullfile([cfg.analyse_lfp_folder filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Grand_grand_avg_sessions_sites',withunits,'.mat']);
 
 if cfg.combine_hemispheres
@@ -52,7 +52,7 @@ if reprocess
                 time      = event.time;
                 tfr_time  = event.tfr_time;
                 lfp       = squeeze(event.real.lfp.mean)';
-                % lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
+%                 lfp       = squeeze(event.real.lfp.mean)' - squeeze(event.shuffled.lfp.mean)';
                 % lfp       = squeeze(event.normalized.lfp.mean)';
                 itpc      = squeeze(event.real.itpc.mean)-squeeze(event.shuffled.itpc.mean);
                 power     = squeeze(event.normalized.pow.mean);

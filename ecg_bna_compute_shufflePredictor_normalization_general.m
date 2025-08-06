@@ -23,6 +23,8 @@ switch cfg.to_trigger
         parameters={'pow','itpc','lfp','itpcbp','powbp','pha'};
     case 'MUA';
         parameters ={'mua'};
+    case 'ECG';
+        parameters ={'ecg'};
 end
 
 for p=1:numel(parameters)

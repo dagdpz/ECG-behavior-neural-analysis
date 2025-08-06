@@ -4,7 +4,7 @@ clear all
 clc
 
 %%
-monkey ='Magnus';%'Bacchus';
+monkey ='Magnus';%'Magnus'; , 'Bacchus';
 
 if strcmp(monkey,'Bacchus')
     path_to_save = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Bacchus_TaskRest_generalTrig_finalRun\not filtered\grand_average_wo combine_hemispheres_LFP real_New GrandAvg version\';
@@ -101,7 +101,7 @@ clusterthreshold = 0.05;
 tThreshold = (1-pthreshold)/2;
 Fin = {'itpc','pow'};
 tin = {[1,2],[1,3],[2,3]}; %1: length(targets);
-c = 1; % comparing nuclei only in Rest
+c = 2; % comparing nuclei only in Rest
 % %% Method 1
 % for Tin = 1:length(tin)
 %     t = tin{Tin};
@@ -396,7 +396,7 @@ for Tin = 1:length(tin)
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
-            title([targets{t(1)},' - ',Fin{fin},' - ',cond{c},' - nSite: ', num2str(size(data_targ2,3))],'fontsize', 8,'Interpreter', 'none');
+            title([targets{t(2)},' - ',Fin{fin},' - ',cond{c},' - nSite: ', num2str(size(data_targ2,3))],'fontsize', 8,'Interpreter', 'none');
             % ==============================================================
             % Plotting the Rest data
             subplot(132)
@@ -421,7 +421,7 @@ for Tin = 1:length(tin)
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
-            title([targets{t(2)},' - ',Fin{fin},' - ',cond{c},' - nSite: ', num2str(size(data_targ1,3))],'fontsize', 8,'Interpreter', 'none');
+            title([targets{t(1)},' - ',Fin{fin},' - ',cond{c},' - nSite: ', num2str(size(data_targ1,3))],'fontsize', 8,'Interpreter', 'none');
             
             % ==============================================================
             % Plotting the Stats data
@@ -448,7 +448,7 @@ for Tin = 1:length(tin)
             axis square;
             colormap(jet);  % Change the colormap if desired
             colorbar;  % Show colorbar
-            title([Fin{fin},' - ',targets{t(1)},' vs. ',targets{t(2)},' difference - with Sig. Clusters' ],'fontsize', 8,'Interpreter', 'none');
+            title([Fin{fin},' - ',targets{t(2)},' vs. ',targets{t(1)},' difference - with Sig. Clusters' ],'fontsize', 8,'Interpreter', 'none');
             
             hold on
             %         contour(stat_tfs.time, 1:numel(stat_tfs.freq), stat_tfs.mask, [0.5, 0.5], 'LineColor', 'k', 'LineWidth', 2); % Overlay significant clusters
@@ -461,8 +461,9 @@ for Tin = 1:length(tin)
             
             sgtitle([monkey,'-',Fin{fin},'-',targets{t(1)},' vs. ',targets{t(2)},'- Significant difference in: ',cond{c},'- numPerm =',...
                 num2str(numPermutation)],'fontsize', 12,'Interpreter', 'none');
-            results_file = fullfile([path_to_save,filesep,monkey,'-',targets{t(1)},' vs. ',targets{t(2)},'-',Fin{fin},'_Significant difference_mthd2']);
+            results_file = fullfile([path_to_save,filesep,monkey,'-',targets{t(1)},' vs. ',targets{t(2)},'-',Fin{fin},'_',cond{c},'_Significant difference_mthd2']);
             export_fig(h(e),[results_file,'.pdf']);
         end
     end
 end
+close all,

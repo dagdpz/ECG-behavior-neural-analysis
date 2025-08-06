@@ -9,6 +9,10 @@ switch cfg.to_trigger
         FN ={'mua'};
         FN_in={'mua'};
         FN={'mua'};
+    case 'ECG';
+        FN ={'ecg'};
+        FN_in={'ecg'};
+        FN={'ecg'};
 end
 
 % ecg_bna_get_triggered_split_shuffled - gets the time-frequency
