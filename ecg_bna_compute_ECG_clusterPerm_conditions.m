@@ -151,10 +151,8 @@ else
                 nTriggers = event.real.ntriggers;
                 time      = event.time;
                 ecg_time  = event.tfr_time;
-                %                     ecg       = squeeze(event.real.ecg.mean)'; % not normalized ecg
-                ecg       = squeeze(event.normalized.ecg.mean)';
-                
-                
+                ecg       = squeeze(event.real.ecg.mean)'; % not normalized ecg
+%                 ecg       = squeeze(event.normalized.ecg.mean)';
                 ecg_sig   =squeeze(event.significance.ecg)'; %% weird dimension thing
                 
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
@@ -167,7 +165,18 @@ else
         end
     end
     sites = sites([sites.all_conditions_present]==1);
-    
+    %%
+    % a table of max min ECG trace per sites:
+    for s = 1: length(sites)
+        ecgMaxMin(s).site_ID = sites(s).site_ID;
+        ecgMaxMin(s).target = sites(s).target;
+        ecgMaxMin(s).Rest_max = max(sites(s).condition(1).event.ecg);
+        ecgMaxMin(s).Rest_min = min(sites(s).condition(1).event.ecg);
+        ecgMaxMin(s).Task_max = max(sites(s).condition(2).event.ecg);
+        ecgMaxMin(s).Task_min = min(sites(s).condition(2).event.ecg);
+    end
+    ecg_filename = fullfile(['Y:\Projects\Pulv_bodysignal\ECG\ECG_',monkey,'_TaskRest_generalTrig_ECG\', monkey,'_ecgMaxMin_perSite']);
+    save(ecg_filename, 'ecgMaxMin');
     %% Computing the Target-wise averaging of total available sites
     % potential cutoff -> probably startfreq should go into settings at somepoint
     startfreq=3.5;
@@ -240,8 +249,16 @@ else
                 
                 rest_R = permute(data_rest, [2, 1]);  % [trials x  time ]
                 task_R = permute(data_task, [2, 1]);  % [trials x  time ]
-                
-                
+                figure,
+                %                 ttest(rest_R,task_R)
+                % Plotting the Task and Rest data
+                linePropsT ={'color',[1 0 0]};
+                linePropsR ={'color',[0 0 1]};
+                linePropsTR ={'color',[0.1 0.1 0.1]};
+                shadedErrorBar((1:53),mean(rest_R,1),std(rest_R),linePropsR,1), hold on
+                shadedErrorBar((1:53),mean(task_R,1),std(task_R),linePropsT,1),
+                shadedErrorBar((1:53),mean((task_R-rest_R),1),std(task_R-rest_R),linePropsTR,1)
+                plot((-0.0020 ).*ttest(rest_R,task_R))
                 % generating the shuffled files :
                 tic
                 task_shf = zeros(numPermutation, size(task_R,2));
