@@ -34,7 +34,7 @@ fprintf('Processing site, %s\n', sites.site_ID);
 site_lfp.session = sites.site_ID(1:12);
 site_lfp.recorded_hemisphere = upper(sites.target(end));
 % %filtering the LFP file
-% sites.LFP = eegfilt(sites.LFP,1/ts_original,4,[]);
+sites.LFP = eegfilt(sites.LFP,1/ts_original,4,[]);
 
 N_cycles=cfg.lfp.n_cycles;
 frequencies = cfg.lfp.foi;

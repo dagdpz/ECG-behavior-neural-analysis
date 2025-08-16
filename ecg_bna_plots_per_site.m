@@ -39,14 +39,14 @@ gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
 for cn= 1:numel(data.condition)
     if isempty(fieldnames(data.condition(cn))) || isempty(data.condition(cn).event) % &&~isempty([sites_data(i).condition(cn).event.lfp])
         continue
-    end    
+    end
     % this here is eventually indicating number of triggers for each alignment
     con_data=data.condition(cn).event;
     
     % create figure
     h = figure('units','normalized','position',[0 0 1 1]);
     
-%    states_valid=[];
+    %    states_valid=[];
     collim{1}=[];
     collim{2}=[];
     collim{6}=[];
@@ -64,7 +64,7 @@ for cn= 1:numel(data.condition)
     concat.powbp_sgnf = [];
     concat.lfp_sgnf = [];
     concat.tfr_time = [];
-    concat.lfp_time = [];    
+    concat.lfp_time = [];
     concat.lfp_shufmean = [];
     concat.lfp_shufstd = [];
     concat.freq  = cfg.lfp.foi; %% this is actually in the settings...
@@ -72,7 +72,7 @@ for cn= 1:numel(data.condition)
     %event_info = struct();
     ticksamples_tfr=[];
     ticksamples_lfp=[];
-    for e = 1:size(con_data, 2)
+    for e = 1:size(cfg.analyse_states,1)%size(con_data, 2)
         shufmean=con_data(e).shuffled.lfp.mean;
         shufstd=con_data(e).shuffled.lfp.std;
         
@@ -94,12 +94,12 @@ for cn= 1:numel(data.condition)
         
         onset_s = find(tfr_time <= 0, 1, 'last'); % state onset time
         start_s = 1; % state start time
-        finish_s = length(tfr_time); % start end sample        
+        finish_s = length(tfr_time); % start end sample
         ticksamples_tfr=[ticksamples_tfr length(concat.tfr_time)+[start_s onset_s finish_s]];
         
         onset_s = find(lfp_time <= 0, 1, 'last'); % state onset time
         start_s = 1; % state start time
-        finish_s = length(lfp_time); % start end sample        
+        finish_s = length(lfp_time); % start end sample
         ticksamples_lfp=[ticksamples_lfp length(concat.lfp_time)+[start_s onset_s finish_s]];
         
         %% smooth here !
@@ -128,24 +128,24 @@ for cn= 1:numel(data.condition)
         concat.tfr_time     = [concat.tfr_time, tfr_time, nan(1, NaNseparator)];
         concat.lfp_time     = [concat.lfp_time, lfp_time,     nan(1, NaNseparator)];
         
-%         % somehow needed for (not) labelling not existing alignments
-%         if ~all(isnan(tfr_time))
-%             states_valid=[states_valid e];
-%         end
+        %         % somehow needed for (not) labelling not existing alignments
+        %         if ~all(isnan(tfr_time))
+        %             states_valid=[states_valid e];
+        %         end
     end
     
     %% plot
     tfr_events.onset        = find(concat.tfr_time == 0);
-    %tfr_events.name         ={con_data(states_valid).event_name};    
-    tfr_events.name         ={con_data.event_name};    
+    %tfr_events.name         ={con_data(states_valid).event_name};
+    tfr_events.name         ={con_data.event_name};
     tfr_events.ticksamples  = sort(ticksamples_tfr);
     tfr_events.startsamples = ticksamples_tfr(1:3:end);
     tfr_events.endsamples   = ticksamples_tfr(3:3:end);
     tfr_events.ticks        =round(concat.tfr_time(tfr_events.ticksamples)*10)/10;
     
     lfp_events.onset        = find(concat.lfp_time == 0);
-    %lfp_events.name         ={con_data(states_valid).event_name};    
-    lfp_events.name         ={con_data.event_name};   
+    %lfp_events.name         ={con_data(states_valid).event_name};
+    lfp_events.name         ={con_data.event_name};
     lfp_events.ticksamples  = sort(ticksamples_lfp);
     lfp_events.ticks        =round(concat.lfp_time(lfp_events.ticksamples)*10)/10;
     
@@ -165,7 +165,13 @@ for cn= 1:numel(data.condition)
         contour(1:size(toplot{sp},3),1:numel(concat.freq),significance,1,'linecolor','k')
         nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
         collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
-        
+%         if  strcmp(PlotMethod,'shuffled')
+%             collim{1}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
+%             collim{2}=[0 0.55];
+%         else
+%             collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
+%         end
+%         
         % horizontal lines to separate frequency bands
         fbandstart = unique(cfg.lfp.frequency_bands(:))';
         fbandstart_idx = zeros(size(fbandstart));
@@ -185,71 +191,72 @@ for cn= 1:numel(data.condition)
         
         set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5);
         ylabel('Frequency (Hz)');
-        title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);            
+        title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
+        axis square
     end
     
     %% Bandpassed POW and ITPC
     for sp=3:4
-    sph(sp)=subplot(nrows, ncolumns, sp);             %% change color order to something nicer
-    hold on;
-    set(gca,'ColorOrder',jet(size(toplot{sp},2)));
-    %plot(repmat(concat.lfp_time,size(concat.powbp,2),1)', squeeze(concat.powbp)')
-    plot(squeeze(toplot{sp})')
-    xlabel('Time(s)'); ylabel('Power (W)');
-    
-    % adding the signifiance horizontal lines:
-    ylm = get(gca,'Ylim');
-    stp = (ylm(2)-ylm(1))/20;
-    ylm(1)=ylm(1)-size(toplot{sp},2)*stp;
-    set(gca,'Ylim',ylm);
-    
-    significance = double(squeeze(sigplot{sp}));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
-    significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
-    multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
-    significance=significance.*repmat(multiplicator',1,size(significance,2));
-    X=~all(isnan(diff(significance,1,2)),2);
-    plot(significance(X,:)','linewidth',3);
-    
-    add_ticks_and_labels(lfp_events,ylm,stp)
-    
-    legend({strcat(num2str(round(cfg.lfp.frequency_bands(:,1))), '-',num2str(round(cfg.lfp.frequency_bands(:,2))), ' Hz')},'fontsize',3);
-    title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
-    set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5); %%should be from lfp_events   
+        sph(sp)=subplot(nrows, ncolumns, sp);             %% change color order to something nicer
+        hold on;
+        set(gca,'ColorOrder',jet(size(toplot{sp},2)));
+        %plot(repmat(concat.lfp_time,size(concat.powbp,2),1)', squeeze(concat.powbp)')
+        plot(squeeze(toplot{sp})')
+        xlabel('Time(s)'); ylabel('Power (W)');
         
+        % adding the signifiance horizontal lines:
+        ylm = get(gca,'Ylim');
+        stp = (ylm(2)-ylm(1))/20;
+        ylm(1)=ylm(1)-size(toplot{sp},2)*stp;
+        set(gca,'Ylim',ylm);
+        
+        significance = double(squeeze(sigplot{sp}));         % i needed to create concat.itpcbp_sgnf, it basically appends Nans for a (potential) separator with a second alignment
+        significance(significance==0)=NaN;                          % replacing zeros with Nans means once we plot, lines will be discontinoous there
+        multiplicator= ylm(1)+(1:size(significance,1))*stp;              % multiplicator basically defines position of significance line
+        significance=significance.*repmat(multiplicator',1,size(significance,2));
+        X=~all(isnan(diff(significance,1,2)),2);
+        plot(significance(X,:)','linewidth',3);
+        
+        add_ticks_and_labels(lfp_events,ylm,stp)
+        
+        legend({strcat(num2str(round(cfg.lfp.frequency_bands(:,1))), '-',num2str(round(cfg.lfp.frequency_bands(:,2))), ' Hz')},'fontsize',3);
+        title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
+        set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5); %%should be from lfp_events
+        axis square
     end
     
-   %% POW and ITPC
-   toplot={concat.pow,concat.itpc,concat.powbp,concat.itpcbp,0,concat.pha};
-   sp=6; % frequency spectra
-   sph(sp)=subplot(nrows, ncolumns, sp);
-   image(1:size(toplot{sp},3), 1:numel(concat.freq), squeeze(toplot{sp}),'CDataMapping','scaled');
-   set(gca,'YDir','normal');
-   hold on;
-   
-   nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
-   collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
-   
-   % horizontal lines to separate frequency bands
-   fbandstart = unique(cfg.lfp.frequency_bands(:))';
-   fbandstart_idx = zeros(size(fbandstart));
-   for f = fbandstart
-       f_idx = find(abs(concat.freq - f) == min(abs(concat.freq - f)), 1, 'first');
-       line([tfr_events.startsamples' tfr_events.endsamples']-1/2, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
-       fbandstart_idx(fbandstart == f) = f_idx;
-   end
-   
-   set(gca,'TickDir','out')
-   set(gca, 'ytick', fbandstart_idx);
-   set(gca, 'yticklabel', fbandstart);
-   % add 0.5 at end since the time value is the center of the bin
-   % add 0 at beginning to make x-axis visible
-   set(gca, 'ylim', [0.5,numel(concat.freq) + 0.5]);
-   add_ticks_and_labels(tfr_events,[0.5,numel(concat.freq) + 0.5],8)
-   
-   set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5);
-   ylabel('Frequency (Hz)');
-   title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
-   
+    %% Phase
+    toplot={concat.pow,concat.itpc,concat.powbp,concat.itpcbp,0,concat.pha};
+    sp=6; % frequency spectra
+    sph(sp)=subplot(nrows, ncolumns, sp);
+    image(1:size(toplot{sp},3), 1:numel(concat.freq), squeeze(toplot{sp}),'CDataMapping','scaled');
+    set(gca,'YDir','normal');
+    hold on;
+    
+    nonnan=toplot{sp};nonnan(isnan(nonnan))=[];
+    collim{sp}=[min([collim{sp}(:); nonnan(:)]) max([collim{sp}(:); nonnan(:)])];
+    
+    % horizontal lines to separate frequency bands
+    fbandstart = unique(cfg.lfp.frequency_bands(:))';
+    fbandstart_idx = zeros(size(fbandstart));
+    for f = fbandstart
+        f_idx = find(abs(concat.freq - f) == min(abs(concat.freq - f)), 1, 'first');
+        line([tfr_events.startsamples' tfr_events.endsamples']-1/2, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+        fbandstart_idx(fbandstart == f) = f_idx;
+    end
+    
+    set(gca,'TickDir','out')
+    set(gca, 'ytick', fbandstart_idx);
+    set(gca, 'yticklabel', fbandstart);
+    % add 0.5 at end since the time value is the center of the bin
+    % add 0 at beginning to make x-axis visible
+    set(gca, 'ylim', [0.5,numel(concat.freq) + 0.5]);
+    add_ticks_and_labels(tfr_events,[0.5,numel(concat.freq) + 0.5],8)
+    
+    set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5);
+    ylabel('Frequency (Hz)');
+    title(plot_names{sp},'Interpreter', 'none', 'fontsize',8);
+    axis square
     
     
     %% Evoked LFP
@@ -271,12 +278,12 @@ for cn= 1:numel(data.condition)
     significance=significance.*ylm(1);
     % adding the signifiance horizontal lines:
     %if ~all(isnan(diff(significance,1,1)));
-        plot(significance','linewidth',3);
+    plot(significance','linewidth',3);
     %end
     add_ticks_and_labels(lfp_events,ylm,diff(ylim)/10)
-    set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5); %%should be from lfp_events 
+    set(gca, 'xlim', [0 tfr_events.ticksamples(end)] + 0.5); %%should be from lfp_events
     % end
-    
+    axis square
     %% format spectra colors
     collim{3}=collim{1};
     collim{4}=collim{1};

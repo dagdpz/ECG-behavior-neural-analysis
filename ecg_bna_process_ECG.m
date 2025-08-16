@@ -1,5 +1,5 @@
 function site_ecg = ecg_bna_process_ECG(sites,cfg,ts_original)
-cfg.ecg.timestep = 0.01;
+cfg.ecg.timestep = 0.001;
 
 dospectralanalysis=0;
 

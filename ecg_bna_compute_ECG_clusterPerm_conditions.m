@@ -3,10 +3,10 @@ close all,
 clear all,
 clc
 %%
-reprosess = 0;
+reprosess = 1;
 
 project = 'Pulv_bodysignal';
-version = 'ECG_Magnus_TaskRest_generalTrig_ECG'; % 'ECG_Magnus_TaskRest_generalTrig_ECG' , 'ECG_Bacchus_TaskRest_generalTrig_ECG'
+version = 'ECG_Bacchus_TaskRest_generalTrig_ECG'; % 'ECG_Magnus_TaskRest_generalTrig_ECG' , 'ECG_Bacchus_TaskRest_generalTrig_ECG'
 
 
 driver_path = 'Y:';%'/home/shamim/fileserver';
@@ -31,6 +31,9 @@ monkeys = unique({cfg.session_info.Monkey});
 cfg.monkey = [monkeys{:}];
 cfg.session_ecg_fldr = fullfile(cfg.ECG_root_results_fldr, 'Per_Session');
 cfg.sites_ecg_fldr   = fullfile(cfg.ECG_root_results_fldr, 'Per_Site');
+% cfg.session_ecg_fldr = fullfile(cfg.ECG_root_results_fldr, 'Per_Session_smpl');
+% cfg.sites_ecg_fldr   = fullfile(cfg.ECG_root_results_fldr, 'Per_Site_smpl');
+
 
 if reprosess
     
@@ -66,6 +69,8 @@ if reprosess
         fprintf('Analysing for session %s\n', [sessions_info(i).Monkey '_' sessions_info(i).Date]);
         cfg.session_ecg_fldr = fullfile(cfg.ECG_root_results_fldr, 'Per_Session');
         cfg.sites_ecg_fldr   = fullfile(cfg.ECG_root_results_fldr, 'Per_Site');
+%         cfg.session_ecg_fldr = fullfile(cfg.ECG_root_results_fldr, 'Per_Session_smpl');
+%         cfg.sites_ecg_fldr   = fullfile(cfg.ECG_root_results_fldr, 'Per_Site_smpl');
         cfg.sites_fldr       = cfg.sites_ecg_fldr;
         cfg.to_trigger   = 'ECG';
         

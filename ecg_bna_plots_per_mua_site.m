@@ -38,7 +38,7 @@ for cn= 1:numel(data.condition)
     concat.mua_shufstd = [];
     
     ticksamples_mua=[];
-    for e = 1:size(con_data, 2)
+    for e = 1:size(cfg.analyse_states,1)% size(con_data, 2)
         shufmean=con_data(e).shuffled.mua.mean;
         shufstd=con_data(e).shuffled.mua.std;
         
@@ -94,7 +94,7 @@ for cn= 1:numel(data.condition)
     end
     add_ticks_and_labels(mua_events,ylm,diff(ylim)/10)
     set(gca, 'xlim', [0 mua_events.ticksamples(end)] + 0.5); %%should be from mua_events 
-    
+    axis square
     %% plot title...
     R=[con_data(:).real];R=[R(:).ntriggers];
     S=[con_data(:).shuffled];S=[S(:).ntriggers];

@@ -134,15 +134,27 @@ for s = 1: numel(w_samples)
         elseif ismember(fn,{'pha'})
             BB=single(angle(mean(AA,3)));
         else
+            
             BB=single(mean(AA,3));
+            
         end
         
-        triggered.(fn).mean(1,:,s)        = single(mean(BB,2));
-        triggered.(fn).std(1,:,s)         = single(std(BB,0,2));
+        if n_shuffles==1 && ismember(fn,{'lfp','ecg','mua'})% && ismember(fni,{'ecg'})
+            triggered.(fn).mean(1,:,s)        = single(mean(AA,3));
+            triggered.(fn).std(1,:,s)         = single(std(AA,0,3));
+            triggered.(fn).sterr(1,:,s)       = single(sterr(AA,3));
+            % check dimensions
+            triggered.(fn).conf95(1,:,s)      = single(prctile(AA,97.5,3));
+            triggered.(fn).conf95(2,:,s)      = single(prctile(AA,2.5,3));
+        else
+            triggered.(fn).mean(1,:,s)        = single(mean(BB,2));
+            triggered.(fn).std(1,:,s)         = single(std(BB,0,2));
+            % check dimensions
+            triggered.(fn).conf95(1,:,s)      = single(prctile(BB,97.5,2));
+            triggered.(fn).conf95(2,:,s)      = single(prctile(BB,2.5,2));
+        end
         
-        %% check dimensions
-        triggered.(fn).conf95(1,:,s)      = single(prctile(BB,97.5,2));
-        triggered.(fn).conf95(2,:,s)      = single(prctile(BB,2.5,2));
+       
         if n_shuffles==1
             triggered.(fn).complete(:,:,s)    = squeeze(AA)';
         else

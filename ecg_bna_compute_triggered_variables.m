@@ -149,7 +149,7 @@ if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
 end
 
 
-save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data');
-% save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data','-v7.3');
+% save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data');
+save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data','-v7.3');
 close all;
 end

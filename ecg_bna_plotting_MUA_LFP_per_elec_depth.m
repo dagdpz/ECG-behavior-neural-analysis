@@ -1,4 +1,4 @@
-function ecg_bna_plotting_MUA_per_elec_depth
+function ecg_bna_plotting_MUA_LFP_per_elec_depth
 
 % ==================================================================
 % just to plot the LFP and MUA per electrode depth
@@ -8,7 +8,7 @@ close all,
 clear all
 clc
 
-monkey = 'Magnus';%'Magnus' or 'Bacchus'
+monkey = 'Bacchus';%'Magnus' or 'Bacchus'
 
 Fin = {'lfp','mua'};
 for fin = 1%1:length(Fin)

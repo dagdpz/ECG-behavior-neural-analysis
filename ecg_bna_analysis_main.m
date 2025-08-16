@@ -125,8 +125,10 @@ for v = 1:length(versions)
             end
              if cfg.process_MUA
                 fprintf('Analysing for session %s\n', [sessions_info(i).Monkey '_' sessions_info(i).Date]);
-                cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session');
-                cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site');
+%                 cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session');
+%                 cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site');
+                cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session_smpl');
+                cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site_smpl');
                 cfg.sites_fldr       = cfg.sites_mua_fldr;
                 cfg.to_trigger   = 'MUA';
                 
@@ -160,8 +162,10 @@ for v = 1:length(versions)
             
             if cfg.process_LFP
                 fprintf('Analysing for session %s\n', [sessions_info(i).Monkey '_' sessions_info(i).Date]);
-                cfg.session_lfp_fldr = fullfile(cfg.LFP_root_results_fldr, 'Per_Session');
-                cfg.sites_lfp_fldr   = fullfile(cfg.LFP_root_results_fldr, 'Per_Site');
+%                 cfg.session_lfp_fldr = fullfile(cfg.LFP_root_results_fldr, 'Per_Session');
+%                 cfg.sites_lfp_fldr   = fullfile(cfg.LFP_root_results_fldr, 'Per_Site');
+                cfg.session_lfp_fldr = fullfile(cfg.LFP_root_results_fldr, 'Per_Session_smpl');
+                cfg.sites_lfp_fldr   = fullfile(cfg.LFP_root_results_fldr, 'Per_Site_smpl');
                 cfg.sites_fldr       = cfg.sites_lfp_fldr;
                 cfg.to_trigger   = 'LFP';
                 
