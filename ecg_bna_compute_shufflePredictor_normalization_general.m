@@ -30,19 +30,22 @@ end
 for p=1:numel(parameters)
     parameter=parameters{p};
     if ismember(parameter,{'lfp','ecg','mua'})
-        realmean = real.(parameter).mean;
-        realstd=real.(parameter).std;
+        realmean = real.(parameter).complete;
+        realstd = real.(parameter).std;
         shuffledmean=shuffled.(parameter).mean;
         shuffledstd=shuffled.(parameter).std;
         if strcmp(method , 'subtraction')
-            normalized.(parameter).mean    = realmean-shuffledmean;
-            normalized.(parameter).std    = shuffledstd;  %%??
+            normalized.(parameter).mean    = mean((realmean-shuffledmean),1);
+            normalized.(parameter).std     = std((realmean-shuffledmean),0,1);
+            normalized.(parameter).sterr   = sterr((realmean-shuffledmean),1);
         elseif strcmp(method , 'division')
-            normalized.(parameter).mean    = realmean./shuffledmean;
-            normalized.(parameter).std    = realstd;%./shuffledmean;  %%??
+            normalized.(parameter).mean    = mean((realmean./shuffledmean),1);
+            normalized.(parameter).std     = std((realmean./shuffledmean),0,1);% realstd;%./shuffledmean;  %%??
+            normalized.(parameter).sterr   = sterr((realmean./shuffledmean),1);
         elseif strcmp(method , 'zscore')
-            normalized.(parameter).mean    = (realmean-shuffledmean)./shuffledstd;
-            normalized.(parameter).std    = realstd;%./shuffledstd; %% ??
+            normalized.(parameter).mean    = mean(((realmean-shuffledmean)./shuffledstd),1);
+            normalized.(parameter).std     = std(((realmean-shuffledmean)./shuffledstd),0,1);% realstd;%./shuffledstd; %% ??
+            normalized.(parameter).sterr   = sterr(((realmean-shuffledmean)./shuffledstd),1);
         elseif strcmp(method , 'not normalized')
             normalized.(parameter).mean    = realmean;
             normalized.(parameter).std    = realstd;
