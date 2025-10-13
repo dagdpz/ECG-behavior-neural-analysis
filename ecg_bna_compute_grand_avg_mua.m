@@ -1,6 +1,6 @@
 function tar = ecg_bna_compute_grand_avg_mua(cfg,withunits)
 
-reprocess=1;
+reprocess=0;
 fileName = fullfile([cfg.MUA_root_results_fldr filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Grand_grand_avg_sessions_mua_sites',withunits,'.mat']);
 
 if cfg.combine_hemispheres
@@ -52,16 +52,30 @@ if reprocess
                 time      = event.time;
                 mua_time  = event.tfr_time;
                 mua       = squeeze(event.normalized.mua.mean)';
-                
+                mua_real       = squeeze(event.real.mua.mean)';
+                mua_real_std       = squeeze(event.real.mua.std)';
+                mua_shuffled       = squeeze(event.shuffled.mua.mean)';
+                mua_shuffled_std       = squeeze(event.shuffled.mua.std)';
+                p=event.prevspost.p;
+                h=event.prevspost.h;
                 
                 mua_sig     =squeeze(event.significance.mua)'; %% weird dimension thing
                                 
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
                 sites(s).condition(c).event(e).mua = mua;               
-                sites(s).condition(c).event(e).mua_sig = mua_sig;              
+                sites(s).condition(c).event(e).mua_sig = mua_sig;                  
+                sites(s).condition(c).event(e).any_sig = any(mua_sig);   
+                sites(s).condition(c).event(e).mua_real = mua_real;               
+                sites(s).condition(c).event(e).mua_real_std = mua_real_std;               
+                sites(s).condition(c).event(e).mua_shuffled = mua_shuffled;               
+                sites(s).condition(c).event(e).mua_shuffled_std = mua_shuffled_std;        
+                sites(s).condition(c).event(e).p = p;       
+                sites(s).condition(c).event(e).h = h;                      
                 
                 sites(s).condition(c).event(e).time = time;
                 sites(s).condition(c).event(e).tfr_time = mua_time;
+                
+                %% some comparison of before and after trigger
             end
         end
     end
@@ -77,10 +91,66 @@ else
 end
 
 %% Computing the Target-wise averaging of total available sites
+% for t = 1: length(targets)
+%     sites_for_this_target=arrayfun(@(x) any(strfind(x.target,targets{t})),sites);
+%     target_sites = sites(sites_for_this_target);
+%     condition=vertcat(target_sites.condition);
+%     
+%     for c = 1:size(condition,2)
+%         events=cat(1,condition(:,c).event);
+%         
+%         concat.nTriggers=round(mean(reshape([events.nTriggers],size(events)),1));
+%         
+%         concat.mua          = [];
+%         concat.mua_25       = [];
+%         concat.mua_75       = [];
+%         concat.muasig       = [];
+%         concat.mua_time     = [];
+%         concat.mua_std      = [];
+%         
+%         for e=1:size(cfg.analyse_states,1)
+%             E.nTriggers     = mean(cat(3,events(:,e).nTriggers),3);
+%             E.mua           = mean(cat(3,events(:,e).mua),3);
+%             E.mua_25        = prctile(cat(3,events(:,e).mua),25,3);
+%             E.mua_75        = prctile(cat(3,events(:,e).mua),75,3);
+%             E.mua_time      = events(1,e).time;
+%             E.mua_std       = std(cat(3,events(:,e).mua),0,3);                        
+%             E.mua_sig       = mean(cat(3,events(:,e).mua_sig),3);            
+%             E.mua_sig_signed= mean(cat(3,events(:,e).mua_sig).*sign(cat(3,events(:,e).mua)),3);
+%             
+%             E.mua_sig       = E.mua_sig*100;                
+%             E.mua_sig_signed= E.mua_sig_signed*100;     
+%             
+%             NaNseparator=100/25;
+%             concat.mua          = cat(2, concat.mua,        E.mua,        nan(size(E.mua, 1),        NaNseparator));
+%             concat.mua_25       = cat(2, concat.mua_25,     E.mua_25,	  nan(size(E.mua_25, 1),     NaNseparator));
+%             concat.mua_75       = cat(2, concat.mua_75,     E.mua_75,	  nan(size(E.mua_75, 1),     NaNseparator));
+%             
+%             concat.muasig       = cat(2, concat.muasig,     E.mua_sig,    nan(size(E.mua_sig, 1),    NaNseparator));
+%             concat.mua_std      = cat(2, concat.mua_std,    E.mua_std,	  nan(size(E.mua_std, 1),    NaNseparator));
+%             concat.mua_time     = [concat.mua_time, E.mua_time, nan(1, NaNseparator)];
+%             
+%             eventname=cfg.analyse_states{e,1};
+%             tar(t).con(c).(eventname)=E;
+%         end
+%         tar(t).con(c).cond_name = cfg.condition(c).name;
+%         tar(t).con(c).concat=concat;
+%     end
+%     tar(t).target = targets{t};
+%     tar(t).nSites = length(target_sites);
+% end
+
 for t = 1: length(targets)
     sites_for_this_target=arrayfun(@(x) any(strfind(x.target,targets{t})),sites);
     target_sites = sites(sites_for_this_target);
     condition=vertcat(target_sites.condition);
+    
+    taskevents=cat(1,condition(:,2).event);
+    restevents=cat(1,condition(:,1).event);
+    cueresponse_sigbin=[taskevents(:,4).any_sig];
+    cueresponse_ttest=[taskevents(:,4).p]<0.05;
+    
+    
     
     for c = 1:size(condition,2)
         events=cat(1,condition(:,c).event);
@@ -88,21 +158,54 @@ for t = 1: length(targets)
         concat.nTriggers=round(mean(reshape([events.nTriggers],size(events)),1));
         
         concat.mua          = [];
+        concat.mua_abs      = [];
+        concat.mua_abs_25   = [];
+        concat.mua_abs_75   = [];
         concat.mua_25       = [];
         concat.mua_75       = [];
         concat.muasig       = [];
         concat.mua_time     = [];
         concat.mua_std      = [];
+        concat.mua_abs_std      = [];
         
         for e=1:size(cfg.analyse_states,1)
-            E.nTriggers     = mean(cat(3,events(:,e).nTriggers),3);
-            E.mua           = mean(cat(3,events(:,e).mua),3);
-            E.mua_25        = prctile(cat(3,events(:,e).mua),25,3);
-            E.mua_75        = prctile(cat(3,events(:,e).mua),75,3);
+            
+    sig_sites=[taskevents(:,e).any_sig] | [restevents(:,e).any_sig];
+    %S=sig_sites;
+    %S=true(size(sig_sites));
+    %S=cueresponse_sigbin;
+    S=cueresponse_ttest;
+            
+            
+%             mua=zscore(cat(3,events(S,e).mua),0,2);
+%             mua_real=zscore(cat(3,events(S,e).mua_real),0,2);
+%             mua_shuffled=zscore(cat(3,events(S,e).mua_shuffled),0,2);
+            mua=cat(3,events(S,e).mua);
+            mua_real=cat(3,events(S,e).mua_real);
+            mua_shuffled=cat(3,events(S,e).mua_shuffled);
+            
+            
+            E.nTriggers     = mean(cat(3,events(S,e).nTriggers),3);
+            E.mua           = mean(mua,3);
+            E.mua_real      = mean(mua_real,3);
+            E.mua_shuffled  = mean(mua_shuffled,3);
+            E.mua_abs       = mean(abs(mua),3);
+            E.mua_abs_sterr = sterr(abs(mua),3);
+            E.mua_abs_25    = prctile(abs(mua),25,3);
+            E.mua_abs_75    = prctile(abs(mua),75,3);
+            E.mua_25        = prctile(mua,25,3);
+            E.mua_75        = prctile(mua,75,3);
             E.mua_time      = events(1,e).time;
-            E.mua_std       = std(cat(3,events(:,e).mua),0,3);                        
-            E.mua_sig       = mean(cat(3,events(:,e).mua_sig),3);            
-            E.mua_sig_signed= mean(cat(3,events(:,e).mua_sig).*sign(cat(3,events(:,e).mua)),3);
+            E.mua_std       = std(mua,0,3);    
+            E.mua_real_std  = std(mua_real,0,3);      
+            E.mua_sterr     = sterr(mua,3);    
+            E.mua_real_sterr= sterr(mua_real,3);    
+            E.mua_real_abs  = mean(abs(mua_real),3);  
+            E.mua_real_abs_std  = std(abs(mua_real),0,3);  
+            E.mua_real_abs_sterr  = sterr(abs(mua_real),3); 
+            E.mua_sig       = mean(cat(3,events(S,e).mua_sig),3);
+            E.mua_abs_std   = std(abs(mua),0,3);               
+            E.mua_sig_signed= mean(cat(3,events(S,e).mua_sig).*sign(cat(3,events(S,e).mua)),3);
             
             E.mua_sig       = E.mua_sig*100;                
             E.mua_sig_signed= E.mua_sig_signed*100;     
@@ -111,9 +214,13 @@ for t = 1: length(targets)
             concat.mua          = cat(2, concat.mua,        E.mua,        nan(size(E.mua, 1),        NaNseparator));
             concat.mua_25       = cat(2, concat.mua_25,     E.mua_25,	  nan(size(E.mua_25, 1),     NaNseparator));
             concat.mua_75       = cat(2, concat.mua_75,     E.mua_75,	  nan(size(E.mua_75, 1),     NaNseparator));
+            concat.mua_abs      = cat(2, concat.mua_abs,    E.mua_abs,    nan(size(E.mua_abs, 1),    NaNseparator));
+            concat.mua_abs_25   = cat(2, concat.mua_abs_25, E.mua_abs_25, nan(size(E.mua_abs_25, 1), NaNseparator));
+            concat.mua_abs_75   = cat(2, concat.mua_abs_75, E.mua_abs_75, nan(size(E.mua_abs_75, 1), NaNseparator));
             
             concat.muasig       = cat(2, concat.muasig,     E.mua_sig,    nan(size(E.mua_sig, 1),    NaNseparator));
             concat.mua_std      = cat(2, concat.mua_std,    E.mua_std,	  nan(size(E.mua_std, 1),    NaNseparator));
+            concat.mua_abs_std  = cat(2, concat.mua_abs_std,E.mua_abs_std,nan(size(E.mua_abs_std, 1),NaNseparator));
             concat.mua_time     = [concat.mua_time, E.mua_time, nan(1, NaNseparator)];
             
             eventname=cfg.analyse_states{e,1};
@@ -123,9 +230,8 @@ for t = 1: length(targets)
         tar(t).con(c).concat=concat;
     end
     tar(t).target = targets{t};
-    tar(t).nSites = length(target_sites);
+    tar(t).nSites = sum(S);
 end
-
 
 %% plotting the results:
 cond = {cfg.condition.name};
@@ -194,7 +300,7 @@ clear results_file sph h collim
 
 
 % same as figure 1, but separately for each event
-plot_names={'MUA','MUA significance','MUA signed_signficance'};
+plot_names={'MUA','MUA significance','MUA absolute','MUA signed_signficance'};
 for e=1:size(cfg.analyse_states,1)
     E=cfg.analyse_states{e,1};
     
@@ -216,7 +322,11 @@ for e=1:size(cfg.analyse_states,1)
             
             %========================== MUA evoked Potential ==================== %
             mua=tar(t).con(c).(E).mua;
+            mua_abs=tar(t).con(c).(E).mua_abs;
             mua_std=tar(t).con(c).(E).mua_std;
+            mua_sterr=tar(t).con(c).(E).mua_sterr;
+            mua_abs_std=tar(t).con(c).(E).mua_abs_std;
+            mua_abs_sterr=tar(t).con(c).(E).mua_abs_sterr;
             %mua_se=sterr(mua,3,0);
             percentile25=tar(t).con(c).(E).mua_25;
             percentile75=tar(t).con(c).(E).mua_75;
@@ -226,16 +336,19 @@ for e=1:size(cfg.analyse_states,1)
             % Smoothing of the  LFP evoked Potential here:
             smoothed_mean=smoothit(mua,half_win,gaussian_kernel);    
             smoothed_std=smoothit(mua_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(mua_sterr,half_win,gaussian_kernel);
             smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
             smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
             
+            %========================== mua  ==================== %
             sp=1;
-            sph(c,sp,t)=subplot(2,1,sp);
+            sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
             hold on;
             lineProps={'color',[0 0 1]};
             
-            shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
             %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('MUA evoked Potential');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
@@ -247,14 +360,49 @@ for e=1:size(cfg.analyse_states,1)
             smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
             
             sp=2;
-            sph(c,sp,t)=subplot(2,1,sp);
+            sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
             hold on;
             plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
             
             xlabel('Time(s)'); ylabel('sig. MUA [% of sites]');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
-            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)           
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
+            
+            
+            %========================== mua abs  ==================== %
+            smoothed_mean=smoothit(mua_abs,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(mua_abs_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(mua_abs_sterr,half_win,gaussian_kernel);
+            sp=3;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            lineProps={'color',[0 0 1]};
+            
+            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
+            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            xlabel('Time(s)'); ylabel('MUA Absolute');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
+            
+            
+            %========================== mua significance ==================== %
+            mua_sig=tar(t).con(c).(E).mua_sig_signed;
+            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            
+            sp=4;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
+            
+            xlabel('Time(s)'); ylabel('signed sig. MUA [% of sites]');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
+            
+            
             
             results_file{c,t} = fullfile(cfg.MUA_root_results_fldr, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
             mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
@@ -267,6 +415,126 @@ end
 close all,
 
 clear results_file sph h collim
+
+
+
+% same as figure 1, but separately for each event
+plot_names={'MUA','MUA significance','MUA absolute','MUA signed_signficance'};
+for e=1:size(cfg.analyse_states,1)
+    E=cfg.analyse_states{e,1};
+    
+    for t = 1: length(targets)
+        for c = 1:length(cond)
+            % create figure
+            h(c,t) = figure('units','normalized','position',[0 0 1 1]);
+            if tar(t).nSites == 0
+                continue;
+            end
+            
+            mua_time                = tar(t).con(c).(E).mua_time;
+            tfr_events.onset        = find(mua_time == 0);
+            tfr_events.name         = cfg.analyse_states(e,1);
+            tfr_events.ticksamples  = [1,numel(mua_time)]; 
+            tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
+            tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
+            tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+            
+            %========================== MUA evoked Potential ==================== %
+            mua=tar(t).con(c).(E).mua_real;
+            mua_abs=tar(t).con(c).(E).mua_real_abs;
+            mua_std=tar(t).con(c).(E).mua_real_std;
+            mua_sterr=tar(t).con(c).(E).mua_real_sterr;
+            mua_abs_std=tar(t).con(c).(E).mua_real_abs_std;
+            mua_abs_sterr=tar(t).con(c).(E).mua_real_abs_sterr;
+            %mua_se=sterr(mua,3,0);
+            percentile25=tar(t).con(c).(E).mua_25;
+            percentile75=tar(t).con(c).(E).mua_75;
+            percentile25(isnan(percentile25))=0;
+            percentile75(isnan(percentile75))=0;
+           
+            % Smoothing of the  LFP evoked Potential here:
+            smoothed_mean=smoothit(mua,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(mua_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(mua_sterr,half_win,gaussian_kernel);
+            smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
+            smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
+            
+            %========================== mua  ==================== %
+            sp=1;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            lineProps={'color',[0 0 1]};
+            
+            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
+            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            xlabel('Time(s)'); ylabel('MUA evoked Potential');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
+            
+            
+            %========================== mua significance ==================== %
+            mua_sig=tar(t).con(c).(E).mua_sig;
+            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            
+            sp=2;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
+            
+            xlabel('Time(s)'); ylabel('sig. MUA [% of sites]');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
+            
+            
+            %========================== mua abs  ==================== %
+            smoothed_mean=smoothit(mua_abs,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(mua_abs_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(mua_abs_sterr,half_win,gaussian_kernel);
+            sp=3;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            lineProps={'color',[0 0 1]};
+            
+            %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
+            shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
+            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            xlabel('Time(s)'); ylabel('MUA Absolute');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
+            
+            
+            %========================== mua significance ==================== %
+            mua_sig=tar(t).con(c).(E).mua_sig_signed;
+            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            
+            sp=4;
+            sph(c,sp,t)=subplot(2,2,sp);
+            ax=sph(c,sp,t);
+            hold on;
+            plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
+            
+            xlabel('Time(s)'); ylabel('signed sig. MUA [% of sites]');
+            title(plot_names{sp},'fontsize',10,'interpreter','none');
+            add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
+            
+            
+            
+            results_file{c,t} = fullfile(cfg.MUA_root_results_fldr, ['real_' cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
+            mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
+            export_fig(h(c,t),[results_file{c,t},'.pdf']);
+        end
+        
+    end
+    
+end
+close all,
+
+clear results_file sph h collim
+
 clc
 % 
 % % same as figure 1, but now for significances

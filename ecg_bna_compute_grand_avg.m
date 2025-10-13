@@ -775,47 +775,106 @@ end
 clearall
 
 %% plotting the avgogram of the timing of the Max ITPC/POW:
-bins=cfg.analyse_states{1,4}:cfg.lfp.timestep*10:cfg.analyse_states{1,5};
-for t = 1: length(targets)
-    if tar(t).nSites == 0
-        continue;
-    end
-    h = figure;
-    for c = 1:length(cond)
-        nsites=[' for ',num2str(size(tar(t).con(c).concat.max_itpcbp,2)),' sites,'];
-        ntriggers=[num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'];
-        ncond=strrep(cond{c},'_',' ');
-        for fb = 1: length(freqb)
-            
-            % itpcbp
-            sp1=subplot(2,2,2*c-1);
-            [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_itpcbp_time(fb,:)),bins);
-            plot(centers,nelements,'-','Color',colsbp(fb,:));
-            hold on
-            title([' max itpc-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
-            xlabel('Max ITPC times','Interpreter','latex');
-            set(gca,'xlim',[-0.25,0.25])
-            
-            % powbp
-            sp2=subplot(2,2,2*c);
-            [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_powbp_time(fb,:)),bins);
-            plot(centers,nelements,'-','Color',colsbp(fb,:));
-            hold on
-            title([' max power-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
-            xlabel('Max POWER times','Interpreter','latex');
-            set(gca,'xlim',[-0.25,0.25])            
+for e=1:size(cfg.analyse_states,1)
+    E=cfg.analyse_states{e,1};
+    bins=cfg.analyse_states{e,4}:cfg.lfp.timestep*10:cfg.analyse_states{e,5};
+    for t = 1:length(targets)
+        if tar(t).nSites == 0
+            continue;
+        end
+        h = figure('Name',['Max ITPCbp/POWbp in ' E ' of Target=' tar(t).target],'NumberTitle','off');
+        for c = 1:length(cond)
+            ncond=strrep(cond{c},'_',' ');
+            ntriggers=[num2str(tar(t).con(c).(E).nTriggers),' avg nTriggers'];
+            ns=size(tar(t).con(c).(E).max_itpcbp_time,2);
+            nsites=[' of ',num2str(ns),' sites,'];
+            for fb = 1: length(freqb)
+                % itpcbp
+                sp1(c)=subplot(2,2,2*c-1);
+                
+                [nelements,centers]= hist(squeeze(tar(t).con(c).(E).max_itpcbp_time(fb,:)),bins);
+                nelements=nelements/ns;
+                plot(centers,nelements,'-','Color',colsbp(fb,:));
+                hold on
+                title([' max itpc-bp in ',E,' ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
+                xlabel('Max ITPC times','Interpreter','latex');
+                set(gca,'xlim',[bins(1) bins(end)])
+                
+                % powbp
+                sp2(c)=subplot(2,2,2*c);
+                [nelements,centers]= hist(squeeze(tar(t).con(c).(E).max_powbp_time(fb,:)),bins);
+                nelements=nelements/ns;
+                plot(centers,nelements,'-','Color',colsbp(fb,:));
+                hold on
+                title([' max power-bp in ',E,' ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
+                xlabel('Max POWER times','Interpreter','latex');
+                set(gca,'xlim',[bins(1) bins(end)])
+            end
         end
         legend(freqb,'FontSize',5)
-        legend('boxoff')        
-        plot(sp1,[0,0],get(sp1,'ylim'),'k--')
-        plot(sp2,[0,0],get(sp2,'ylim'),'k--')
+        legend('boxoff')    
+        ylims1=get(sp1,'ylim');
+        set(sp1,'ylim',[0 max([ylims1{:}])]);
+        ylims2=get(sp2,'ylim');
+        set(sp2,'ylim',[0 max([ylims2{:}])]);
+       
+        
+        for c = 1:length(cond)
+        plot(sp1(c),[0,0],get(sp1(c),'ylim'),'k--')
+        plot(sp2(c),[0,0],get(sp2(c),'ylim'),'k--')
+        end
+            
+        mtit([strrep(tar(t).target,'_','-') '-' E],mtitsettings{:});
+        results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-',E,'-Time_of_Max_ITPCbp_POWbp ',num2str(tar(t).nSites),' sites ', withunits]);
+        export_fig(h,[results_file,'.pdf']);
     end
-    mtit(['Target=',strrep(tar(t).target,'_','-')],mtitsettings{:});
-    results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp',nsites,withunits]);
-    export_fig(h,[results_file,'.pdf']);
+    close all,
+    clc
 end
 clearall
 
+% %% plotting the avgogram of the timing of the Max ITPC/POW:
+% bins=cfg.analyse_states{1,4}:cfg.lfp.timestep*10:cfg.analyse_states{1,5};
+% for t = 1: length(targets)
+%     if tar(t).nSites == 0
+%         continue;
+%     end
+%     h = figure;
+%     for c = 1:length(cond)
+%         nsites=[' for ',num2str(size(tar(t).con(c).concat.max_itpcbp,2)),' sites,'];
+%         ntriggers=[num2str(tar(t).con(c).concat.nTriggers),' avg nTriggers'];
+%         ncond=strrep(cond{c},'_',' ');
+%         for fb = 1: length(freqb)
+%             
+%             % itpcbp
+%             sp1=subplot(2,2,2*c-1);
+%             [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_itpcbp_time(fb,:)),bins);
+%             plot(centers,nelements,'-','Color',colsbp(fb,:));
+%             hold on
+%             title([' max itpc-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
+%             xlabel('Max ITPC times','Interpreter','latex');
+%             set(gca,'xlim',[-0.25,0.25])
+%             
+%             % powbp
+%             sp2=subplot(2,2,2*c);
+%             [nelements,centers]= hist(squeeze(tar(t).con(c).concat.max_powbp_time(fb,:)),bins);
+%             plot(centers,nelements,'-','Color',colsbp(fb,:));
+%             hold on
+%             title([' max power-bp in ',ncond,nsites,ntriggers],'FontSize',6,'Interpreter','latex');
+%             xlabel('Max POWER times','Interpreter','latex');
+%             set(gca,'xlim',[-0.25,0.25])            
+%         end
+%         legend(freqb,'FontSize',5)
+%         legend('boxoff')        
+%         plot(sp1,[0,0],get(sp1,'ylim'),'k--')
+%         plot(sp2,[0,0],get(sp2,'ylim'),'k--')
+%     end
+%     mtit(['Target=',strrep(tar(t).target,'_','-')],mtitsettings{:});
+%     results_file = fullfile(cfg.analyse_lfp_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp',nsites,withunits]);
+%     export_fig(h,[results_file,'.pdf']);
+% end
+% clearall
+% 
 
 
 end

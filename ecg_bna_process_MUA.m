@@ -59,6 +59,7 @@ for b=1:numel(blocks_with_LFP)
     
     site_mua.tfs.n_samples_per_block(:,b)=[B,be-bs+1];
     dat = nanmean(reshape(concat_raw(1:end-mod(size(concat_raw,2), ts)),ts,[]),1);
+    dat = zscore(dat);
     site_mua.tfs.mua(1,bs:be)= dat;
     
     if dospectralanalysis
