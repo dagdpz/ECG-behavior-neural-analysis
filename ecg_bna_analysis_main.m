@@ -7,24 +7,16 @@ function ecg_bna_analysis_main(project,versions)
 % and task specific analysis using TFR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% whether the LFP should be processed (true) or not (false)
-% if the LFP for the sessions to analyse has already been processed, and no
-% settings need to be changed, this flag can be set to false to skip LFP
-% being processed again
-% If LFP was not previously processed and the flag is set to false,
-% analysis won't happen
-% TODO: check if LFP is processed, of not, process LFP even if flag is set
-% to false
 
 %% INITIALIZATION
 % loop through settings file
 % addpath(genpath_exclude('/home/shamim/fileserver/Projects/_Shamim/rework_LS_SS','.git'));
-driver_path = 'Y:';%'/home/shamim/fileserver';
+root_path = 'Y:';%'/home/shamim/fileserver';
 
 cfg = [];
 cfg.process_MUA=0;
 cfg.project = project;
-cfg.results_folder = [driver_path,filesep,'Projects',filesep,cfg.project];
+cfg.results_folder = [root_path,filesep,'Projects',filesep,cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 
@@ -58,7 +50,7 @@ for v = 1:length(versions)
             
             % reading in actual TDT clock block starts (in seconds - inprecise, but that is irrelevant)
             blocks=unique([trials.block]);
-            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,driver_path); 
+            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,root_path); 
                         
             cfg.event_types=cfg.analyse_states(:,2);
             cfg.events=cfg.analyse_states(:,1);
@@ -249,6 +241,9 @@ for v = 1:length(versions)
             cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session');
             cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site');
             grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'all');
+            load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
+            cfg.site_IDS=cueresponsivesites;
+            grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'w_units');
         end
         
         if cfg.process_LFP
@@ -257,6 +252,9 @@ for v = 1:length(versions)
             cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
             cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
             grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
+            load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
+            cfg.site_IDS=cueresponsivesites;
+            grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
         end
         
         if cfg.process_spikes

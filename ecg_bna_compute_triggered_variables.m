@@ -110,6 +110,7 @@ for cn = 1:length(cfg.condition)
         trig.condition(cn).event(e).normalized=normalized;
         trig.condition(cn).event(e).significance=significance;
         
+        if isfield(realD,'mua')
         pre_samples=1:abs(width_in_samples(1))+1;
         post_samples=max(pre_samples)+1:width_in_samples(2)+max(pre_samples);
         
@@ -118,7 +119,7 @@ for cn = 1:length(cfg.condition)
         [h,p]=ttest(pre,post);
         trig.condition(cn).event(e).prevspost.p=p;
         trig.condition(cn).event(e).prevspost.h=h;
-        
+        end
     end
 end
 triggered_site_data = trig;

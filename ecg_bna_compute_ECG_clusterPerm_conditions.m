@@ -3,10 +3,11 @@ close all,
 clear all,
 clc
 %%
-reprosess = 1;
+reprosess = 0;
 
 project = 'Pulv_bodysignal';
 version = 'ECG_Bacchus_TaskRest_generalTrig_ECG'; % 'ECG_Magnus_TaskRest_generalTrig_ECG' , 'ECG_Bacchus_TaskRest_generalTrig_ECG'
+version2 = 'ECG_Bacchus_TaskRest_generalTrig_MUA'; % 'ECG_Magnus_TaskRest_generalTrig_ECG' , 'ECG_Bacchus_TaskRest_generalTrig_ECG'
 
 
 driver_path = 'Y:';%'/home/shamim/fileserver';
@@ -20,7 +21,8 @@ cfg.results_folder = [driver_path,filesep,'Projects',filesep,cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 cfg.version = version;
-run([github_folder filesep 'Settings' filesep cfg.project filesep 'ECG_bna' filesep cfg.version '.m']);
+run([github_folder filesep 'Settings' filesep cfg.project filesep 'ECG_bna' filesep version2 '.m']);
+
 cfg = ecg_bna_define_folders(cfg);
 
 %% Get info about sessions to be analysed
@@ -158,6 +160,10 @@ else
                 ecg_time  = event.tfr_time;
                 ecg       = squeeze(event.real.ecg.mean)'; % not normalized ecg
 %                 ecg       = squeeze(event.normalized.ecg.mean)';
+%% this needs some normalization, because ecg electrodes are probably slowly detaching in the course of a session...
+                ecg=(ecg-mean(ecg))/(max(ecg)-min(ecg));
+
+
                 ecg_sig   =squeeze(event.significance.ecg)'; %% weird dimension thing
                 
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
@@ -181,20 +187,9 @@ else
         ecgMaxMin(s).Task_min = min(sites(s).condition(2).event.ecg);
     end
     ecg_filename = fullfile(['Y:\Projects\Pulv_bodysignal\ECG\ECG_',monkey,'_TaskRest_generalTrig_ECG\', monkey,'_ecgMaxMin_perSite']);
-    save(ecg_filename, 'ecgMaxMin');
-    %% Computing the Target-wise averaging of total available sites
-    % potential cutoff -> probably startfreq should go into settings at somepoint
-    startfreq=3.5;
-    colsbp=jet(length(cfg.lfp.frequency_bands));
-    fbx=find(cfg.lfp.frequency_bands(:,1)>=startfreq,1,'first');
-    frequency_bands=cfg.lfp.frequency_bands(fbx:end,:);
-    %freqName = cfg.lfp.freqName(fbx:end);
-    colsbp=colsbp(fbx:end,:);
-    freqb=num2cell(strcat(num2str(round(frequency_bands(:,1))), '-',num2str(round(frequency_bands(:,2))), ' Hz'),2);
-    fx=find(cfg.lfp.foi>=startfreq,1,'first');
-    freq = cfg.lfp.foi(fx:end);
+    %save(ecg_filename, 'ecgMaxMin');
     
-    %%
+    %% Computing the Target-wise averaging of total available sites    
     for t = 1: length(targets)
         sites_for_this_target=arrayfun(@(x) any(strfind(x.target,targets{t})),sites);
         target_sites = sites(sites_for_this_target);
@@ -215,7 +210,7 @@ else
                 E.ecg_sig_signed= [];
                 
                 E.nTriggers     = mean([events(:,e).nTriggers]);
-                E.ecg           = (cat(3,events(:,e).ecg));
+                E.ecg           = (cat(events(:,e).ecg));
                 E.ecg_25        = prctile(cat(3,events(:,e).ecg),25,3);
                 E.ecg_75        = prctile(cat(3,events(:,e).ecg),75,3);
                 E.ecg_time      = events(1,e).time;
