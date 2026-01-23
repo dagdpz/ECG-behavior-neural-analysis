@@ -1,4 +1,4 @@
-function  Trigger_samples = ecg_bna_resample_triggers2(Triggers,offset_per_block,Stream_samples_per_block,sr)
+function  Trigger_samples = ecg_bna_resample_triggers(Triggers,offset_per_block,Stream_samples_per_block,sr)
 
 Stream_blocks=Stream_samples_per_block(1,:);
 Stream_samples=Stream_samples_per_block(2,:);
@@ -14,7 +14,7 @@ for f=events
     ts_surrogate=Triggers.(f{:}).surrogate_ts;
     
     observed_ts=[];    
-    Surrogate_ts=[];    
+    surrogate_ts=[];    
     for b=Stream_blocks
         BS=Stream_blocks==b;   %this block's samples in the LFP
         BT=trigger_blocks==b;
@@ -41,10 +41,10 @@ for f=events
         S=S+sum(Stream_samples(ismember(Stream_blocks,past_blocks)));
         S(S==sum(Stream_samples(ismember(Stream_blocks,past_blocks))))=0;
         
-        Surrogate_ts=[Surrogate_ts S];
+        surrogate_ts=[surrogate_ts S];
                 
         past_blocks=[past_blocks b];
     end
     Trigger_samples.([f{:} '_observed'])=observed_ts;
-    Trigger_samples.([f{:} '_surrogate'])=Surrogate_ts;
+    Trigger_samples.([f{:} '_surrogate'])=surrogate_ts;
 end

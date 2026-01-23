@@ -11,12 +11,12 @@ function ecg_bna_analysis_main(project,versions)
 %% INITIALIZATION
 % loop through settings file
 % addpath(genpath_exclude('/home/shamim/fileserver/Projects/_Shamim/rework_LS_SS','.git'));
-root_path = 'Y:';%'/home/shamim/fileserver';
+root_drive = 'Y:';%'/home/shamim/fileserver';
 
 cfg = [];
 cfg.process_MUA=0;
 cfg.project = project;
-cfg.results_folder = [root_path,filesep,'Projects',filesep,cfg.project];
+cfg.fldr.root     = [root_drive,filesep,'Projects',filesep,cfg.project];
 ecg_bna_location     =which('ecg_bna_define_folders');
 github_folder        =ecg_bna_location(1:strfind(ecg_bna_location,['ECG-behavior-neural-analysis' filesep 'ecg_bna_define_folders'])-1);
 
@@ -26,16 +26,16 @@ for v = 1:length(versions)
     run([github_folder filesep 'Settings' filesep cfg.project filesep 'ECG_bna' filesep cfg.version '.m']);
     cfg = ecg_bna_define_folders(cfg);
     
-    %% Get info about sessions to be analysed    
+    %% Get info about sessions to be analysed
     sessions_info = cfg.session_info;
     
     %% per session processing..
-    if cfg.process_per_session       
+    if cfg.process_per_session
         for i = 1:length(sessions_info)
-            % First make same seed for each session -> that way even if
-            % the data changes in a subsequent re-running, shuffles in
-            % unaffected sessions are unaffected...
-            seed_filename=[cfg.ECG_root_results_fldr filesep 'seed.mat']; %% not quite sure yet where to put seed
+            % First make a seed for each session -> that way even if the
+            % new sessios are added in a subsequent re-running, already
+            % processed sessions are unaffected
+            seed_filename=[cfg.fldr.seeds filesep 'seed_' sessions_info(i).Date '.mat']; %% make seeds subfolder and add one per session
             if exist(seed_filename,'file')
                 load(seed_filename);
                 rng(seed);
@@ -44,14 +44,14 @@ for v = 1:length(versions)
                 save(seed_filename,'seed');
             end
             
-            java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
-                        
-            load(sessions_info(i).Input_trials);            
+            %java.lang.System.gc() % added by Luba to control the number of graphical device interface handles (hope to handle the problem with freezing plots while creating figures)
+            
+            load(sessions_info(i).Input_trials);
             
             % reading in actual TDT clock block starts (in seconds - inprecise, but that is irrelevant)
             blocks=unique([trials.block]);
-            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,root_path); 
-                        
+            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,root_drive);
+            
             cfg.event_types=cfg.analyse_states(:,2);
             cfg.events=cfg.analyse_states(:,1);
             for e=1:numel(cfg.events)
@@ -59,7 +59,7 @@ for v = 1:length(versions)
                 Event=ecg_bna_get_events(sessions_info(i),trials,current_event,blockstart);
                 Triggers.(cfg.events{e})=ecg_bna_jitter(Event,cfg.spk);
             end
-                    
+            
             
             if cfg.process_spikes
                 cfg.Input_WC=sessions_info(i).Input_WC;
@@ -67,7 +67,7 @@ for v = 1:length(versions)
                 %% apply exclusion criteria and save lists of units - we do it once
                 if cfg.spk.compute_unit_subsets
                     ecg_bna_get_unit_list(cfg,1);
-                end                
+                end
                 %% copy selected units separately - we do it once
                 if cfg.spk.move_files
                     ecg_bna_copy_selected_units(cfg)
@@ -81,9 +81,8 @@ for v = 1:length(versions)
                     end
                     load(sessions_info(i).Input_spikes);
                     
+                    ecg_bna_compute_session_phase_response_analysis(trials,population,Rpeaks,cfg)
                     
-                   ecg_bna_compute_session_phase_response_analysis(trials,population,Rpeaks,cfg)
-
                     if cfg.spk.compute_spike_histograms
                         ecg_bna_PSTH(trials,population,Triggers,blockstart,cfg)
                     end
@@ -111,67 +110,23 @@ for v = 1:length(versions)
                 if cfg.spk.plot_correlation
                     ecg_bna_plot_session_correlation(sessions_info(i),cfg)
                 end
-%                 if cfg.spk.plot_spike_phase
-%                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
-%                 end
+                %                 if cfg.spk.plot_spike_phase
+                %                     ecg_bna_plot_session_ECG_related_spikePhase(sessions_info(i),cfg)
+                %                 end
             end
-             if cfg.process_MUA
+            if cfg.process_MUA || cfg.process_LFP
                 fprintf('Analysing for session %s\n', [sessions_info(i).Monkey '_' sessions_info(i).Date]);
-%                 cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session');
-%                 cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site');
-                cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session_smpl');
-                cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site_smpl');
-                cfg.sites_fldr       = cfg.sites_mua_fldr;
-                cfg.to_trigger   = 'MUA';
                 
-                %% this is new
                 sitesdir=fileparts(sessions_info(i).Input_LFP{:});
                 [sitefiles]=dir(sessions_info(i).Input_LFP{:});
-                sr=unique([trials.TDT_MUAx_SR]);
-                ts_original=1/sr;
                 
-                for s = 1:length(sitefiles) %% loop only through valid sites
-                    load([sitesdir filesep sitefiles(s).name], 'sites');
-                    site_MUA = ecg_bna_process_MUA(sites, cfg, ts_original);
-                    n_MUA_samples_per_block=site_MUA.tfs.n_samples_per_block;
-                    
-                    site_triggers     = ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_MUA_samples_per_block,site_MUA.tfs.sr);                     
-                    site_data=ecg_bna_compute_triggered_variables(site_MUA,site_triggers,trials,cfg );                    
-                    
-                    triggered_session_data.sites(s) = site_data;
-                    triggered_session_data.session = site_data.session;
-                end
-                
-                % make a folder to save figures
-                session_result_folder = fullfile(cfg.session_mua_fldr);
-                if ~exist(session_result_folder, 'dir')
-                    mkdir(session_result_folder);
-                end
-                save(fullfile(session_result_folder, ['Triggered_session_' triggered_session_data.session '.mat']), 'triggered_session_data');
-                clear session_proc_lfp site_data triggered_session_data;
-                
-            end
-            
-            if cfg.process_LFP
-                fprintf('Analysing for session %s\n', [sessions_info(i).Monkey '_' sessions_info(i).Date]);
-%                 cfg.session_lfp_fldr = fullfile(cfg.LFP_root_results_fldr, 'Per_Session');
-%                 cfg.sites_lfp_fldr   = fullfile(cfg.LFP_root_results_fldr, 'Per_Site');
-                cfg.session_lfp_fldr = fullfile(cfg.LFP_root_results_fldr, 'Per_Session_smpl');
-                cfg.sites_lfp_fldr   = fullfile(cfg.LFP_root_results_fldr, 'Per_Site_smpl');
-                cfg.sites_fldr       = cfg.sites_lfp_fldr;
-                cfg.to_trigger   = 'LFP';
-                
-                %% this is new
-                sitesdir=fileparts(sessions_info(i).Input_LFP{:});
-                [sitefiles]=dir(sessions_info(i).Input_LFP{:});
-                sr=unique([trials.TDT_LFPx_SR]);
-                ts_original=1/sr;
-                
-                %% load all sites
-                if (isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1)|| (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
-                    allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,ts_original,sr,Triggers,blocks,blockstart);
+                % excluding sites and ICA correction
+                if cfg.process_LFP && (cfg.lfp.Reref==1 || cfg.lfp.runICA==1)
+                    sr=unique([trials.TDT_LFPx_SR]);
+                    cfg.LFP_ts_original=1/sr;
+                    allSitesData = ecg_bna_remove_rawLFP_outliers(sitesdir,sitefiles,cfg,cfg.LFP_ts_original,sr,Triggers,blocks,blockstart);
                     removed_sites = find(~ismember({sitefiles.name},{allSitesData.name}));
-                    if ~isempty(removed_sites) 
+                    if ~isempty(removed_sites)
                         removed_sites_name = sitefiles(removed_sites).name;
                         fprintf('\n\n removed_sites: %s\n',removed_sites_name);
                     else
@@ -179,86 +134,88 @@ for v = 1:length(versions)
                     end
                     sitefiles = allSitesData;
                     clear allSitesData;
-%                 elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==0)
+                    %                 elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==0)
                     
-%                     smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
-%                         cfg.session_info(i).Monkey(1:3),'_', cfg.session_info(i).Date , '_sampleTble_allSitesdata']);
-%                     load([smplTblfilename,'.mat']);
-%                     
-%                     sitefiles = allSitesData;
-%                     clear allSitesData;
+                    %                     smplTblfilename = fullfile([cfg.analyse_lfp_folder,filesep,...
+                    %                         cfg.session_info(i).Monkey(1:3),'_', cfg.session_info(i).Date , '_sampleTble_allSitesdata']);
+                    %                     load([smplTblfilename,'.mat']);
+                    %
+                    %                     sitefiles = allSitesData;
+                    %                     clear allSitesData;
                 end
-% % % %                 ecg_bna_rawLFP_butterfly_plots(cfg,allSitesData,sr)
-                %% exclude outliars (too many samples with too high/low voltage ? or other criteria)
-                   %% threshold = 1V (fixed threshold), more than 1% of bins above that threshold
-                %% exclude blocks with less than 3 sites
-                %% compute common ground for remaining blocks
-                %% identify valid blocks (because some BLOCKS will be excluded, not only sites)
-
-                %% create corrected site LFP data for each valid site, and loop through that
-                %% instead of looping through sitefiles and load each of them again
-% % % % % % % % % %                 continue; % just for saving the ICA weights now
                 
                 for s = 1:length(sitefiles) %% loop only through valid sites
-                     if isfield(cfg.lfp, 'Reref') && cfg.lfp.Reref==1 || (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==1)
-                         sites = sitefiles(s).site;
-%                      elseif (isfield(cfg.lfp, 'runICA') && cfg.lfp.runICA==0)
-%                          sites = sitefiles(s).site;
-                     else
-                         load([sitesdir filesep sitefiles(s).name], 'sites');
-                     end
-                    site_LFP = ecg_bna_process_LFP(sites, cfg, ts_original);
-                    n_LFP_samples_per_block=site_LFP.tfs.n_samples_per_block;
+                    if cfg.lfp.Reref==1 || cfg.lfp.runICA==1
+                        sites = sitefiles(s).site;
+                    else
+                        load([sitesdir filesep sitefiles(s).name], 'sites');
+                    end
                     
-                    site_triggers     = ecg_bna_resample_triggers2(Triggers,[blocks;blockstart(blocks)],n_LFP_samples_per_block,site_LFP.tfs.sr);                     
-                    site_data=ecg_bna_compute_triggered_variables(site_LFP,site_triggers,trials,cfg );                    
+                    if cfg.process_MUA
+                        cfg.to_trigger='MUA';
+                        sr=unique([trials.TDT_MUAx_SR]);
+                        cfg.ts_original=1/sr;
+                        site_prep    = ecg_bna_resampled_spectra(sites,cfg);
+                        n_samples_per_block=site_prep.mua.n_samples_per_block;
+                        site_triggers     = ecg_bna_resample_triggers(Triggers,[blocks;blockstart(blocks)],n_samples_per_block,site_prep.mua.sr);
+                        site_triggered                 = ecg_bna_compute_triggered_variables(site_prep,site_triggers,trials,cfg);
+                        triggered_session_MUA.sites(s) = site_triggered;
+                        triggered_session_MUA.session  = site_triggered.session;
+                    end
                     
-                    triggered_session_data.sites(s) = site_data;
-                    triggered_session_data.session = site_data.session;
+                    if cfg.process_LFP
+                        cfg.to_trigger='LFP';
+                        sr=unique([trials.TDT_LFPx_SR]);
+                        cfg.ts_original=1/sr;
+                        site_prep    = ecg_bna_resampled_spectra(sites,cfg);
+                        n_samples_per_block=site_prep.lfp.n_samples_per_block;
+                        site_triggers     = ecg_bna_resample_triggers(Triggers,[blocks;blockstart(blocks)],n_samples_per_block,site_prep.lfp.sr);
+                        site_triggered                 = ecg_bna_compute_triggered_variables(site_prep,site_triggers,trials,cfg);
+                        triggered_session_LFP.sites(s) = site_triggered;
+                        triggered_session_LFP.session  = site_triggered.session;
+                    end
+                    
+                end
+                if cfg.process_MUA
+                    triggered_session_data=triggered_session_MUA;
+                    save(fullfile(cfg.fldr.LFP_sessions, ['Triggered_session_' triggered_session_MUA.session '.mat']), 'triggered_session_data');
+                    clear triggered_session_MUA triggered_session_data;
                 end
                 
-                % make a folder to save figures
-                session_result_folder = fullfile(cfg.session_lfp_fldr);
-                if ~exist(session_result_folder, 'dir')
-                    mkdir(session_result_folder);
+                if cfg.process_LFP
+                    triggered_session_data=triggered_session_LFP;
+                    save(fullfile(cfg.fldr.LFP_sessions, ['Triggered_session_' triggered_session_LFP.session '.mat']), 'triggered_session_data');
+                    clear triggered_session_LFP triggered_session_data;
                 end
-                save(fullfile(session_result_folder, ['Triggered_session_' triggered_session_data.session '.mat']), 'triggered_session_data');
-                clear session_proc_lfp site_data triggered_session_data;
-                
+                clear site_prep site_triggers site_triggered;
             end
         end
     end
     
     %% average across sessions
     if cfg.process_population
+        monkeys = unique({cfg.session_info.Monkey});
+        cfg.monkey = [monkeys{:}];
         
         keys=ecg_bna_get_unit_list(cfg,0);
         cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
         
         if cfg.process_MUA
-            monkeys = unique({cfg.session_info.Monkey});
-            cfg.monkey = [monkeys{:}];
-            cfg.session_mua_fldr = fullfile(cfg.MUA_root_results_fldr, 'Per_Session');
-            cfg.sites_mua_fldr   = fullfile(cfg.MUA_root_results_fldr, 'Per_Site');
-            grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'all');
-            load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
-            cfg.site_IDS=cueresponsivesites;
-            grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'w_units');
+            ecg_bna_compute_grand_avg_mua(cfg,'all');
+            %             load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
+            %             cfg.site_IDS=cueresponsivesites;
+            %             grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'w_units');
         end
         
         if cfg.process_LFP
-            monkeys = unique({cfg.session_info.Monkey});
-            cfg.monkey = [monkeys{:}];
-            cfg.session_lfp_fldr = fullfile(cfg.analyse_lfp_folder, 'Per_Session');
-            cfg.sites_lfp_fldr   = fullfile(cfg.analyse_lfp_folder, 'Per_Site');
-            grand_avg = ecg_bna_compute_grand_avg(cfg,'all');
-            load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
-            cfg.site_IDS=cueresponsivesites;
-            grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
+            ecg_bna_compute_grand_avg(cfg,'all');
+            %             load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
+            %             cfg.site_IDS=cueresponsivesites;
+            %             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');
         end
         
         if cfg.process_spikes
-            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_results_fldr','','per_unit','Output');
+            SPK_PSTH=load_stuff(sessions_info,cfg,'SPK_root_fldr','','per_unit','Output');
             %ecg_bna_avg_spike_histogram(SPK_PSTH,sessions_info, cfg);
             ecg_bna_avg_spike_histogram_clean(SPK_PSTH,cfg);
         end

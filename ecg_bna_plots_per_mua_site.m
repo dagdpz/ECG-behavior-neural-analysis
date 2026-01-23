@@ -1,9 +1,9 @@
-function ecg_bna_plots_per_mua_site( data, cfg, PlotMethod,varargin )
+function ecg_bna_plots_per_mua_site( data, con, cfg, PlotMethod,varargin )
 
 
 % number of subplots required
 plot_names={'MUA'};
-results_folder=[cfg.sites_mua_fldr filesep];
+results_folder=[cfg.fldr.([cfg.to_trigger '_sites']) filesep];
 
 %% Smoothing Kernel here:
 %win = 1:cfg.mua.smoothWin; win=win-(numel(win)+1)/2;
@@ -15,12 +15,12 @@ gaussian_kernel=normpdf(win,0,numel(win)/6);
 gaussian_kernel=gaussian_kernel/sum(gaussian_kernel);
 
 %% loop through conditions
-for cn= 1:numel(data.condition)
-    if isempty(fieldnames(data.condition(cn))) || isempty(data.condition(cn).event) % &&~isempty([sites_data(i).condition(cn).event.mua])
+for cn= 1:numel(data.(con))
+    if isempty(fieldnames(data.(con)(cn))) || isempty(data.(con)(cn).event) % &&~isempty([sites_data(i).(con)(cn).event.mua])
         continue
     end    
     % this here is eventually indicating number of triggers for each alignment
-    con_data=data.condition(cn).event;
+    con_data=data.(con)(cn).event;
     
     % create figure
     h = figure('units','normalized','position',[0 0 1 1]);
@@ -36,14 +36,16 @@ for cn= 1:numel(data.condition)
     concat.mua_time = [];    
     concat.mua_shufmean = [];
     concat.mua_shufstd = [];
+    concat.mua_shufconf = [];
     
     ticksamples_mua=[];
     for e = 1:size(cfg.analyse_states,1)% size(con_data, 2)
-        shufmean=con_data(e).shuffled.mua.mean;
-        shufstd=con_data(e).shuffled.mua.std;
+        shufmean=con_data(e).surrogate.evoked.mean;
+        shufstd=con_data(e).surrogate.evoked.std;
+        shufconf=con_data(e).surrogate.evoked.conf95;
         
-        mua_sgnf        =con_data(e).significance.mua;
-        mua_mean        =con_data(e).(PlotMethod).mua.mean;
+        mua_sgnf        =con_data(e).significance.evoked;
+        mua_mean        =con_data(e).(PlotMethod).evoked.mean;
         mua_time        =con_data(e).time;
         
         onset_s = find(mua_time <= 0, 1, 'last'); % state onset time
@@ -61,6 +63,7 @@ for cn= 1:numel(data.condition)
                 
         concat.mua_shufmean = cat(3, concat.mua_shufmean,  shufmean,  nan(size(shufmean, 1),     size(shufmean, 2),  NaNseparator));
         concat.mua_shufstd  = cat(3, concat.mua_shufstd,   shufstd,   nan(size(shufstd, 1),      size(shufstd, 2),   NaNseparator));
+        concat.mua_shufconf  = cat(3, concat.mua_shufconf,   shufconf,   nan(size(shufconf, 1),      size(shufconf, 2),   NaNseparator));
         
         concat.mua_time     = [concat.mua_time, mua_time,     nan(1, NaNseparator)];
         
@@ -71,7 +74,7 @@ for cn= 1:numel(data.condition)
     %mua_events.name         ={con_data(states_valid).event_name};    
     mua_events.name         ={con_data.event_name};   
     mua_events.ticksamples  = sort(ticksamples_mua);
-    mua_events.ticks        =round(concat.mua_time(mua_events.ticksamples)*10)/10;
+    mua_events.ticks        =round(concat.mua_time(mua_events.ticksamples)*100)/100;
         
     
     %% Evoked mua
@@ -79,32 +82,48 @@ for cn= 1:numel(data.condition)
     xlabel('Time(s)'); ylabel('Voltage (V)');
     title(plot_names{1},'Interpreter', 'none', 'fontsize',8);
     
-    if strcmp(PlotMethod,'real')
+    if strcmp(PlotMethod,'observed')
         lineprops={};
-        shadedErrorBar(1:size(concat.mua_shufmean,3), squeeze(concat.mua_shufmean),squeeze(concat.mua_shufstd),lineprops,1);
+        % plot 95% confidence?
+        conmean=concat.mua_shufmean;
+        conf=concat.mua_shufconf;
+        conf(1,:,:)=-conmean+conf(1,:,:);
+        conf(2,:,:)=conmean-conf(2,:,:);
+        shadedErrorBar(1:size(concat.mua_shufmean,3), squeeze(concat.mua_shufmean),squeeze(conf),lineprops,1);
     end
     plot(squeeze(concat.mua)','linewidth',1.5)
     line([0 0], ylim, 'color', 'k');
     ylm = get(gca,'Ylim');
     significance = double(squeeze(concat.mua_sgnf));
-    significance(significance==0)=NaN;
-    significance=significance.*ylm(1);
-    if any(~isnan(significance) & [false; diff(significance)==0])
-        plot(1:numel(significance),significance','linewidth',3);
-    end
+    signeg=significance;
+    sigpos=significance;
+    signeg(signeg~=-1)=NaN;
+    sigpos(sigpos~=1)=NaN;
+    signeg=abs(signeg).*ylm(1);
+    sigpos=abs(sigpos).*ylm(1)+diff(ylm)/40;    
+%     if any(~isnan(signeg) & [false; diff(signeg)==0])
+%         plot(1:numel(signeg),signeg','linewidth',3);
+%     end
+%     if any(~isnan(sigpos) & [false; diff(sigpos)==0])
+%         plot(1:numel(sigpos),sigpos','linewidth',3);
+%     end
+    
+        plot(1:numel(signeg),signeg','b','linewidth',3);
+        plot(1:numel(sigpos),sigpos','r','linewidth',3);
+    
     add_ticks_and_labels(mua_events,ylm,diff(ylim)/10)
     set(gca, 'xlim', [0 mua_events.ticksamples(end)] + 0.5); %%should be from mua_events 
     axis square
     %% plot title...
-    R=[con_data(:).real];R=[R(:).ntriggers];
-    S=[con_data(:).shuffled];S=[S(:).ntriggers];
+    R=[con_data(:).observed];R=[R(:).ntriggers];
+    S=[con_data(:).surrogate];S=[S(:).ntriggers];
     
-    realtriggers=[num2str(R') repmat('/',size(R'))]';realtriggers=realtriggers(:)';realtriggers=strrep(realtriggers,' ','');
-    shuffledtriggers=[num2str(S') repmat('/',size(S'))]';shuffledtriggers=shuffledtriggers(:)';shuffledtriggers=strrep(shuffledtriggers,' ','');
-    %plottitle = [data.site_ID ' - ' data.target ', ' data.condition(cn).label ', ' num2str(cfg.mua.n_permutations) ' shuffles, ntriggers:' realtriggers ' real, ' shuffledtriggers ' shuffled'];
-    plottitle = [data.site_ID ' - ' data.target ', ' data.condition(cn).label ', ' num2str(cfg.lfp.n_permutations) ' shuffles, ntriggers:' realtriggers ' real, ' shuffledtriggers ' shuffled'];
+    observedtriggers=[num2str(R') repmat('/',size(R'))]';observedtriggers=observedtriggers(:)';observedtriggers=strrep(observedtriggers,' ','');
+    surrogatetriggers=[num2str(S') repmat('/',size(S'))]';surrogatetriggers=surrogatetriggers(:)';surrogatetriggers=strrep(surrogatetriggers,' ','');
+    %plottitle = [data.site_ID ' - ' data.target ', ' data.(con)(cn).label ', ' num2str(cfg.mua.n_permutations) ' shuffles, ntriggers:' observedtriggers ' observed, ' surrogatetriggers ' surrogate'];
+    plottitle = [data.site_ID ' - ' data.target ', ' data.(con)(cn).label ', ' num2str(cfg.lfp.n_permutations) ' shuffles, ntriggers:' observedtriggers ' observed, ' surrogatetriggers ' surrogate'];
     
-    results_file = fullfile(results_folder, [data.site_ID '_' data.condition(cn).label ' ' PlotMethod]);
+    results_file = fullfile(results_folder, [data.site_ID '_' data.(con)(cn).label ' ' PlotMethod]);
     if strcmp(PlotMethod,'normalized')
         mtit([plottitle ' ' PlotMethod ' (' cfg.lfp.normalization ')'],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
         %mtit([plottitle ' ' PlotMethod ' (' cfg.mua.normalization ')'],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')

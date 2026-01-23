@@ -4,20 +4,16 @@ function [ triggered_site_data ] = ecg_bna_compute_triggered_variables( site , t
 warning ('off', 'MATLAB:hg:willberemoved');
 
 switch cfg.to_trigger
-    case 'LFP';        
-        FN ={'pow','powbp','lfp','pha','itpc','itpcbp'};
-        samples_FN='LFP_samples';
+    case 'LFP';
+        FN ={'pow','powbp','evoked','pha','itpc','itpcbp'};
     case 'MUA';
-        FN ={'mua'};
-        samples_FN='MUA_samples';
+        FN ={'evoked'};
 end
+datatype=lower(cfg.to_trigger); % mua or lfp
+site_results_folder=cfg.fldr.([cfg.to_trigger '_sites']);
+samples_FN=[cfg.to_trigger '_samples'];
 
-% folder to save sitewise results
-site_results_folder = fullfile(cfg.sites_fldr);
-if ~exist(site_results_folder, 'dir')
-    mkdir(site_results_folder);
-end
-resampling_factor=site.tfs.resampling_factor;
+resampling_factor=site.(datatype).resampling_factor;
 
 u_blocks=unique(site.block);
 trial_end_samples=0;
@@ -47,29 +43,31 @@ trig.site_ID = site.site_ID;
 trig.session = site.session;
 trig.target  = site.target;
 
-% loop through conditions
+conditions_valid=true(size(cfg.condition));
 
-for cn = 1:length(cfg.condition)
-    % store details of analysed condition
-    trig.condition(cn).label    = cfg.condition(cn).name;
+% loop through events
+for e = 1:size(cfg.analyse_states, 1)
+    state=cfg.analyse_states(e,:);
+    event_name=state{1};
+    width_in_samples=[floor([state{4}]*site.(datatype).sr) ceil([state{5}]*site.(datatype).sr)]; %% time to samples!
+    time=[width_in_samples(1):width_in_samples(2)]/site.(datatype).sr;
     
-    % get trial indices for the given condition
-    cond_trials = ecg_bna_get_condition_trials(sitetrials, cfg.condition(cn));
-    
-    if sum(cond_trials) == 0
-        continue;
-    end
-    % fprintf('Condition Trials = %i , Num Trial_idx = %i, CIX = %i\n',numel(cond_trials),sum(trial_idx), sum(cix))
-    
-    % loop through time windows around the states to analyse
-    for e = 1:size(cfg.analyse_states, 1)
-        state=cfg.analyse_states(e,:);
-        event_name=state{1};
-        width_in_samples=[floor([state{4}]*site.tfs.sr) ceil([state{5}]*site.tfs.sr)]; %% time to samples!
+    % loop through conditions
+    for cn = 1:length(cfg.condition)
+        % store details of analysed condition
+        trig.condition(cn).label    = cfg.condition(cn).name;
+        
+        % get trial indices for the given condition
+        cond_trials = ecg_bna_get_condition_trials(sitetrials, cfg.condition(cn));
+        if sum(cond_trials) == 0
+            conditions_valid(cn)=false;
+            continue;
+        end
+        % fprintf('Condition Trials = %i , Num Trial_idx = %i, CIX = %i\n',numel(cond_trials),sum(trial_idx), sum(cix))
+        
         
         con_end_samples=trial_end_samples(cond_trials);
         con_start_samples=trial_start_samples(cond_trials);
-        time=[width_in_samples(1):width_in_samples(2)]/site.tfs.sr;
         
         trig.condition(cn).event(e).trials = find(cond_trials); %find(cond_trials);
         trig.condition(cn).event(e).ntrials = sum(cond_trials);
@@ -77,7 +75,7 @@ for cn = 1:length(cfg.condition)
         trig.condition(cn).event(e).time=time;
         trig.condition(cn).event(e).tfr_time=time;
         
-        trig_con_s=triggers.([event_name '_real']);
+        trig_con_s=triggers.([event_name '_observed']);
         trig_con_s(trig_con_s<con_start_samples(1)-width_in_samples(1))=0;
         trig_con_s(trig_con_s>con_end_samples(end)-width_in_samples(2)-2)=0;
         
@@ -87,10 +85,10 @@ for cn = 1:length(cfg.condition)
         end
         trig_con_s(inbetween)=0;
         
-        realD = ecg_bna_get_triggered_parameters(site,trig_con_s, width_in_samples,cfg);
+        observedD = ecg_bna_get_triggered_parameters(site,trig_con_s, width_in_samples,cfg);
         
-        %% compute shuffled power spectra, ITPC spectra, lfp, and bandpassed ITPC:
-        trig_con_s=triggers.([event_name '_shuffled']);
+        %% compute surrogate power spectra, ITPC spectra, lfp, and bandpassed ITPC:
+        trig_con_s=triggers.([event_name '_surrogate']);
         trig_con_s(trig_con_s<con_start_samples(1)-width_in_samples(1))=0;
         trig_con_s(trig_con_s>con_end_samples(end)-width_in_samples(2))=0;
         
@@ -100,56 +98,117 @@ for cn = 1:length(cfg.condition)
             inbetween=inbetween | trig_con_s<con_start_samples(t+1) & trig_con_s>con_end_samples(t);
         end
         trig_con_s(inbetween)=0;
-        [shuffledD, significance]= ecg_bna_get_triggered_parameters(site,trig_con_s,width_in_samples,cfg,realD);
+        tic
+        [surrogateD, significance, cluster_z_values]= ecg_bna_get_triggered_parameters(site,trig_con_s,width_in_samples,cfg,observedD);
+        toc
+        normalized = ecg_bna_normalize(observedD,surrogateD,cfg);
+        %significance = ecg_bna_compute_significance(observedD,surrogateD,cfg);
         
-        normalized = ecg_bna_compute_shufflePredictor_normalization_general(realD,shuffledD,cfg);
-        %significance = ecg_bna_compute_significance(realD,shuffledD,cfg);
-        
-        trig.condition(cn).event(e).real=realD;
-        trig.condition(cn).event(e).shuffled=shuffledD;
+        trig.condition(cn).event(e).observed=observedD;
+        trig.condition(cn).event(e).surrogate=surrogateD;
         trig.condition(cn).event(e).normalized=normalized;
         trig.condition(cn).event(e).significance=significance;
+        trig.condition(cn).event(e).cluster_z_values=cluster_z_values;
         
-        if isfield(realD,'mua')
-        pre_samples=1:abs(width_in_samples(1))+1;
-        post_samples=max(pre_samples)+1:width_in_samples(2)+max(pre_samples);
-        
-        pre=mean(squeeze(realD.mua.complete(:,1,pre_samples)),2);
-        post=mean(squeeze(realD.mua.complete(:,1,post_samples)),2);
-        [h,p]=ttest(pre,post);
-        trig.condition(cn).event(e).prevspost.p=p;
-        trig.condition(cn).event(e).prevspost.h=h;
+        if isfield(observedD,'mua')
+            pre_samples=1:abs(width_in_samples(1))+1;
+            post_samples=max(pre_samples)+1:width_in_samples(2)+max(pre_samples);
+            
+            pre=mean(squeeze(observedD.mua.complete(:,1,pre_samples)),2);
+            post=mean(squeeze(observedD.mua.complete(:,1,post_samples)),2);
+            [h,p]=ttest(pre,post);
+            trig.condition(cn).event(e).prevspost.p=p;
+            trig.condition(cn).event(e).prevspost.h=h;
+        end
+    end
+    if ~isempty(cfg.lfp.compare_conditions)
+        for ncomp=1:numel(cfg.lfp.compare_conditions)
+            c1=cfg.lfp.compare_conditions{ncomp}(1);
+            c2=cfg.lfp.compare_conditions{ncomp}(2);
+            cond = [trig.condition(c1).label,'_',trig.condition(c2).label];
+            if all (conditions_valid([c1,c2]))
+                ev_temp = ecg_bna_compare_per_site(trig.condition(c1).event(e),trig.condition(c2).event(e),cfg);
+                fntemp=fieldnames(ev_temp);
+                for f=1:numel(fntemp)
+                    fn=fntemp{f};
+                    trig.(cond).event(e).(fn)=ev_temp.(fn);
+                end
+                
+                normalized = ecg_bna_normalize(trig.(cond).event(e).observed,trig.(cond).event(e).surrogate,cfg);
+                trig.(cond).event(e).normalized=normalized;
+            else
+                trig.(cond).event(e).ntriggers=0;
+            end
+            trig.(cond).event(e).event_name=cfg.analyse_states{e,1};
+            trig.(cond).label=cond;
         end
     end
 end
-triggered_site_data = trig;
-if isfield(cfg.lfp, 'TaskRest_SigClust') && cfg.lfp.TaskRest_SigClust == 1
-    [ out_triggered_site_data] = ecg_bna_compute_cluster_sig_withinSites_between_cond( triggered_site_data, {'pha','pow','lfp'},cfg.analyse_states(:,1), cfg );
-    
-    triggered_site_data = out_triggered_site_data;
-    clear out_triggered_site_data
+
+if ~isempty(cfg.lfp.compare_conditions) %% && both conditions exist...
+    for ncomp=1:numel(cfg.lfp.compare_conditions)
+        c1=cfg.lfp.compare_conditions{ncomp}(1);
+        c2=cfg.lfp.compare_conditions{ncomp}(2);
+        if all (conditions_valid([c1,c2]))
+            switch cfg.to_trigger
+                case 'LFP';
+                    ecg_bna_plots_per_site( trig, cond, cfg, 'normalized') % per site!
+                case 'MUA';
+                    ecg_bna_plots_per_mua_site( trig, cond, cfg, 'normalized') % per site!
+            end
+        end
+    end
 end
-% plots - if we don't shuffle, there will be no shuffled!
-methods= {'real','shuffled','normalized'};
+
+
+
+% if ~isempty(cfg.lfp.compare_conditions) %% && both conditions exist...
+%     ncomp=1;
+%     tic
+%     out_comp = ecg_bna_compare_per_site( trig, FN,cfg,ncomp);
+%     toc
+%     c1=cfg.lfp.compare_conditions{ncomp}(1);
+%     c2=cfg.lfp.compare_conditions{ncomp}(2);
+%     cond = [trig.condition(c1).label,'_',trig.condition(c2).label];
+%     trig.(cond)=out_comp;
+%     trig.(cond).label=cond;
+%     %     for e=1:numel(trig.condition(c1).event)
+%     %
+%     %         trig.(cond).event(e).time=trig.condition(c1).event(e).time;
+%     %         trig.(cond).event(e).event_name=trig.condition(c1).event(e).event_name;
+%     %         trig.(cond).event(e).observed.ntriggers=trig.condition(c1).event(e).observed.ntriggers;
+%     %         trig.(cond).event(e).surrogate.ntriggers=trig.condition(c2).event(e).observed.ntriggers;
+%     %     end
+%     
+%     
+%     switch cfg.to_trigger
+%         case 'LFP';
+%             ecg_bna_plots_per_site( trig, cond, cfg, 'observed') % per site!
+%         case 'MUA';
+%             ecg_bna_plots_per_mua_site( trig, cond, cfg, 'observed') % per site!
+%     end
+% end
+% plots - if we don't shuffle, there will be no surrogate!
+methods= {'observed','surrogate','normalized'};
 for mt = 1: numel(methods)
     switch cfg.to_trigger
         case 'LFP';
-            ecg_bna_plots_per_site( trig, cfg, methods{mt}) % per site!
+            ecg_bna_plots_per_site( trig, 'condition',cfg, methods{mt}) % per site!
         case 'MUA';
-            ecg_bna_plots_per_mua_site( trig, cfg, methods{mt}) % per site!
+            ecg_bna_plots_per_mua_site( trig,'condition', cfg, methods{mt}) % per site!
     end
     
-    % Note: ===> last input could be 'real', 'shuffled', or 'normalized'
+    % Note: ===> last input could be 'observed', 'surrogate', or 'normalized'
 end
 
 if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
     for cn = 1:length(cfg.condition)
         for e = 1:size(cfg.analyse_states, 1)
-            if ~isempty(triggered_site_data.condition(cn).event)
+            if ~isempty(trig.condition(cn).event)
                 for fin = 1:length(FN)
                     Fin = FN{fin};
-                    triggered_site_data.condition(cn).event(e).real.(Fin)     = rmfield(triggered_site_data.condition(cn).event(e).real.(Fin), 'complete');
-                    triggered_site_data.condition(cn).event(e).shuffled.(Fin) = rmfield(triggered_site_data.condition(cn).event(e).shuffled.(Fin), 'complete');
+                    trig.condition(cn).event(e).observed.(Fin)     = rmfield(trig.condition(cn).event(e).observed.(Fin), 'complete');
+                    trig.condition(cn).event(e).surrogate.(Fin) = rmfield(trig.condition(cn).event(e).surrogate.(Fin), 'complete');
                 end
             else
                 continue;
@@ -158,8 +217,7 @@ if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
     end
 end
 
-
-% save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data');
-save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data','-v7.3');
+triggered_site_data = trig;
+save(fullfile(site_results_folder, [trig.site_ID '.mat']), 'triggered_site_data');
 close all;
 end

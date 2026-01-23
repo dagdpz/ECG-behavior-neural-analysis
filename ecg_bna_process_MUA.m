@@ -55,7 +55,7 @@ for b=1:numel(blocks_with_LFP)
     samples_past_resampled=be;    
     
     concat_raw = real(double(sites.MUA(bs_original:be_original))*1000000); % scale here is really bad 
-    %% for some freaking reason, mua can be a complex......
+    %% for some reason, mua can be a complex......
     
     site_mua.tfs.n_samples_per_block(:,b)=[B,be-bs+1];
     dat = nanmean(reshape(concat_raw(1:end-mod(size(concat_raw,2), ts)),ts,[]),1);

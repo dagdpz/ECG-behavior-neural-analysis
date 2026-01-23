@@ -140,26 +140,26 @@ for u = 1:numel(population)
         %data.(L).spike_phases_histogram_smoothed = hist3([spikephases, cycleNums_withSpikes], 'ctrs', {cfg.phase.phase_bin_centers 1:length(interval_starts)});
         
         
-        % compute shuffled intervals
-        shuffled_ends   = Triggers.(E).shuffled_ts;
-        shuffled_starts = Triggers.(E).shuffled_ts  - Triggers.(E).shuffled_intervals;
-        % for reshuffled data - calculate heart cycle phase where individual spikes ended up
-        shuffled_SDF         = nan(size(shuffled_starts,1),Nbins);
-        for s = 1:size(shuffled_starts,1)
-            shuffled_within_trial_idx=any(bsxfun(@ge,shuffled_starts(s,:)',trial_starts) & bsxfun(@le,shuffled_ends(s,:)',trial_ends),2)';
-            starts = shuffled_starts(s,shuffled_within_trial_idx)';
-            ends = shuffled_ends(s,shuffled_within_trial_idx)';
+        % compute surrogate intervals
+        surrogate_ends   = Triggers.(E).surrogate_ts;
+        surrogate_starts = Triggers.(E).surrogate_ts  - Triggers.(E).surrogate_intervals;
+        % for resurrogate data - calculate heart cycle phase where individual spikes ended up
+        surrogate_SDF         = nan(size(surrogate_starts,1),Nbins);
+        for s = 1:size(surrogate_starts,1)
+            surrogate_within_trial_idx=any(bsxfun(@ge,surrogate_starts(s,:)',trial_starts) & bsxfun(@le,surrogate_ends(s,:)',trial_ends),2)';
+            starts = surrogate_starts(s,surrogate_within_trial_idx)';
+            ends = surrogate_ends(s,surrogate_within_trial_idx)';
             durations=ends-starts;
             [events2include,cycleNums_withSpikes] = find(bsxfun(@ge,spiketimes,starts') & bsxfun(@le,spiketimes,ends'));
             ts = spiketimes(events2include); % include only events that landed within any interval
             spikephases = 2*pi*(ts - starts(cycleNums_withSpikes))./durations(cycleNums_withSpikes);
             %eventsTaken = single(find(events2include))';
             % all data
-            shuffled_histogram = hist3([spikephases, cycleNums_withSpikes], 'ctrs', {phase_bins 1:length(starts)});
-            %shuffled_SDF(s,:) = mean(average_smooth_data(shuffled_histogram,cfg));
-            shuffled_SDF(s,:) = sum(shuffled_histogram.*repmat(numel(phase_bins)./durations',numel(phase_bins),1),2)/numel(durations);
+            surrogate_histogram = hist3([spikephases, cycleNums_withSpikes], 'ctrs', {phase_bins 1:length(starts)});
+            %surrogate_SDF(s,:) = mean(average_smooth_data(surrogate_histogram,cfg));
+            surrogate_SDF(s,:) = sum(surrogate_histogram.*repmat(numel(phase_bins)./durations',numel(phase_bins),1),2)/numel(durations);
         end
-        SD        = ecg_bna_do_statistics(real_SDF',shuffled_SDF,1:Nbins);
+        SD        = ecg_bna_do_statistics(real_SDF',surrogate_SDF,1:Nbins);
         
         % 12. compute correlation between features phase dynamics and
         % spike dynamics
@@ -216,7 +216,7 @@ for u = 1:numel(population)
         %         end
         %
         
-        %% IF we are fitting, we want to use shuffled data too!
+        %% IF we are fitting, we want to use surrogate data too!
         %% POSITIVE VON MISES FITS
         % fit all the data
         %         data.(L).vonMisesPos          = ecg_bna_fit_neuronal_data(cfg, cfg.phase.phase_bin_centers, data.(L).spike_phases_histogram2, length(valid_RRinterval_starts), 'vonMises', 1);
@@ -281,7 +281,7 @@ output = [coefs(1) lin_mdl.Coefficients.pValue(2) coefs(2) gof.rsquare lin_mdl.C
 
 end
 
-function [max_consec_bins, feature_modulation_index] = significant_bins(average_real, lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled)
+function [max_consec_bins, feature_modulation_index] = significant_bins(average_real, lowerPercentile_2_5, upperPercentile_97_5, average_resurrogate)
 % figure out significant differences of spike feature dynamics
 sig_above = average_real > upperPercentile_97_5;
 sig_below = average_real < lowerPercentile_2_5;
@@ -308,7 +308,7 @@ if isempty(max_consec_bins)
 end
 
 feature_modulation_index = ...
-    (max(average_real) - min(average_real)) / mean(average_reshuffled, 'omitnan');
+    (max(average_real) - min(average_real)) / mean(average_resurrogate, 'omitnan');
 
 end
 
@@ -340,16 +340,16 @@ spikes_realigned_microV = bsxfun(@(x,y) circshift(x,y,1), waveforms_upsampled', 
 spikes_realigned_microV = spikes_realigned_microV';
 end
 
-function [lowerPercentile_2_5, upperPercentile_97_5, average_reshuffled] = compute_reshuffles(data, bin, cfg)
+function [lowerPercentile_2_5, upperPercentile_97_5, average_resurrogate] = compute_reshuffles(data, bin, cfg)
 %% compute reshuffles
 rng(0)
-[~, reshuffled_spike_order] = sort(rand(cfg.n_permutations, length(data)), 2); % get random order of elements
-data_reshuffled      = data(reshuffled_spike_order);
-data_reshuffled      = arrayfun(@(x) nanmean(data_reshuffled(:, bin == x),2), 1:cfg.N_phase_bins, 'UniformOutput', false); % mean by phase
-data_reshuffled      = cat(2, data_reshuffled{:});
-average_reshuffled = mean(data_reshuffled, 1, 'omitnan');
-lowerPercentile_2_5    = prctile(data_reshuffled, 2.5, 1);
-upperPercentile_97_5  = prctile(data_reshuffled, 97.5, 1);
+[~, resurrogate_spike_order] = sort(rand(cfg.n_permutations, length(data)), 2); % get random order of elements
+data_resurrogate      = data(resurrogate_spike_order);
+data_resurrogate      = arrayfun(@(x) nanmean(data_resurrogate(:, bin == x),2), 1:cfg.N_phase_bins, 'UniformOutput', false); % mean by phase
+data_resurrogate      = cat(2, data_resurrogate{:});
+average_resurrogate = mean(data_resurrogate, 1, 'omitnan');
+lowerPercentile_2_5    = prctile(data_resurrogate, 2.5, 1);
+upperPercentile_97_5  = prctile(data_resurrogate, 97.5, 1);
 end
 
 % function Y_microV = upsample_spikes(waveforms, wf_times, wf_times_interp)
@@ -385,12 +385,12 @@ end
 % AMP.std_by_phase                  = arrayfun(@(x) std(AMP.abs_microV(AMP.bin == x)), unique(AMP.bin)); % standard deviation by phase
 %
 % %% compute reshuffles
-% [~, reshuffled_spike_order] = sort(rand(nReshuffles, size(waveforms,1)), 2); % get random order of elements
-% AMP_reshuffled = AMP.abs_microV(reshuffled_spike_order);
-% AMP_reshuffled      = arrayfun(@(x) mean(AMP_reshuffled(:, AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false); % mean by phase
-% AMP_reshuffled      = cat(2, AMP_reshuffled{:});
-% AMP.lowerPrctile_2_5    = prctile(AMP_reshuffled, 2.5, 1);
-% AMP.uppperPrctile_97_5  = prctile(AMP_reshuffled, 97.5, 1);
+% [~, resurrogate_spike_order] = sort(rand(nReshuffles, size(waveforms,1)), 2); % get random order of elements
+% AMP_resurrogate = AMP.abs_microV(resurrogate_spike_order);
+% AMP_resurrogate      = arrayfun(@(x) mean(AMP_resurrogate(:, AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false); % mean by phase
+% AMP_resurrogate      = cat(2, AMP_resurrogate{:});
+% AMP.lowerPrctile_2_5    = prctile(AMP_resurrogate, 2.5, 1);
+% AMP.uppperPrctile_97_5  = prctile(AMP_resurrogate, 97.5, 1);
 %
 % % average waveforms by phase and then figure out spike parameters
 % AMP.WF_by_phase = arrayfun(@(x) mean(AMP.waveforms_microV(:,AMP.bin == x),2), unique(AMP.bin), 'UniformOutput', false);
@@ -430,23 +430,23 @@ end
 %         cfg.time.IBI_low   = 1;
 %         cfg.time.IBI_high  = 0;
 %         cfg.time.IBI_thrsh = data.(L).IBI_median* ones(1, length(cfg.condition));
-%         Rpeaks_lowIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+%         Rpeaks_lowIBI      = ecg_bna_compute_session_surrogate_Rpeaks(sessions_info,cfg.time);
 %         for XXX=1:numel(Rpeaks_lowIBI)
 %             Rpeaks_lowIBI(XXX).RPEAK_ts=Rpeaks_lowIBI(XXX).RPEAK_ts-Rpeaks_lowIBI(XXX).offset+Triggers(XXX).offset;
-%             Rpeaks_lowIBI(XXX).shuffled_ts=Rpeaks_lowIBI(XXX).shuffled_ts-Rpeaks_lowIBI(XXX).offset+Triggers(XXX).offset;
+%             Rpeaks_lowIBI(XXX).surrogate_ts=Rpeaks_lowIBI(XXX).surrogate_ts-Rpeaks_lowIBI(XXX).offset+Triggers(XXX).offset;
 %             Rpeaks_lowIBI(XXX).offset=Triggers(XXX).offset;
 %         end
 
-%         %% compute within trial lowIBI RR intervals for real and shuffled data
+%         %% compute within trial lowIBI RR intervals for real and surrogate data
 %         % compute RR-intervals
 %         lowIBI_valid_RRinterval_ends      = single([Rpeaks_lowIBI(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
 %         lowIBI_valid_RRinterval_starts    = single(lowIBI_valid_RRinterval_ends - [Rpeaks_lowIBI(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
-%         % compute shuffled RR-intervals
-%         lowIBI_shuffled_RRinterval_ends   = single([Rpeaks_lowIBI(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])]);
-%         lowIBI_shuffled_RRinterval_starts = single(lowIBI_shuffled_RRinterval_ends - [Rpeaks_lowIBI(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])]);
+%         % compute surrogate RR-intervals
+%         lowIBI_surrogate_RRinterval_ends   = single([Rpeaks_lowIBI(b).(['surrogate_ts' cfg.condition(c).Rpeak_field])]);
+%         lowIBI_surrogate_RRinterval_starts = single(lowIBI_surrogate_RRinterval_ends - [Rpeaks_lowIBI(b).(['surrogate_dur' cfg.condition(c).Rpeak_field])]);
 %
-%         lowIBI_shuffled_RRinterval_ends   = mat2cell(lowIBI_shuffled_RRinterval_ends, ones(size(lowIBI_shuffled_RRinterval_ends,1),1), size(lowIBI_shuffled_RRinterval_ends,2));
-%         lowIBI_shuffled_RRinterval_starts = mat2cell(lowIBI_shuffled_RRinterval_starts, ones(size(lowIBI_shuffled_RRinterval_starts,1),1), size(lowIBI_shuffled_RRinterval_starts,2));
+%         lowIBI_surrogate_RRinterval_ends   = mat2cell(lowIBI_surrogate_RRinterval_ends, ones(size(lowIBI_surrogate_RRinterval_ends,1),1), size(lowIBI_surrogate_RRinterval_ends,2));
+%         lowIBI_surrogate_RRinterval_starts = mat2cell(lowIBI_surrogate_RRinterval_starts, ones(size(lowIBI_surrogate_RRinterval_starts,1),1), size(lowIBI_surrogate_RRinterval_starts,2));
 %
 % %         % 0. figure out RR-intervals lying within trials
 % %         lowIBI_trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks_lowIBI([Rpeaks_lowIBI.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
@@ -460,13 +460,13 @@ end
 %         lowIBI_valid_RRinterval_starts = lowIBI_valid_RRinterval_starts(lowIBI_RR_within_trial_idx);
 %         lowIBI_valid_RRinterval_ends   = lowIBI_valid_RRinterval_ends(lowIBI_RR_within_trial_idx);
 %
-%         % reshuffled - get rid of RRs beyond the current set of trials
-%         for shuffNum = 1:length(lowIBI_shuffled_RRinterval_starts)
-%             lowIBI_shuffledRR_within_trial_idx = any(lowIBI_shuffled_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
-%                 lowIBI_shuffled_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
+%         % resurrogate - get rid of RRs beyond the current set of trials
+%         for shuffNum = 1:length(lowIBI_surrogate_RRinterval_starts)
+%             lowIBI_surrogateRR_within_trial_idx = any(lowIBI_surrogate_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
+%                 lowIBI_surrogate_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
 %
-%             lowIBI_shuffled_RRinterval_ends{shuffNum}   = lowIBI_shuffled_RRinterval_ends{shuffNum}(lowIBI_shuffledRR_within_trial_idx);
-%             lowIBI_shuffled_RRinterval_starts{shuffNum} = lowIBI_shuffled_RRinterval_starts{shuffNum}(lowIBI_shuffledRR_within_trial_idx);
+%             lowIBI_surrogate_RRinterval_ends{shuffNum}   = lowIBI_surrogate_RRinterval_ends{shuffNum}(lowIBI_surrogateRR_within_trial_idx);
+%             lowIBI_surrogate_RRinterval_starts{shuffNum} = lowIBI_surrogate_RRinterval_starts{shuffNum}(lowIBI_surrogateRR_within_trial_idx);
 %         end
 %
 %         lowIBI_RRs   = lowIBI_valid_RRinterval_ends - lowIBI_valid_RRinterval_starts;
@@ -476,10 +476,10 @@ end
 %         cfg.time.IBI_low   = 0;
 %         cfg.time.IBI_high  = 1;
 %         cfg.time.IBI_thrsh = data.(L).IBI_median* ones(1, length(cfg.condition));
-%         Rpeaks_highIBI      = ecg_bna_compute_session_shuffled_Rpeaks(sessions_info,cfg.time);
+%         Rpeaks_highIBI      = ecg_bna_compute_session_surrogate_Rpeaks(sessions_info,cfg.time);
 %         for XXX=1:numel(Rpeaks_highIBI)
 %             Rpeaks_highIBI(XXX).RPEAK_ts=Rpeaks_highIBI(XXX).RPEAK_ts-Rpeaks_highIBI(XXX).offset+Triggers(XXX).offset;
-%             Rpeaks_highIBI(XXX).shuffled_ts=Rpeaks_highIBI(XXX).shuffled_ts-Rpeaks_highIBI(XXX).offset+Triggers(XXX).offset;
+%             Rpeaks_highIBI(XXX).surrogate_ts=Rpeaks_highIBI(XXX).surrogate_ts-Rpeaks_highIBI(XXX).offset+Triggers(XXX).offset;
 %             Rpeaks_highIBI(XXX).offset=Triggers(XXX).offset;
 %         end
 %
@@ -487,16 +487,16 @@ end
 %         % reshuffles and re-initiate them for the next unit
 %         cfg.time = rmfield(cfg.time, {'IBI', 'IBI_low', 'IBI_high', 'IBI_thrsh'});
 %
-%         %% compute within trial highIBI RR intervals for real and shuffled data
+%         %% compute within trial highIBI RR intervals for real and surrogate data
 %         % compute RR-intervals
 %         highIBI_valid_RRinterval_ends      = single([Rpeaks_highIBI(b).(['RPEAK_ts' cfg.condition(c).Rpeak_field])]);
 %         highIBI_valid_RRinterval_starts    = single(highIBI_valid_RRinterval_ends - [Rpeaks_highIBI(b).(['RPEAK_dur' cfg.condition(c).Rpeak_field])]);
-%         % compute shuffled RR-intervals
-%         highIBI_shuffled_RRinterval_ends   = single([Rpeaks_highIBI(b).(['shuffled_ts' cfg.condition(c).Rpeak_field])]);
-%         highIBI_shuffled_RRinterval_starts = single(highIBI_shuffled_RRinterval_ends - [Rpeaks_highIBI(b).(['shuffled_dur' cfg.condition(c).Rpeak_field])]);
+%         % compute surrogate RR-intervals
+%         highIBI_surrogate_RRinterval_ends   = single([Rpeaks_highIBI(b).(['surrogate_ts' cfg.condition(c).Rpeak_field])]);
+%         highIBI_surrogate_RRinterval_starts = single(highIBI_surrogate_RRinterval_ends - [Rpeaks_highIBI(b).(['surrogate_dur' cfg.condition(c).Rpeak_field])]);
 %
-%         highIBI_shuffled_RRinterval_ends   = mat2cell(highIBI_shuffled_RRinterval_ends, ones(size(highIBI_shuffled_RRinterval_ends,1),1), size(highIBI_shuffled_RRinterval_ends,2));
-%         highIBI_shuffled_RRinterval_starts = mat2cell(highIBI_shuffled_RRinterval_starts, ones(size(highIBI_shuffled_RRinterval_starts,1),1), size(highIBI_shuffled_RRinterval_starts,2));
+%         highIBI_surrogate_RRinterval_ends   = mat2cell(highIBI_surrogate_RRinterval_ends, ones(size(highIBI_surrogate_RRinterval_ends,1),1), size(highIBI_surrogate_RRinterval_ends,2));
+%         highIBI_surrogate_RRinterval_starts = mat2cell(highIBI_surrogate_RRinterval_starts, ones(size(highIBI_surrogate_RRinterval_starts,1),1), size(highIBI_surrogate_RRinterval_starts,2));
 %
 % %         % 0. figure out RR-intervals lying within trials
 % %         trial_starts_one_stream    = cellfun(@(x,y,z) x+y+Rpeaks_highIBI([Rpeaks_highIBI.block] == z).offset, state2_times, TDT_ECG1_t0_from_rec_start, block_nums);
@@ -510,13 +510,13 @@ end
 %         highIBI_valid_RRinterval_starts = highIBI_valid_RRinterval_starts(highIBI_RR_within_trial_idx);
 %         highIBI_valid_RRinterval_ends   = highIBI_valid_RRinterval_ends(highIBI_RR_within_trial_idx);
 %
-%         % reshuffled - get rid of RRs beyond the current set of trials
-%         for shuffNum = 1:length(highIBI_shuffled_RRinterval_starts)
-%             highIBI_shuffledRR_within_trial_idx = any(highIBI_shuffled_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
-%                 highIBI_shuffled_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
+%         % resurrogate - get rid of RRs beyond the current set of trials
+%         for shuffNum = 1:length(highIBI_surrogate_RRinterval_starts)
+%             highIBI_surrogateRR_within_trial_idx = any(highIBI_surrogate_RRinterval_starts{shuffNum}' > trial_starts_one_stream & ...
+%                 highIBI_surrogate_RRinterval_ends{shuffNum}' < trial_ends_one_stream, 2);
 %
-%             highIBI_shuffled_RRinterval_ends{shuffNum}   = highIBI_shuffled_RRinterval_ends{shuffNum}(highIBI_shuffledRR_within_trial_idx);
-%             highIBI_shuffled_RRinterval_starts{shuffNum} = highIBI_shuffled_RRinterval_starts{shuffNum}(highIBI_shuffledRR_within_trial_idx);
+%             highIBI_surrogate_RRinterval_ends{shuffNum}   = highIBI_surrogate_RRinterval_ends{shuffNum}(highIBI_surrogateRR_within_trial_idx);
+%             highIBI_surrogate_RRinterval_starts{shuffNum} = highIBI_surrogate_RRinterval_starts{shuffNum}(highIBI_surrogateRR_within_trial_idx);
 %         end
 %
 %         highIBI_RRs   = highIBI_valid_RRinterval_ends - highIBI_valid_RRinterval_starts;

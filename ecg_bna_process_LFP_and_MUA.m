@@ -1,18 +1,23 @@
-function site_lfp = ecg_bna_process_LFP(sites,cfg,ts_original)
+function site_lfp = ecg_bna_process_LFP_and_MUA(sites,cfg)
 
 % lfp_tfa_process_LFP - function to read in the trial-wise LFP data for all
 % sites recorded in a session, compute the LFP time frequency spectrogram,
 
+ts_LFP=cfg.LFP_ts_LFP;
+ts_MUA=cfg.MUA_ts_LFP;
 
 % struct to save data for a site
-site_lfp = rmfield(sites,'LFP');
+site_lfp = rmfield(sites,{'LFP','MUA'});
 fprintf('=============================================================\n');
 fprintf('Processing site, %s\n', sites.site_ID);
 site_lfp.session = sites.site_ID(1:12);
 site_lfp.recorded_hemisphere = upper(sites.target(end));
 % %filtering the LFP file
+
 if cfg.lfp.filter{1}
-sites.LFP = eegfilt(sites.LFP,1/ts_original,cfg.lfp.filter{2},cfg.lfp.filter{3});
+    rawLFP = eegfilt(sites.LFP,1/ts_LFP,cfg.lfp.filter{2},cfg.lfp.filter{3});
+else
+    rawLFP = sites.LFP;
 end
 
 N_cycles=cfg.lfp.n_cycles;
@@ -22,21 +27,23 @@ morlet_borders=1/min(frequencies)*N_cycles/2;
 s = N_cycles./(2*pi*frequencies);
 %s = repmat(0.05,size(frequencies));
 
-ts=round(cfg.lfp.timestep/ts_original);
+ts=round(cfg.lfp.timestep/ts_LFP);
 
 % fT parameters (use next-pow-of-2)
-time = -morlet_borders:1*ts_original:morlet_borders;
+time = -morlet_borders:1*ts_LFP:morlet_borders;
 n_wavelet     = length(time);
 
 
+site_lfp.tfs.freq             = frequencies;
 site_lfp.tfs.resampling_factor=1/ts;
-site_lfp.tfs.sr=1/ts_original/ts;
+site_lfp.tfs.sr=1/ts_LFP/ts;
 sizepreallocator=[size(frequency_bands,1),floor(numel(sites.LFP)/ts)];
 site_lfp.tfs.phabp=NaN(sizepreallocator);
 site_lfp.tfs.powbp=NaN(sizepreallocator);
 sizepreallocator=[numel(frequencies),floor(numel(sites.LFP)/ts)];
 site_lfp.tfs.pha=NaN(sizepreallocator);
 site_lfp.tfs.pow=NaN(sizepreallocator);
+
 site_lfp.tfs.lfp=NaN([1,floor(numel(sites.LFP)/ts)]);
 
 trials_block=[sites.block];
@@ -48,6 +55,7 @@ samples_past_resampled=0;
 for b=1:numel(blocks_with_LFP) 
     B=blocks_with_LFP(b);
     b_samples=trials_block==B;
+    
     bs=samples_past_resampled+1;
     be=floor(sum(sites.LFP_samples(b_samples))/ts)+samples_past_resampled;  
     bs_original=samples_past+1;
@@ -57,31 +65,20 @@ for b=1:numel(blocks_with_LFP)
     
     concat_raw = double(sites.LFP(bs_original:be_original))*1000000; % scale here is really bad 
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % This part is now moved to the very begining of the pipeline, before
-    % detecting a whole noisy channel and the Rerefrencing the block-weise
-    % data in : "ecg_bna_remove_rawLFP_outliers"
-%     plot([bs_original:be_original],concat_raw, 'k'); hold on,
-%     [concat_raw, noisy_trials_lfp_mean , noisy_trials_lfp_zscore] = ecg_bna_noisy_LFP_detection(concat_raw);
-%     plot([bs_original:be_original],concat_raw, 'r'); %hold off,
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     n_data        = size(concat_raw,2);
     n_convolution = n_wavelet+n_data;
     n_conv_pow2   = pow2(nextpow2(n_convolution));
     half_wavelet_len = ceil(length(time)/2);
     
-    % get fT of data
     dataft = fft(concat_raw,n_conv_pow2);
-    site_lfp.tfs.freq             = frequencies;
     
     site_lfp.tfs.n_samples_per_block(:,b)=[B,be-bs+1];
     dat = nanmean(reshape(concat_raw(1:end-mod(size(concat_raw,2), ts)),ts,[]),1);
-    site_lfp.tfs.lfp(1,bs:be)= dat;
-    
-    
+        
     for f=1:length(frequencies)
         % create wavelet        
-        wavelet = (ts_original/(s(f)*sqrt(2*pi))) * exp(2*1i*pi*frequencies(f).*time) .* exp(-time.^2./(2*(s(f)^2)));   
+        wavelet = (ts_LFP/(s(f)*sqrt(2*pi))) * exp(2*1i*pi*frequencies(f).*time) .* exp(-time.^2./(2*(s(f)^2)));   
         % convolution
         datconv = ifft(fft(wavelet,n_conv_pow2).*dataft);
         
@@ -100,8 +97,8 @@ for b=1:numel(blocks_with_LFP)
         %% think about how to use good filters without causing errors for short periods
         %  fltered_data = eegfilt(concat_LFP, round(1/ts),frequency_bands(f,1), []);
         %  fltered_data = eegfilt(fltered_data, round(1/ts), [], frequency_bands(f,2));
-%         dat = eegfilt(concat_raw, 1/ts_original, frequency_bands(f,1), frequency_bands(f,2));
-        [u, v]=butter(3, 2*frequency_bands(f,:)*ts_original); % band-pass filter
+%         dat = eegfilt(concat_raw, 1/ts_LFP, frequency_bands(f,1), frequency_bands(f,2));
+        [u, v]=butter(3, 2*frequency_bands(f,:)*ts_LFP); % band-pass filter
         dat = filtfilt(u,v,concat_raw);
         H=hilbert(dat);
         H = mean(reshape(H(1:end-mod(size(H,2), ts)),ts,[]),1);
@@ -109,11 +106,17 @@ for b=1:numel(blocks_with_LFP)
         site_lfp.tfs.phabp(f,bs:be) = H./absH;
         site_lfp.tfs.powbp(f,bs:be) = absH.^2;               
     end
+    
+    %% redo for evoked, so it can be filtered independent of the rest
+    concat_raw=double(rawLFP(bs_original:be_original))*1000000; % scale here is really bad 
+    dat = nanmean(reshape(concat_raw(1:end-mod(size(concat_raw,2), ts)),ts,[]),1);    
+    site_lfp.tfs.lfp(1,bs:be)= dat;
 end
 site_lfp.tfs.pha=site_lfp.tfs.pha(:,1:be);
 site_lfp.tfs.pow=site_lfp.tfs.pow(:,1:be);
 site_lfp.tfs.phabp=site_lfp.tfs.phabp(:,1:be);
 site_lfp.tfs.powbp=site_lfp.tfs.powbp(:,1:be);
+
 site_lfp.tfs.lfp=site_lfp.tfs.lfp(:,1:be);
 
 % Noise rejection - is this even still feasable?

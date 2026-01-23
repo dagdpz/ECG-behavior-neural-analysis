@@ -35,7 +35,7 @@ switch cfg.jitter_method
         % First Segment (for 0 to first valid Rpeak) and last segment(everything after last valid Rpeak) are always invalid
         iv_ends    =[ts(valid_idx([true next_invalid]))   inf];  % end of invalid intervals: Timestamps of valid Rpeaks PRECEDED by invalid ones
         % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid
-        grace_window=mean(intervals)/2;                          % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
+        grace_window=mean(intervals)/2;                          % +/- Range for surrogate Rpeaks to be allowed inside invalid segments
         
         
         %% remove jittered Rpeaks and corresponding durations that fell into invalid segments      
@@ -69,7 +69,7 @@ switch cfg.jitter_method
         % (everything after last valid Rpeak) are always invalid
         iv_ends    =[ts(valid_idx([true next_invalid]))   inf];  % end of invalid intervals: Timestamps of valid Rpeaks PRECEDED by invalid ones
         % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid
-        grace_window=mean(intervals)/2;                         % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
+        grace_window=mean(intervals)/2;                         % +/- Range for surrogate Rpeaks to be allowed inside invalid segments
         
         
         %% remove jittered Rpeaks and corresponding durations that fell into invalid segments
@@ -116,22 +116,22 @@ switch cfg.jitter_method
         
         
         valid_mat=bsxfun(@plus,(valid_idx-1)*N,(1:N)');
-        %shuffled_I1=repmat(I1,N,1);
+        %surrogate_I1=repmat(I1,N,1);
         valid_I1   =I1(valid_idx);
         [~,IX]=sort(rand(N,numel(valid_idx)),2);
-        shuffled_valid_I1=valid_I1(IX);
-        %shuffled_I1(valid_mat)=shuffled_valid_I1;
+        surrogate_valid_I1=valid_I1(IX);
+        %surrogate_I1(valid_mat)=surrogate_valid_I1;
         
-        %shuffled_I2=repmat(I2,N,1);
+        %surrogate_I2=repmat(I2,N,1);
         valid_I2   =I2(valid_idx);
         [~,IX]=sort(rand(N,numel(valid_idx)),2);
-        shuffled_valid_I2=valid_I2(IX);
-        %shuffled_I2(valid_mat)=shuffled_valid_I2;
+        surrogate_valid_I2=valid_I2(IX);
+        %surrogate_I2(valid_mat)=surrogate_valid_I2;
         
-        shuffled_proportions=shuffled_valid_I1./(shuffled_valid_I1+shuffled_valid_I2);
+        surrogate_proportions=surrogate_valid_I1./(surrogate_valid_I1+surrogate_valid_I2);
         
         
-        displacement=shuffled_proportions.*repmat(valid_sums,N,1)-repmat(real_distances,N,1);
+        displacement=surrogate_proportions.*repmat(valid_sums,N,1)-repmat(real_distances,N,1);
         
         %displacement=valid_proportions(IX).*repmat(valid_sums,N,1)-repmat(real_distances,N,1);
         
@@ -171,7 +171,7 @@ switch cfg.jitter_method
         % First Segment (for 0 to first valid Rpeak) and last segment(everything after last valid Rpeak) are always invalid
         iv_ends    =[ts(valid_idx([true next_invalid]))   inf];  % end of invalid intervals: Timestamps of valid Rpeaks PRECEDED by invalid ones
         % we can get Rpeak-ts preceded by invalid R2R by shifting next_invalid
-        grace_window=mean(intervals)/2;                          % +/- Range for shuffled Rpeaks to be allowed inside invalid segments
+        grace_window=mean(intervals)/2;                          % +/- Range for surrogate Rpeaks to be allowed inside invalid segments
         
         
         %% remove jittered Rpeaks and corresponding durations that fell into invalid segments
@@ -214,14 +214,14 @@ end
 if ismember(cfg.jitter_method,{'uniform dithering','train_jitter','jisi dithering','pseudo jisi dithering'})
     ts  = ts(valid_idx);                                          % take only Rpeaks surrounded by valid R2R
     V   = repmat(ismember(1:size(ts_jit,2),valid_idx),N,1);       % logical index to reduce
-    Triggers.shuffled_ts  =reshape(ts_jit(V),N,numel(ts));
-    Triggers.shuffled_intervals = reshape(td_jit(V),N,numel(ts)); % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
-    Triggers.shuffled_blocks    =blocks(valid_idx);
+    Triggers.surrogate_ts  =reshape(ts_jit(V),N,numel(ts));
+    Triggers.surrogate_intervals = reshape(td_jit(V),N,numel(ts)); % durations of surrogate RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).surrogate_ts)
+    Triggers.surrogate_blocks    =blocks(valid_idx);
 else
     ts  = ts(valid_idx);                                          % take only Rpeaks surrounded by valid R2R
-    Triggers.shuffled_ts  =ts_jit;
-    Triggers.shuffled_intervals = td_jit; % durations of reshuffled RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).shuffled_ts)
-    Triggers.shuffled_blocks    =blocks_jit;
+    Triggers.surrogate_ts  =ts_jit;
+    Triggers.surrogate_intervals = td_jit; % durations of surrogate RR-intervals (the corresponding ends of those intervals are in Rpeaks(b).surrogate_ts)
+    Triggers.surrogate_blocks    =blocks_jit;
 end
 
 %% put the data together

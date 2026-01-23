@@ -1,4 +1,4 @@
-function [normalized] = ecg_bna_compute_shufflePredictor_normalization_general(observed,surrogate,cfg)
+function [normalized] = ecg_bna_normalize(observed,surrogate,cfg)
 % ecg_bna_compute_shufflePredictor_normalization_general - normalizing the real tfs
 % and evoked data based on the shuffle predictor results
 %
@@ -30,7 +30,7 @@ end
 for p=1:numel(parameters)
     parameter=parameters{p};
     if ismember(parameter,{'evoked'})
-        realmean = observed.(parameter).complete;
+        realmean = observed.(parameter).mean;
         realstd = observed.(parameter).std;
         shuffledmean=repmat(surrogate.(parameter).mean,size(realmean,1),1,1);
         shuffledstd=surrogate.(parameter).std;

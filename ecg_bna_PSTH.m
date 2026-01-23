@@ -46,8 +46,8 @@ for u=1:numel(population)
             trig=Triggers.(E);
             [idx,bins]=get_valid_PSTH_indexes(PSTH_time,O.trial_starts,O.trial_ends,cfg);
             realPSTHs         = compute_PSTH(trig,RAST,SD_stream,PSTH_time,idx,bins,'real',cfg);
-            shuffledPSTH      = compute_PSTH(trig,RAST,SD_stream,PSTH_time,idx,bins,'shuffled',cfg);
-            SD                = do_statistics(realPSTHs,shuffledPSTH,bins,cfg.spk);
+            surrogatePSTH      = compute_PSTH(trig,RAST,SD_stream,PSTH_time,idx,bins,'surrogate',cfg);
+            SD                = do_statistics(realPSTHs,surrogatePSTH,bins,cfg.spk);
             Output.(L).(E)=SD;
         end
     end
@@ -93,9 +93,9 @@ switch mode
     case 'real'
         ts=trig.ts;
         iv=trig.intervals;
-    case 'shuffled'
-        ts=trig.shuffled_ts;
-        iv=trig.shuffled_intervals;
+    case 'surrogate'
+        ts=trig.surrogate_ts;
+        iv=trig.surrogate_intervals;
 end
 
 ts_samples=round((ts-PSTH_time(1))/cfg.spk.PSTH_binwidth);
@@ -112,7 +112,7 @@ n=size(ts_samples,1);
 % out.RTs       = {};
 % out.RDs       = {};
 
-%% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of reshuffled data
+%% loop through rows of RPEAK_samples: 1 row for real, nReshuffles rows of resurrogate data
 for p=1:n
     % %% remove samples that would land outside
     valid = ts_samples(p,:)<=numel(SD) & ts_samples(p,:)>0;
@@ -181,7 +181,7 @@ SD.FR_ModIndex_PcS     = max(SD.SD_diff_normalized) - min(SD.SD_diff_normalized)
 
 %not the place to do histograms id say (?)
 SD.intervals                          = hist(Real.intervals{1},cfg.histbins); % put RR durations to plot those in the histograms later
-SD.shuffled_intervals                     = hist([Shuffled.intervals{:}],cfg.histbins);
+SD.surrogate_intervals                     = hist([Shuffled.intervals{:}],cfg.histbins);
 % Output.(L).FR                           = mean(SD_stream); %% not too sure this was the intended one...
 
 %% signficance
