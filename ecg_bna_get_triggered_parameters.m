@@ -138,6 +138,7 @@ for s = 1: numel(w_samples)
         end
         
         if n_iterations==1 && ismember(fn,{'evoked'})% && ismember(fni,{'ecg'})
+            AA=real(AA);
             triggered.(fn).mean(1,:,s)        = single(mean(AA,3));
             triggered.(fn).std(1,:,s)         = single(std(AA,0,3));
             triggered.(fn).sterr(1,:,s)       = single(sterr(AA,3));
