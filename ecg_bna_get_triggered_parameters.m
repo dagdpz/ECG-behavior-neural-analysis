@@ -129,6 +129,10 @@ for s = 1: numel(w_samples)
         fn=FN{f};
         fni=FN_in{f};
         AA=single(reshape(tfs.(fni)(:,t),size(tfs.(fni),1),size(t,1),size(t,2)));
+        if ismember(fn,{'evoked'})
+             AA=real(AA); 
+        end
+        
         if ismember(fn,{'itpc','itpcbp'})
             BB=single(abs(mean(AA,3)));
         elseif ismember(fn,{'pha'})
@@ -136,9 +140,8 @@ for s = 1: numel(w_samples)
         else
             BB=single(mean(AA,3));
         end
-        
         if n_iterations==1 && ismember(fn,{'evoked'})% && ismember(fni,{'ecg'})
-            AA=real(AA);
+          
             triggered.(fn).mean(1,:,s)        = single(mean(AA,3));
             triggered.(fn).std(1,:,s)         = single(std(AA,0,3));
             triggered.(fn).sterr(1,:,s)       = single(sterr(AA,3));
