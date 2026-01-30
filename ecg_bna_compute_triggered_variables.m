@@ -110,16 +110,16 @@ for e = 1:size(cfg.analyse_states, 1)
         trig.condition(cn).event(e).significance=significance;
         trig.condition(cn).event(e).cluster_z_values=cluster_z_values;
         
-        if isfield(observedD,'mua')
-            pre_samples=1:abs(width_in_samples(1))+1;
-            post_samples=max(pre_samples)+1:width_in_samples(2)+max(pre_samples);
-            
-            pre=mean(squeeze(observedD.mua.complete(:,1,pre_samples)),2);
-            post=mean(squeeze(observedD.mua.complete(:,1,post_samples)),2);
-            [h,p]=ttest(pre,post);
-            trig.condition(cn).event(e).prevspost.p=p;
-            trig.condition(cn).event(e).prevspost.h=h;
-        end
+%         if isfield(observedD,'evoked')
+%             pre_samples=1:abs(width_in_samples(1))+1;
+%             post_samples=max(pre_samples)+1:width_in_samples(2)+max(pre_samples);
+%             
+%             pre=mean(squeeze(observedD.evoked.complete(:,1,pre_samples)),2);
+%             post=mean(squeeze(observedD.evoked.complete(:,1,post_samples)),2);
+%             [h,p]=ttest(pre,post);
+%             trig.condition(cn).event(e).prevspost.p=p;
+%             trig.condition(cn).event(e).prevspost.h=h;
+%         end
     end
     if ~isempty(cfg.lfp.compare_conditions)
         for ncomp=1:numel(cfg.lfp.compare_conditions)

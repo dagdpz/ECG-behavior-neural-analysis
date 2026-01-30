@@ -48,7 +48,8 @@ for p=1:numel(parameters)
 %             normalized.(parameter).sterr   = sterr(((realmean-shuffledmean)./shuffledstd),1);
             normalized.(parameter).mean    = mean((realmean-shuffledmean),1)./shuffledstd;
             normalized.(parameter).std     = std((realmean-shuffledmean),0,1)./shuffledstd;% realstd;%./shuffledstd; %% ??
-            normalized.(parameter).sterr   = sterr((realmean-shuffledmean),1)./shuffledstd;
+            
+            normalized.(parameter).sterr   = sterr((realmean-shuffledmean),1)./shuffledstd; %% this one aint working??
         elseif strcmp(method , 'not normalized')
             normalized.(parameter).mean    = mean(realmean,1);
             normalized.(parameter).std    = realstd;

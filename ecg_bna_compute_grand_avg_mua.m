@@ -2,8 +2,8 @@ function tar = ecg_bna_compute_grand_avg_mua(cfg,withunits)
 
 reprocess=1;
 reprocess2=1;
-fileName = fullfile([cfg.MUA_root_results_fldr filesep 'Grand_avg_mua_sites_',withunits,'.mat']);
-fileName2 = fullfile([cfg.MUA_root_results_fldr filesep 'Grand_avg_mua_targets_',withunits,'.mat']);
+fileName = fullfile([cfg.fldr.MUA_root filesep 'Grand_avg_mua_sites_',withunits,'.mat']);
+fileName2 = fullfile([cfg.fldr.MUA_root filesep 'Grand_avg_mua_targets_',withunits,'.mat']);
 
 if cfg.combine_hemispheres
     cfg.targets=unique(cellfun(@(x) x(1:strfind(x,'_')-1),cfg.targets,'uniformoutput',false));
@@ -11,7 +11,7 @@ end
 targets = cfg.targets;%unique({sites.target}); %%cfg.monkey
 
 if reprocess
-    data_path = cfg.sites_mua_fldr;
+    data_path = cfg.fldr.MUA_sites;
 %     data_path = 'Y:\Projects\Pulv_bodysignal\LFP\ECG_Magnus_TaskRest_test_generalTrig_Reref_shamim\sample session check';
     cd(data_path)
     % read the files
@@ -54,32 +54,33 @@ if reprocess
                 event=con.event(e);
                 %% think about event present?
                 
-                nTriggers = event.real.ntriggers;
+                nTriggers = event.observed.ntriggers;
                 time      = event.time;
-                mua_time  = event.tfr_time;
-                mua       = squeeze(event.normalized.mua.mean)';
-                mua_real       = squeeze(event.real.mua.mean)';
-                mua_real_std       = squeeze(event.real.mua.std)';
-                mua_shuffled       = squeeze(event.shuffled.mua.mean)';
-                mua_shuffled_std       = squeeze(event.shuffled.mua.std)';
-                p=event.prevspost.p;
-                h=event.prevspost.h;
+                evoked_time  = event.tfr_time;
+                evoked       = squeeze(event.normalized.evoked.mean)';
+                evoked_observed       = squeeze(event.observed.evoked.mean)';
+                evoked_observed_std       = squeeze(event.observed.evoked.std)';
+                evoked_surrogate       = squeeze(event.surrogate.evoked.mean)';
+                evoked_surrogate_std       = squeeze(event.surrogate.evoked.std)';
                 
-                mua_sig     =squeeze(event.significance.mua)'; %% weird dimension thing
+%                 p=event.prevspost.p;
+%                 h=event.prevspost.h;
+                
+                evoked_sig     =squeeze(event.significance.evoked)'; %% weird dimension thing
                                 
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
-                sites(s).condition(c).event(e).mua = mua;               
-                sites(s).condition(c).event(e).mua_sig = mua_sig;                  
-                sites(s).condition(c).event(e).any_sig = any(mua_sig);   
-                sites(s).condition(c).event(e).mua_real = mua_real;               
-                sites(s).condition(c).event(e).mua_real_std = mua_real_std;               
-                sites(s).condition(c).event(e).mua_shuffled = mua_shuffled;               
-                sites(s).condition(c).event(e).mua_shuffled_std = mua_shuffled_std;        
-                sites(s).condition(c).event(e).p = p;       
-                sites(s).condition(c).event(e).h = h;                      
+                sites(s).condition(c).event(e).evoked = evoked;               
+                sites(s).condition(c).event(e).evoked_sig = evoked_sig;                  
+                sites(s).condition(c).event(e).any_sig = any(evoked_sig);   
+                sites(s).condition(c).event(e).evoked_observed = evoked_observed;               
+                sites(s).condition(c).event(e).evoked_observed_std = evoked_observed_std;               
+                sites(s).condition(c).event(e).evoked_surrogate = evoked_surrogate;               
+                sites(s).condition(c).event(e).evoked_surrogate_std = evoked_surrogate_std;        
+%                 sites(s).condition(c).event(e).p = p;       
+%                 sites(s).condition(c).event(e).h = h;                      
                 
                 sites(s).condition(c).event(e).time = time;
-                sites(s).condition(c).event(e).tfr_time = mua_time;
+                sites(s).condition(c).event(e).tfr_time = evoked_time;
                 
                 %% some comparison of before and after trigger
             end
@@ -107,34 +108,34 @@ end
 %         
 %         concat.nTriggers=round(mean(reshape([events.nTriggers],size(events)),1));
 %         
-%         concat.mua          = [];
-%         concat.mua_25       = [];
-%         concat.mua_75       = [];
-%         concat.muasig       = [];
-%         concat.mua_time     = [];
-%         concat.mua_std      = [];
+%         concat.evoked          = [];
+%         concat.evoked_25       = [];
+%         concat.evoked_75       = [];
+%         concat.evokedsig       = [];
+%         concat.evoked_time     = [];
+%         concat.evoked_std      = [];
 %         
 %         for e=1:size(cfg.analyse_states,1)
 %             E.nTriggers     = mean(cat(3,events(:,e).nTriggers),3);
-%             E.mua           = mean(cat(3,events(:,e).mua),3);
-%             E.mua_25        = prctile(cat(3,events(:,e).mua),25,3);
-%             E.mua_75        = prctile(cat(3,events(:,e).mua),75,3);
-%             E.mua_time      = events(1,e).time;
-%             E.mua_std       = std(cat(3,events(:,e).mua),0,3);                        
-%             E.mua_sig       = mean(cat(3,events(:,e).mua_sig),3);            
-%             E.mua_sig_signed= mean(cat(3,events(:,e).mua_sig).*sign(cat(3,events(:,e).mua)),3);
+%             E.evoked           = mean(cat(3,events(:,e).evoked),3);
+%             E.evoked_25        = prctile(cat(3,events(:,e).evoked),25,3);
+%             E.evoked_75        = prctile(cat(3,events(:,e).evoked),75,3);
+%             E.evoked_time      = events(1,e).time;
+%             E.evoked_std       = std(cat(3,events(:,e).evoked),0,3);                        
+%             E.evoked_sig       = mean(cat(3,events(:,e).evoked_sig),3);            
+%             E.evoked_sig_signed= mean(cat(3,events(:,e).evoked_sig).*sign(cat(3,events(:,e).evoked)),3);
 %             
-%             E.mua_sig       = E.mua_sig*100;                
-%             E.mua_sig_signed= E.mua_sig_signed*100;     
+%             E.evoked_sig       = E.evoked_sig*100;                
+%             E.evoked_sig_signed= E.evoked_sig_signed*100;     
 %             
 %             NaNseparator=100/25;
-%             concat.mua          = cat(2, concat.mua,        E.mua,        nan(size(E.mua, 1),        NaNseparator));
-%             concat.mua_25       = cat(2, concat.mua_25,     E.mua_25,	  nan(size(E.mua_25, 1),     NaNseparator));
-%             concat.mua_75       = cat(2, concat.mua_75,     E.mua_75,	  nan(size(E.mua_75, 1),     NaNseparator));
+%             concat.evoked          = cat(2, concat.evoked,        E.evoked,        nan(size(E.evoked, 1),        NaNseparator));
+%             concat.evoked_25       = cat(2, concat.evoked_25,     E.evoked_25,	  nan(size(E.evoked_25, 1),     NaNseparator));
+%             concat.evoked_75       = cat(2, concat.evoked_75,     E.evoked_75,	  nan(size(E.evoked_75, 1),     NaNseparator));
 %             
-%             concat.muasig       = cat(2, concat.muasig,     E.mua_sig,    nan(size(E.mua_sig, 1),    NaNseparator));
-%             concat.mua_std      = cat(2, concat.mua_std,    E.mua_std,	  nan(size(E.mua_std, 1),    NaNseparator));
-%             concat.mua_time     = [concat.mua_time, E.mua_time, nan(1, NaNseparator)];
+%             concat.evokedsig       = cat(2, concat.evokedsig,     E.evoked_sig,    nan(size(E.evoked_sig, 1),    NaNseparator));
+%             concat.evoked_std      = cat(2, concat.evoked_std,    E.evoked_std,	  nan(size(E.evoked_std, 1),    NaNseparator));
+%             concat.evoked_time     = [concat.evoked_time, E.evoked_time, nan(1, NaNseparator)];
 %             
 %             eventname=cfg.analyse_states{e,1};
 %             tar(t).con(c).(eventname)=E;
@@ -154,8 +155,10 @@ if reprocess2
         
         taskevents=cat(1,condition(:,2).event);
         restevents=cat(1,condition(:,1).event);
-        cueresponse_sigbin=[taskevents(:,4).any_sig];
-        cueresponse_ttest=[taskevents(:,4).p]<0.05;
+        
+        
+%         cueresponse_sigbin=[taskevents(:,4).any_sig];
+%         cueresponse_ttest=[taskevents(:,4).p]<0.05;
         
         
         
@@ -164,16 +167,16 @@ if reprocess2
             
             concat.nTriggers=round(mean(reshape([events.nTriggers],size(events)),1));
             
-            concat.mua          = [];
-            concat.mua_abs      = [];
-            concat.mua_abs_25   = [];
-            concat.mua_abs_75   = [];
-            concat.mua_25       = [];
-            concat.mua_75       = [];
-            concat.muasig       = [];
-            concat.mua_time     = [];
-            concat.mua_std      = [];
-            concat.mua_abs_std      = [];
+            concat.evoked          = [];
+            concat.evoked_abs      = [];
+            concat.evoked_abs_25   = [];
+            concat.evoked_abs_75   = [];
+            concat.evoked_25       = [];
+            concat.evoked_75       = [];
+            concat.evokedsig       = [];
+            concat.evoked_time     = [];
+            concat.evoked_std      = [];
+            concat.evoked_abs_std      = [];
             
             for e=1:size(cfg.analyse_states,1)
                 
@@ -184,54 +187,54 @@ if reprocess2
                 %S=cueresponse_ttest;
                 
                 
-                %             mua=zscore(cat(3,events(S,e).mua),0,2);
-                %             mua_real=zscore(cat(3,events(S,e).mua_real),0,2);
-                %             mua_shuffled=zscore(cat(3,events(S,e).mua_shuffled),0,2);
-                mua=cat(3,events(S,e).mua);
-                mua_real=cat(3,events(S,e).mua_real);
-                mua_shuffled=cat(3,events(S,e).mua_shuffled);
+                %             evoked=zscore(cat(3,events(S,e).evoked),0,2);
+                %             evoked_observed=zscore(cat(3,events(S,e).evoked_observed),0,2);
+                %             evoked_surrogate=zscore(cat(3,events(S,e).evoked_surrogate),0,2);
+                evoked=cat(3,events(S,e).evoked);
+                evoked_observed=cat(3,events(S,e).evoked_observed);
+                evoked_surrogate=cat(3,events(S,e).evoked_surrogate);
                 
                 
-                E.mua_p= ecg_bna_population_significant_n_bins(cat(3,events(:,e).mua_sig));
+                E.evoked_p= ecg_bna_population_significant_n_bins(cat(3,events(:,e).evoked_sig));
                 E.nTriggers     = mean(cat(3,events(S,e).nTriggers),3);
-                E.mua           = mean(mua,3);
-                E.mua_real      = mean(mua_real,3);
-                E.mua_shuffled  = mean(mua_shuffled,3);
-                E.mua_abs       = mean(abs(mua),3);
-                E.mua_abs_sterr = sterr(abs(mua),3);
-                E.mua_abs_25    = prctile(abs(mua),25,3);
-                E.mua_abs_75    = prctile(abs(mua),75,3);
-                E.mua_25        = prctile(mua,25,3);
-                E.mua_75        = prctile(mua,75,3);
-                E.mua_time      = events(1,e).time;
-                E.mua_std       = std(mua,0,3);
-                E.mua_real_std  = std(mua_real,0,3);
-                E.mua_sterr     = sterr(mua,3);
-                E.mua_real_sterr= sterr(mua_real,3);
-                E.mua_real_abs  = mean(abs(mua_real),3);
-                E.mua_real_abs_std  = std(abs(mua_real),0,3);
-                E.mua_real_abs_sterr  = sterr(abs(mua_real),3);
-                E.mua_sig       = mean(cat(3,events(S,e).mua_sig),3);
-                E.mua_abs_std   = std(abs(mua),0,3);
-                E.mua_sig_signed= mean(cat(3,events(S,e).mua_sig).*sign(cat(3,events(S,e).mua)),3);
-                [E.mua_popsig, E.mua_poppval]=ecg_bna_population_significance_normalized_parametric(mua);
+                E.evoked           = mean(evoked,3);
+                E.evoked_observed      = mean(evoked_observed,3);
+                E.evoked_surrogate  = mean(evoked_surrogate,3);
+                E.evoked_abs       = mean(abs(evoked),3);
+                E.evoked_abs_sterr = sterr(abs(evoked),3);
+                E.evoked_abs_25    = prctile(abs(evoked),25,3);
+                E.evoked_abs_75    = prctile(abs(evoked),75,3);
+                E.evoked_25        = prctile(evoked,25,3);
+                E.evoked_75        = prctile(evoked,75,3);
+                E.evoked_time      = events(1,e).time;
+                E.evoked_std       = std(evoked,0,3);
+                E.evoked_observed_std  = std(evoked_observed,0,3);
+                E.evoked_sterr     = sterr(evoked,3);
+                E.evoked_observed_sterr= sterr(evoked_observed,3);
+                E.evoked_observed_abs  = mean(abs(evoked_observed),3);
+                E.evoked_observed_abs_std  = std(abs(evoked_observed),0,3);
+                E.evoked_observed_abs_sterr  = sterr(abs(evoked_observed),3);
+                E.evoked_sig       = mean(cat(3,events(S,e).evoked_sig),3);
+                E.evoked_abs_std   = std(abs(evoked),0,3);
+                E.evoked_sig_signed= mean(cat(3,events(S,e).evoked_sig).*sign(cat(3,events(S,e).evoked)),3);
+                [E.evoked_popsig, E.evoked_poppval]=ecg_bna_population_significance_normalized_parametric(evoked);
                    
                 
-                E.mua_sig       = E.mua_sig*100;
-                E.mua_sig_signed= E.mua_sig_signed*100;
+                E.evoked_sig       = E.evoked_sig*100;
+                E.evoked_sig_signed= E.evoked_sig_signed*100;
                 
                 NaNseparator=100/25;
-                concat.mua          = cat(2, concat.mua,        E.mua,        nan(size(E.mua, 1),        NaNseparator));
-                concat.mua_25       = cat(2, concat.mua_25,     E.mua_25,	  nan(size(E.mua_25, 1),     NaNseparator));
-                concat.mua_75       = cat(2, concat.mua_75,     E.mua_75,	  nan(size(E.mua_75, 1),     NaNseparator));
-                concat.mua_abs      = cat(2, concat.mua_abs,    E.mua_abs,    nan(size(E.mua_abs, 1),    NaNseparator));
-                concat.mua_abs_25   = cat(2, concat.mua_abs_25, E.mua_abs_25, nan(size(E.mua_abs_25, 1), NaNseparator));
-                concat.mua_abs_75   = cat(2, concat.mua_abs_75, E.mua_abs_75, nan(size(E.mua_abs_75, 1), NaNseparator));
+                concat.evoked          = cat(2, concat.evoked,        E.evoked,        nan(size(E.evoked, 1),        NaNseparator));
+                concat.evoked_25       = cat(2, concat.evoked_25,     E.evoked_25,	  nan(size(E.evoked_25, 1),     NaNseparator));
+                concat.evoked_75       = cat(2, concat.evoked_75,     E.evoked_75,	  nan(size(E.evoked_75, 1),     NaNseparator));
+                concat.evoked_abs      = cat(2, concat.evoked_abs,    E.evoked_abs,    nan(size(E.evoked_abs, 1),    NaNseparator));
+                concat.evoked_abs_25   = cat(2, concat.evoked_abs_25, E.evoked_abs_25, nan(size(E.evoked_abs_25, 1), NaNseparator));
+                concat.evoked_abs_75   = cat(2, concat.evoked_abs_75, E.evoked_abs_75, nan(size(E.evoked_abs_75, 1), NaNseparator));
                 
-                concat.muasig       = cat(2, concat.muasig,     E.mua_sig,    nan(size(E.mua_sig, 1),    NaNseparator));
-                concat.mua_std      = cat(2, concat.mua_std,    E.mua_std,	  nan(size(E.mua_std, 1),    NaNseparator));
-                concat.mua_abs_std  = cat(2, concat.mua_abs_std,E.mua_abs_std,nan(size(E.mua_abs_std, 1),NaNseparator));
-                concat.mua_time     = [concat.mua_time, E.mua_time, nan(1, NaNseparator)];
+                concat.evokedsig       = cat(2, concat.evokedsig,     E.evoked_sig,    nan(size(E.evoked_sig, 1),    NaNseparator));
+                concat.evoked_std      = cat(2, concat.evoked_std,    E.evoked_std,	  nan(size(E.evoked_std, 1),    NaNseparator));
+                concat.evoked_abs_std  = cat(2, concat.evoked_abs_std,E.evoked_abs_std,nan(size(E.evoked_abs_std, 1),NaNseparator));
+                concat.evoked_time     = [concat.evoked_time, E.evoked_time, nan(1, NaNseparator)];
                 
                 eventname=cfg.analyse_states{e,1};
                 tar(t).con(c).(eventname)=E;
@@ -263,19 +266,19 @@ for t = 1: length(targets)
         continue;
     end
     for c = 1:length(cond)
-        mua_time=tar(t).con(c).concat.mua_time;
-        tfr_events.onset        = find(mua_time == 0);
+        evoked_time=tar(t).con(c).concat.evoked_time;
+        tfr_events.onset        = find(evoked_time == 0);
         tfr_events.name         = cfg.analyse_states(:,1);
-        tfr_events.ticksamples  = sort([find(diff([0 ~isnan(mua_time)])==1) find(diff(~isnan(mua_time))==-1)]);
+        tfr_events.ticksamples  = sort([find(diff([0 ~isnan(evoked_time)])==1) find(diff(~isnan(evoked_time))==-1)]);
         tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
         tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-        tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+        tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;
         
-        mua=tar(t).con(c).concat.mua;
-        mua_std=tar(t).con(c).concat.mua_std;
-        %mua_se=sterr(mua,3,0);
-        percentile25=tar(t).con(c).concat.mua_25;
-        percentile75=tar(t).con(c).concat.mua_75;
+        evoked=tar(t).con(c).concat.evoked;
+        evoked_std=tar(t).con(c).concat.evoked_std;
+        %evoked_se=sterr(evoked,3,0);
+        percentile25=tar(t).con(c).concat.evoked_25;
+        percentile75=tar(t).con(c).concat.evoked_75;
         percentile25(isnan(percentile25))=0;
         percentile75(isnan(percentile75))=0;
         
@@ -284,8 +287,8 @@ for t = 1: length(targets)
         
         %========================== LFP evoked Potential ==================== %
         
-        smoothed_mean=smoothit(mua,half_win,gaussian_kernel);
-        smoothed_std=smoothit(mua_std,half_win,gaussian_kernel);
+        smoothed_mean=smoothit(evoked,half_win,gaussian_kernel);
+        smoothed_std=smoothit(evoked_std,half_win,gaussian_kernel);
         smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
         smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
             
@@ -296,13 +299,13 @@ for t = 1: length(targets)
         lineProps={'color',[0 0 1]};
         %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,[smoothed_75-smoothed_mean;smoothed_mean-smoothed_25 ],lineProps,1);        
         shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-        %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+        %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
         
         xlabel('Time(s)'); ylabel('MUA evoked Potential');
         title(plot_names{sp},'fontsize',10,'interpreter','none');
         add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)        
         
-        results_file{c} = fullfile(cfg.MUA_root_results_fldr, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
+        results_file{c} = fullfile(cfg.fldr.MUA_root, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
         mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
         
         export_fig(h(c,t),[results_file{c},'.pdf']);
@@ -325,35 +328,35 @@ for e=1:size(cfg.analyse_states,1)
                 continue;
             end
             
-            mua_time                = tar(t).con(c).(E).mua_time;
-            tfr_events.onset        = find(mua_time == 0);
+            evoked_time                = tar(t).con(c).(E).evoked_time;
+            tfr_events.onset        = find(evoked_time == 0);
             tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(mua_time)]; 
+            tfr_events.ticksamples  = [1,numel(evoked_time)]; 
             tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
             tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+            tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;
             
             %========================== MUA evoked Potential ==================== %
-            mua=tar(t).con(c).(E).mua;
-            mua_abs=tar(t).con(c).(E).mua_abs;
-            mua_std=tar(t).con(c).(E).mua_std;
-            mua_sterr=tar(t).con(c).(E).mua_sterr;
-            mua_abs_std=tar(t).con(c).(E).mua_abs_std;
-            mua_abs_sterr=tar(t).con(c).(E).mua_abs_sterr;
-            %mua_se=sterr(mua,3,0);
-            percentile25=tar(t).con(c).(E).mua_25;
-            percentile75=tar(t).con(c).(E).mua_75;
+            evoked=tar(t).con(c).(E).evoked;
+            evoked_abs=tar(t).con(c).(E).evoked_abs;
+            evoked_std=tar(t).con(c).(E).evoked_std;
+            evoked_sterr=tar(t).con(c).(E).evoked_sterr;
+            evoked_abs_std=tar(t).con(c).(E).evoked_abs_std;
+            evoked_abs_sterr=tar(t).con(c).(E).evoked_abs_sterr;
+            %evoked_se=sterr(evoked,3,0);
+            percentile25=tar(t).con(c).(E).evoked_25;
+            percentile75=tar(t).con(c).(E).evoked_75;
             percentile25(isnan(percentile25))=0;
             percentile75(isnan(percentile75))=0;
            
             % Smoothing of the  LFP evoked Potential here:
-            smoothed_mean=smoothit(mua,half_win,gaussian_kernel);    
-            smoothed_std=smoothit(mua_std,half_win,gaussian_kernel);
-            smoothed_sterr=smoothit(mua_sterr,half_win,gaussian_kernel);
+            smoothed_mean=smoothit(evoked,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(evoked_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(evoked_sterr,half_win,gaussian_kernel);
             smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
             smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
             
-            %========================== mua  ==================== %
+            %========================== evoked  ==================== %
             sp=1;
             sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
@@ -362,15 +365,15 @@ for e=1:size(cfg.analyse_states,1)
             
             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
             shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('MUA evoked Potential');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
             
             
-            %========================== mua significance ==================== %
-            mua_sig=tar(t).con(c).(E).mua_sig;
-            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            %========================== evoked significance ==================== %
+            evoked_sig=tar(t).con(c).(E).evoked_sig;
+            smoothed_mean=smoothit(evoked_sig,half_win,gaussian_kernel);          
             
             sp=2;
             sph(c,sp,t)=subplot(2,2,sp);
@@ -383,10 +386,10 @@ for e=1:size(cfg.analyse_states,1)
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
             
             
-            %========================== mua abs  ==================== %
-            smoothed_mean=smoothit(mua_abs,half_win,gaussian_kernel);    
-            smoothed_std=smoothit(mua_abs_std,half_win,gaussian_kernel);
-            smoothed_sterr=smoothit(mua_abs_sterr,half_win,gaussian_kernel);
+            %========================== evoked abs  ==================== %
+            smoothed_mean=smoothit(evoked_abs,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(evoked_abs_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(evoked_abs_sterr,half_win,gaussian_kernel);
             sp=3;
             sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
@@ -395,15 +398,15 @@ for e=1:size(cfg.analyse_states,1)
             
             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
             shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('MUA Absolute');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
             
             
-            %========================== mua significance ==================== %
-            mua_sig=tar(t).con(c).(E).mua_sig_signed;
-            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            %========================== evoked significance ==================== %
+            evoked_sig=tar(t).con(c).(E).evoked_sig_signed;
+            smoothed_mean=smoothit(evoked_sig,half_win,gaussian_kernel);          
             
             sp=4;
             sph(c,sp,t)=subplot(2,2,sp);
@@ -417,7 +420,7 @@ for e=1:size(cfg.analyse_states,1)
             
             
             
-            results_file{c,t} = fullfile(cfg.MUA_root_results_fldr, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
+            results_file{c,t} = fullfile(cfg.fldr.MUA_root, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
             mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
             export_fig(h(c,t),[results_file{c,t},'.pdf']);
         end
@@ -444,35 +447,35 @@ for e=1:size(cfg.analyse_states,1)
                 continue;
             end
             
-            mua_time                = tar(t).con(c).(E).mua_time;
-            tfr_events.onset        = find(mua_time == 0);
+            evoked_time                = tar(t).con(c).(E).evoked_time;
+            tfr_events.onset        = find(evoked_time == 0);
             tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(mua_time)]; 
+            tfr_events.ticksamples  = [1,numel(evoked_time)]; 
             tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
             tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+            tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;
             
             %========================== MUA evoked Potential ==================== %
-            mua=tar(t).con(c).(E).mua_real;
-            mua_abs=tar(t).con(c).(E).mua_real_abs;
-            mua_std=tar(t).con(c).(E).mua_real_std;
-            mua_sterr=tar(t).con(c).(E).mua_real_sterr;
-            mua_abs_std=tar(t).con(c).(E).mua_real_abs_std;
-            mua_abs_sterr=tar(t).con(c).(E).mua_real_abs_sterr;
-            %mua_se=sterr(mua,3,0);
-            percentile25=tar(t).con(c).(E).mua_25;
-            percentile75=tar(t).con(c).(E).mua_75;
+            evoked=tar(t).con(c).(E).evoked_observed;
+            evoked_abs=tar(t).con(c).(E).evoked_observed_abs;
+            evoked_std=tar(t).con(c).(E).evoked_observed_std;
+            evoked_sterr=tar(t).con(c).(E).evoked_observed_sterr;
+            evoked_abs_std=tar(t).con(c).(E).evoked_observed_abs_std;
+            evoked_abs_sterr=tar(t).con(c).(E).evoked_observed_abs_sterr;
+            %evoked_se=sterr(evoked,3,0);
+            percentile25=tar(t).con(c).(E).evoked_25;
+            percentile75=tar(t).con(c).(E).evoked_75;
             percentile25(isnan(percentile25))=0;
             percentile75(isnan(percentile75))=0;
            
             % Smoothing of the  LFP evoked Potential here:
-            smoothed_mean=smoothit(mua,half_win,gaussian_kernel);    
-            smoothed_std=smoothit(mua_std,half_win,gaussian_kernel);
-            smoothed_sterr=smoothit(mua_sterr,half_win,gaussian_kernel);
+            smoothed_mean=smoothit(evoked,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(evoked_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(evoked_sterr,half_win,gaussian_kernel);
             smoothed_25=smoothit(percentile25,half_win,gaussian_kernel);
             smoothed_75=smoothit(percentile75,half_win,gaussian_kernel);
             
-            %========================== mua  ==================== %
+            %========================== evoked  ==================== %
             sp=1;
             sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
@@ -481,15 +484,15 @@ for e=1:size(cfg.analyse_states,1)
             
             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
             shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('MUA evoked Potential');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
             
             
-            %========================== mua significance ==================== %
-            mua_sig=tar(t).con(c).(E).mua_sig;
-            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            %========================== evoked significance ==================== %
+            evoked_sig=tar(t).con(c).(E).evoked_sig;
+            smoothed_mean=smoothit(evoked_sig,half_win,gaussian_kernel);          
             
             sp=2;
             sph(c,sp,t)=subplot(2,2,sp);
@@ -502,10 +505,10 @@ for e=1:size(cfg.analyse_states,1)
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)   
             
             
-            %========================== mua abs  ==================== %
-            smoothed_mean=smoothit(mua_abs,half_win,gaussian_kernel);    
-            smoothed_std=smoothit(mua_abs_std,half_win,gaussian_kernel);
-            smoothed_sterr=smoothit(mua_abs_sterr,half_win,gaussian_kernel);
+            %========================== evoked abs  ==================== %
+            smoothed_mean=smoothit(evoked_abs,half_win,gaussian_kernel);    
+            smoothed_std=smoothit(evoked_abs_std,half_win,gaussian_kernel);
+            smoothed_sterr=smoothit(evoked_abs_sterr,half_win,gaussian_kernel);
             sp=3;
             sph(c,sp,t)=subplot(2,2,sp);
             ax=sph(c,sp,t);
@@ -514,15 +517,15 @@ for e=1:size(cfg.analyse_states,1)
             
             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
             shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_sterr,lineProps,1);
-            %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+            %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
             xlabel('Time(s)'); ylabel('MUA Absolute');
             title(plot_names{sp},'fontsize',10,'interpreter','none');
             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)            
             
             
-            %========================== mua significance ==================== %
-            mua_sig=tar(t).con(c).(E).mua_sig_signed;
-            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            %========================== evoked significance ==================== %
+            evoked_sig=tar(t).con(c).(E).evoked_sig_signed;
+            smoothed_mean=smoothit(evoked_sig,half_win,gaussian_kernel);          
             
             sp=4;
             sph(c,sp,t)=subplot(2,2,sp);
@@ -536,7 +539,7 @@ for e=1:size(cfg.analyse_states,1)
             
             
             
-            results_file{c,t} = fullfile(cfg.MUA_root_results_fldr, ['real_' cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
+            results_file{c,t} = fullfile(cfg.fldr.MUA_root, ['observed_' cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','avg of ',num2str(tar(t).nSites),' sites ',withunits]);
             mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-avg of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
             export_fig(h(c,t),[results_file{c,t},'.pdf']);
         end
@@ -561,24 +564,24 @@ for e=1:size(cfg.analyse_states,1)
                 continue;
             end
             
-            mua_time                = tar(t).con(c).(E).mua_time;
-            mua_p                   = tar(t).con(c).(E).mua_p;
-            if mua_p<0.001
+            evoked_time                = tar(t).con(c).(E).evoked_time;
+            evoked_p                   = tar(t).con(c).(E).evoked_p;
+            if evoked_p<0.001
                 ptoplot='<0.001';
             else
-                ptoplot=num2str(round(mua_p*1000)/1000);
+                ptoplot=num2str(round(evoked_p*1000)/1000);
             end
-            tfr_events.onset        = find(mua_time == 0);
+            tfr_events.onset        = find(evoked_time == 0);
             tfr_events.name         = cfg.analyse_states(e,1);
-            tfr_events.ticksamples  = [1,numel(mua_time)]; 
+            tfr_events.ticksamples  = [1,numel(evoked_time)]; 
             tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
             tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-            tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;      
+            tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;      
             
             
-            %========================== mua significance ==================== %
-            mua_sig=tar(t).con(c).(E).mua_sig;
-            smoothed_mean=smoothit(mua_sig,half_win,gaussian_kernel);          
+            %========================== evoked significance ==================== %
+            evoked_sig=tar(t).con(c).(E).evoked_sig;
+            smoothed_mean=smoothit(evoked_sig,half_win,gaussian_kernel);          
             
             sp=2;
             sph(c,sp,t)=subplot(3,2,k);
@@ -592,7 +595,7 @@ for e=1:size(cfg.analyse_states,1)
             
         end
     end
-    results_file = fullfile(cfg.MUA_root_results_fldr, [cfg.monkey,'-',E,'-sigNbinstesting-',withunits]);
+    results_file = fullfile(cfg.fldr.MUA_root, [cfg.monkey,'-',E,'-sigNbinstesting-',withunits]);
     export_fig(h(e),[results_file,'.pdf']);
 end
 close all,
@@ -617,20 +620,20 @@ clc
 %             end
 %             
 %             % tfr_time not defined well!
-%             mua_time=tar(t).con(c).(E).tfr_time;
-%             %mua_time=tar(t).con(c).concat.mua_time;
-%             tfr_events.onset        = find(mua_time == 0);
+%             evoked_time=tar(t).con(c).(E).tfr_time;
+%             %evoked_time=tar(t).con(c).concat.evoked_time;
+%             tfr_events.onset        = find(evoked_time == 0);
 %             tfr_events.name         = cfg.analyse_states(e,1);
-%             tfr_events.ticksamples  = [1,numel(mua_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
+%             tfr_events.ticksamples  = [1,numel(evoked_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
 %             tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
 %             tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-%             tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+%             tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;
 %             
-%             mua=tar(t).con(c).(E).mua_sig;
-%             mua_std=tar(t).con(c).(E).mua_std;
-%             %mua_se=sterr(mua,3,0);
-%             percentile25=tar(t).con(c).(E).mua_25;
-%             percentile75=tar(t).con(c).(E).mua_75;
+%             evoked=tar(t).con(c).(E).evoked_sig;
+%             evoked_std=tar(t).con(c).(E).evoked_std;
+%             %evoked_se=sterr(evoked,3,0);
+%             percentile25=tar(t).con(c).(E).evoked_25;
+%             percentile75=tar(t).con(c).(E).evoked_75;
 %             percentile25(isnan(percentile25))=0;
 %             percentile75(isnan(percentile75))=0;
 %            
@@ -639,30 +642,30 @@ clc
 %             %========================== LFP evoked Potential ==================== %
 %             % Smoothing of the  LFP evoked Potential here:
 %             jnk = [];
-%             concat_input = cat(2,(mua(:,half_win:-1:1)),(mua(:,:)));
-%             concat_input = cat(2,concat_input, (mua(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             concat_input = cat(2,(evoked(:,half_win:-1:1)),(evoked(:,:)));
+%             concat_input = cat(2,concat_input, (evoked(:,end:-1:end-half_win+1)));
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_mean = jnk(:,half_win+1:end-half_win);
-%             concat_input = cat(2,(mua_std(:,half_win:-1:1)),(mua_std(:,:)));
-%             concat_input = cat(2,concat_input, (mua_std(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             concat_input = cat(2,(evoked_std(:,half_win:-1:1)),(evoked_std(:,:)));
+%             concat_input = cat(2,concat_input, (evoked_std(:,end:-1:end-half_win+1)));
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_std = jnk(:,half_win+1:end-half_win);
 %             concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
 %             concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_25 = jnk(:,half_win+1:end-half_win);
 %             concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
 %             concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
@@ -675,13 +678,13 @@ clc
 %             plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
 %             
 %             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-%             %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+%             %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
 %             xlabel('Time(s)'); ylabel('sig. LFP [% of sites]');
 %             title(plot_names{sp},'fontsize',10,'interpreter','none');
 %             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
 %             
 %             
-%             results_file{c,t} = fullfile(cfg.analyse_mua_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
+%             results_file{c,t} = fullfile(cfg.analyse_evoked_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
 %             mtit(h(c,t),[cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-sig% of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
 %             
 %         end
@@ -720,22 +723,22 @@ clc
 %             end
 %             
 %             % tfr_time not defined well!
-%             mua_time=tar(t).con(c).(E).tfr_time;
-%             %mua_time=tar(t).con(c).concat.mua_time;
-%             tfr_events.onset        = find(mua_time == 0);
+%             evoked_time=tar(t).con(c).(E).tfr_time;
+%             %evoked_time=tar(t).con(c).concat.evoked_time;
+%             tfr_events.onset        = find(evoked_time == 0);
 %             tfr_events.name         = cfg.analyse_states(e,1);
-%             tfr_events.ticksamples  = [1,numel(mua_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
+%             tfr_events.ticksamples  = [1,numel(evoked_time)]; %sort([find(diff([0 ~isnan(tfr_time)])==1) find(diff([~isnan(tfr_time)])==-1)]);
 %             tfr_events.startsamples = tfr_events.ticksamples(1:3:end);
 %             tfr_events.endsamples   = tfr_events.ticksamples(3:3:end);
-%             tfr_events.ticks        = round(mua_time(tfr_events.ticksamples)*100)/100;
+%             tfr_events.ticks        = round(evoked_time(tfr_events.ticksamples)*100)/100;
 %             
 %             powbp=tar(t).con(c).(E).powbp_sig_signed;
 %             itpcbp=tar(t).con(c).(E).itpcbp_sig_signed;
-%             mua=tar(t).con(c).(E).mua_sig_signed;
-%             mua_std=tar(t).con(c).(E).mua_std;
-%             %mua_se=sterr(mua,3,0);
-%             percentile25=tar(t).con(c).(E).mua_25;
-%             percentile75=tar(t).con(c).(E).mua_75;
+%             evoked=tar(t).con(c).(E).evoked_sig_signed;
+%             evoked_std=tar(t).con(c).(E).evoked_std;
+%             %evoked_se=sterr(evoked,3,0);
+%             percentile25=tar(t).con(c).(E).evoked_25;
+%             percentile75=tar(t).con(c).(E).evoked_75;
 %             percentile25(isnan(percentile25))=0;
 %             percentile75(isnan(percentile75))=0;
 %             
@@ -743,30 +746,30 @@ clc
 %             %========================== LFP evoked Potential ==================== %
 %             % Smoothing of the  LFP evoked Potential here:
 %             jnk = [];
-%             concat_input = cat(2,(mua(:,half_win:-1:1)),(mua(:,:)));
-%             concat_input = cat(2,concat_input, (mua(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             concat_input = cat(2,(evoked(:,half_win:-1:1)),(evoked(:,:)));
+%             concat_input = cat(2,concat_input, (evoked(:,end:-1:end-half_win+1)));
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_mean = jnk(:,half_win+1:end-half_win);
-%             concat_input = cat(2,(mua_std(:,half_win:-1:1)),(mua_std(:,:)));
-%             concat_input = cat(2,concat_input, (mua_std(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             concat_input = cat(2,(evoked_std(:,half_win:-1:1)),(evoked_std(:,:)));
+%             concat_input = cat(2,concat_input, (evoked_std(:,end:-1:end-half_win+1)));
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_std = jnk(:,half_win+1:end-half_win);
 %             concat_input = cat(2,(percentile25(:,half_win:-1:1)),(percentile25(:,:)));
 %             concat_input = cat(2,concat_input, (percentile25(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
 %             smoothed_25 = jnk(:,half_win+1:end-half_win);
 %             concat_input = cat(2,(percentile75(:,half_win:-1:1)),(percentile75(:,:)));
 %             concat_input = cat(2,concat_input, (percentile75(:,end:-1:end-half_win+1)));
-%             for k=1:size(mua,1)
+%             for k=1:size(evoked,1)
 %                 jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');%./max(conv(ones(100,1), gausswin(win)));
 %             end
 %             clear concat_input
@@ -779,12 +782,12 @@ clc
 %             plot(1:numel(smoothed_mean),smoothed_mean,'color',[0 0 1]);
 %             
 %             %shadedErrorBar(1:numel(smoothed_mean),smoothed_mean,smoothed_std,lineProps,1);
-%             %plot(repmat(time,size(tar(t).con(c).mua_avg,1),1)', squeeze(smoothed_mean)')
+%             %plot(repmat(time,size(tar(t).con(c).evoked_avg,1),1)', squeeze(smoothed_mean)')
 %             xlabel('Time(s)'); ylabel('sig. LFP [% of sites]');
 %             title(plot_names{sp},'fontsize',10,'interpreter','none');
 %             add_ticks_and_labels(ax,tfr_events,get(ax,'ylim'),8)
 %             
-%             results_file{c,t} = fullfile(cfg.analyse_mua_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','signed sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
+%             results_file{c,t} = fullfile(cfg.analyse_evoked_folder, [cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'-','signed sig% of ',num2str(tar(t).nSites),' sites ',withunits]);
 %             mtit(h(c,t),[ cfg.monkey,'-',targets{t},'-',tar(t).con(c).cond_name,'-',E,'- (signed) sig% of ',num2str(tar(t).nSites),' sites ' ,withunits],'xoff', 0, 'yoff', 0.05, 'color', [0 0 0], 'fontsize', 12,'Interpreter', 'none')
 %             
 %         end
@@ -844,7 +847,7 @@ clc
 %             
 %         end
 %         mtit([strrep(tar(t).target,'_','-') '-' E],'xoff', 0, 'yoff', 0.05, 'fontsize', 12,'Interpreter', 'none');
-%         results_file = fullfile(cfg.analyse_mua_folder, [cfg.monkey,'-',targets{t},'-',E,'-Max_ITPCbp_POWbp_of ',num2str(tar(t).nSites),' sites ', withunits]);
+%         results_file = fullfile(cfg.analyse_evoked_folder, [cfg.monkey,'-',targets{t},'-',E,'-Max_ITPCbp_POWbp_of ',num2str(tar(t).nSites),' sites ', withunits]);
 %         export_fig(h,[results_file,'.pdf']);
 %     end
 %     close all,
@@ -854,7 +857,7 @@ clc
 % 
 % %%
 % % ploting the avgogram of the timing of the Max ITPC/POW:
-% bins=cfg.analyse_states{1,4}:cfg.mua.timestep*10:cfg.analyse_states{1,5};
+% bins=cfg.analyse_states{1,4}:cfg.evoked.timestep*10:cfg.analyse_states{1,5};
 % for t = 1: length(targets)
 %     if tar(t).nSites == 0
 %         continue;
@@ -890,7 +893,7 @@ clc
 %         plot(sp2,[0,0],get(sp2,'ylim'),'k--')
 %     end
 %     mtit(['Target=',strrep(tar(t).target,'_','-')],'xoff', 0, 'yoff', 0.05, 'Color','red', 'fontsize', 12);
-%     results_file = fullfile(cfg.analyse_mua_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp_for ',num2str(tar(t).nSites),' sites ', withunits]);
+%     results_file = fullfile(cfg.analyse_evoked_folder, [cfg.monkey,'-',targets{t},'-','Time_of_Max_ITPCbp_POWbp_for ',num2str(tar(t).nSites),' sites ', withunits]);
 %     export_fig(h,[results_file,'.pdf']);
 % %     saveas(h,[results_file]);
 % end

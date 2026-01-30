@@ -197,8 +197,8 @@ for v = 1:length(versions)
         monkeys = unique({cfg.session_info.Monkey});
         cfg.monkey = [monkeys{:}];
         
-        keys=ecg_bna_get_unit_list(cfg,0);
-        cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
+%        keys=ecg_bna_get_unit_list(cfg,0);
+ %       cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
         
         if cfg.process_MUA
             ecg_bna_compute_grand_avg_mua(cfg,'all');

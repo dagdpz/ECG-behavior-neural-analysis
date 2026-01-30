@@ -1,0 +1,10 @@
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Bacchus_unfiltered'});
+disp('ECG_Bacchus_unfiltered done');
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Magnus_unfiltered'});
+disp('ECG_Magnus_unfiltered done');
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Bacchus_filtered'});
+disp('ECG_Bacchus_filtered done');
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Magnus_filtered'});
+disp('ECG_Magnus_filtered done');
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Magnus_TaskRest_generalTrig_MUA'});
+ecg_bna_analysis_main('Pulv_bodysignal',{'ECG_Bacchus_TaskRest_generalTrig_MUA'});
