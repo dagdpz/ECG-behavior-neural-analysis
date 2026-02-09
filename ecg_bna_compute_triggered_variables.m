@@ -145,62 +145,33 @@ for e = 1:size(cfg.analyse_states, 1)
     end
 end
 
-if ~isempty(cfg.lfp.compare_conditions) %% && both conditions exist...
-    for ncomp=1:numel(cfg.lfp.compare_conditions)
-        c1=cfg.lfp.compare_conditions{ncomp}(1);
-        c2=cfg.lfp.compare_conditions{ncomp}(2);
-        if all (conditions_valid([c1,c2]))
-            switch cfg.to_trigger
-                case 'LFP';
-                    ecg_bna_plots_per_site( trig, cond, cfg, 'normalized') % per site!
-                case 'MUA';
-                    ecg_bna_plots_per_mua_site( trig, cond, cfg, 'normalized') % per site!
+% plots - if we don't shuffle, there will be no surrogate!
+if cfg.plot_per_site
+    if ~isempty(cfg.lfp.compare_conditions) %% && both conditions exist...
+        for ncomp=1:numel(cfg.lfp.compare_conditions)
+            c1=cfg.lfp.compare_conditions{ncomp}(1);
+            c2=cfg.lfp.compare_conditions{ncomp}(2);
+            if all (conditions_valid([c1,c2]))
+                switch cfg.to_trigger
+                    case 'LFP';
+                        ecg_bna_plots_per_site( trig, cond, cfg, 'normalized') % per site!
+                    case 'MUA';
+                        ecg_bna_plots_per_mua_site( trig, cond, cfg, 'normalized') % per site!
+                end
             end
         end
     end
-end
-
-
-
-% if ~isempty(cfg.lfp.compare_conditions) %% && both conditions exist...
-%     ncomp=1;
-%     tic
-%     out_comp = ecg_bna_compare_per_site( trig, FN,cfg,ncomp);
-%     toc
-%     c1=cfg.lfp.compare_conditions{ncomp}(1);
-%     c2=cfg.lfp.compare_conditions{ncomp}(2);
-%     cond = [trig.condition(c1).label,'_',trig.condition(c2).label];
-%     trig.(cond)=out_comp;
-%     trig.(cond).label=cond;
-%     %     for e=1:numel(trig.condition(c1).event)
-%     %
-%     %         trig.(cond).event(e).time=trig.condition(c1).event(e).time;
-%     %         trig.(cond).event(e).event_name=trig.condition(c1).event(e).event_name;
-%     %         trig.(cond).event(e).observed.ntriggers=trig.condition(c1).event(e).observed.ntriggers;
-%     %         trig.(cond).event(e).surrogate.ntriggers=trig.condition(c2).event(e).observed.ntriggers;
-%     %     end
-%     
-%     
-%     switch cfg.to_trigger
-%         case 'LFP';
-%             ecg_bna_plots_per_site( trig, cond, cfg, 'observed') % per site!
-%         case 'MUA';
-%             ecg_bna_plots_per_mua_site( trig, cond, cfg, 'observed') % per site!
-%     end
-% end
-% plots - if we don't shuffle, there will be no surrogate!
-methods= {'observed','surrogate','normalized'};
-for mt = 1: numel(methods)
-    switch cfg.to_trigger
-        case 'LFP';
-            ecg_bna_plots_per_site( trig, 'condition',cfg, methods{mt}) % per site!
-        case 'MUA';
-            ecg_bna_plots_per_mua_site( trig,'condition', cfg, methods{mt}) % per site!
+    methods= {'observed','surrogate','normalized'};
+    for mt = 1: numel(methods)
+        switch cfg.to_trigger
+            case 'LFP';
+                ecg_bna_plots_per_site( trig, 'condition',cfg, methods{mt}) % per site!
+            case 'MUA';
+                ecg_bna_plots_per_mua_site( trig,'condition', cfg, methods{mt}) % per site!
+        end
+        % Note: ===> last input could be 'observed', 'surrogate', or 'normalized'
     end
-    
-    % Note: ===> last input could be 'observed', 'surrogate', or 'normalized'
 end
-
 if isfield(cfg.lfp, 'removeComplete') &&cfg.lfp.removeComplete==1
     for cn = 1:length(cfg.condition)
         for e = 1:size(cfg.analyse_states, 1)
