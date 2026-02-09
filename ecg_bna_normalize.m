@@ -32,6 +32,7 @@ for p=1:numel(parameters)
     if ismember(parameter,{'evoked'})
         realmean = observed.(parameter).mean;
         realstd = observed.(parameter).std;
+        realsterr = observed.(parameter).sterr;
         shuffledmean=repmat(surrogate.(parameter).mean,size(realmean,1),1,1);
         shuffledstd=surrogate.(parameter).std;
         if strcmp(method , 'subtraction')
@@ -46,10 +47,9 @@ for p=1:numel(parameters)
 %             normalized.(parameter).mean    = mean(((realmean-shuffledmean)./shuffledstd),1);
 %             normalized.(parameter).std     = std(((realmean-shuffledmean)./shuffledstd),0,1);% realstd;%./shuffledstd; %% ??
 %             normalized.(parameter).sterr   = sterr(((realmean-shuffledmean)./shuffledstd),1);
-            normalized.(parameter).mean    = mean((realmean-shuffledmean),1)./shuffledstd;
-            normalized.(parameter).std     = std((realmean-shuffledmean),0,1)./shuffledstd;% realstd;%./shuffledstd; %% ??
-            
-            normalized.(parameter).sterr   = sterr((realmean-shuffledmean),1)./shuffledstd; %% this one aint working??
+            normalized.(parameter).mean    = (realmean-shuffledmean)./shuffledstd;
+            normalized.(parameter).std     = realstd./shuffledstd;% 
+            normalized.(parameter).sterr   = realsterr./shuffledstd; 
         elseif strcmp(method , 'not normalized')
             normalized.(parameter).mean    = mean(realmean,1);
             normalized.(parameter).std    = realstd;
