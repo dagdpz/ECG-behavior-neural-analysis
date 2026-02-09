@@ -203,7 +203,7 @@ if reprocess2
                             
                     end
                     CAT=cat(3,events(:,e).(CN));
-                    CATsig=cat(3,events(:,e).([CN '_sig']));
+                    CATsig=abs(cat(3,events(:,e).([CN '_sig'])));
                     CATsigsigned=cat(3,events(:,e).([CN '_sig'])).*sign(CAT);
                     CAT_R=cat(3,events(:,e).([CN '_R']));
                     CAT_S=cat(3,events(:,e).([CN '_S']));

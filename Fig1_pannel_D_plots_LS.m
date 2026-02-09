@@ -16,6 +16,7 @@ for ses = 1:length(sessions)
     Site_ID = ['Bac_',session,'_Site_01'];
     %%
     load([folder_load_ECG,Site_ID,'.mat'])
+    
     ecg_task = triggered_site_data.condition(2).event(1).real.ecg  ;
     ecg_rest = triggered_site_data.condition(1).event(1).real.ecg  ;
     ecgtime = triggered_site_data.condition(1).event(1).time  ;
@@ -28,6 +29,8 @@ for ses = 1:length(sessions)
         s=    sites_per_session{ses};
             
         load(allSesData_mua(s).name)
+        
+        triggered_site_data=ecg_bna_add_sterr_posthoc(triggered_site_data);
         if isempty(triggered_site_data.condition(1).event) || isempty(triggered_site_data.condition(2).event)
             disp([sessions{ses} 'site' num2str(s)])
         end
@@ -40,6 +43,8 @@ for ses = 1:length(sessions)
         cd(folder_load_LFP)
         
         load(allSesData_lfp(s).name)
+        
+        triggered_site_data=ecg_bna_add_sterr_posthoc(triggered_site_data);
         lfp_rest = triggered_site_data.condition(1).event(1).(PlotMode{Pm}).evoked;
         lfp_task = triggered_site_data.condition(2).event(1).(PlotMode{Pm}).evoked;
         time = triggered_site_data.condition(1).event(1).time  ;

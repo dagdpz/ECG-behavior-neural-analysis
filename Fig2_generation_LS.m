@@ -33,19 +33,26 @@ cfg = ecg_bna_define_folders(cfg);
 %     LFPEV=triggered_site_data;
 base_path=['Y:\Projects\Pulv_bodysignal\LFP\' version];
 load([base_path '\Per_Site\' Site_ID '.mat'])
-LFP=triggered_site_data;
+LFP=ecg_bna_add_sterr_posthoc(triggered_site_data);
+
 %% 'MUA'
 base_path=['Y:\Projects\Pulv_bodysignal\MUA\' version] ;
 load([base_path '\Per_Site\' Site_ID '.mat'])
-MUA=triggered_site_data;
+MUA=ecg_bna_add_sterr_posthoc(triggered_site_data);
 
 c=2; %task?
 e=1;
 
 %% time
-sr=1017; %hz
+sr=1017.2526041; %hz
 sl=1/sr*10;
 time=[-sl*26:sl:sl*26];
+ticklabelsx=[-0.2,0,0.2];
+for tl=1:numel(ticklabelsx)
+    tt=ticklabelsx(tl);
+    tlstepsize=numel(time)/(time(end)-time(1));
+    ticksx(tl)=tt*tlstepsize-time(1)*tlstepsize;
+end
 
 %% frequencies !
 % % potential cutoff -> probably startfreq should go into settings at somepoint
@@ -90,7 +97,8 @@ for mt = 1: numel(methods)
             %conf=[TPG.evoked.mean-TPG.evoked.conf95(1,:,:);-1*(TPG.evoked.mean-TPG.evoked.conf95(2,:,:))];
             conf=squeeze(TPG.evoked.sterr)';
         case 'normalized'
-            conf=squeeze(LFP.condition(c).event(e).surrogate.evoked.sterr)'./LFP.condition(c).event(e).surrogate.evoked.std;
+            conf=squeeze(TPG.evoked.sterr)';
+            %conf=squeeze(LFP.condition(c).event(e).surrogate.evoked.sterr)'./LFP.condition(c).event(e).surrogate.evoked.std;
     end
     meantp=squeeze(TPG.evoked.mean)';
     shadedErrorBar(time,meantp,conf,lineprops,1);
@@ -119,10 +127,15 @@ for mt = 1: numel(methods)
     end
     line([0 0], ylm, 'color', 'k');
     if strcmp(M,'normalized')
-        significance = double(squeeze(TPS.evoked));
-        significance(significance==0)=NaN;
-        significance=significance.*ylm(1);
-        plot(time,significance','linewidth',3);
+        significance = double(squeeze(TPS.evoked));        
+        significance(significance==0)=NaN;        
+        sigpos=significance;sigpos(sigpos==-1)=NaN;sigpos=sigpos.*diff(ylm)/40*c+ylm(1);
+        signeg=significance;signeg(signeg==1)=NaN;signeg=abs(signeg).*diff(ylm)/40*c+ylm(1);
+        plot(gca,time,sigpos','linewidth',2,'color',[1 0 0]);
+        plot(gca,time,signeg','linewidth',2,'color',[1 0 0]/2);
+        
+%         significance=significance.*ylm(1);
+%         plot(time,significance','linewidth',3);
     end
     set(gca, 'xlim', [time(1) time(end)]);
     axis square
@@ -136,9 +149,12 @@ for mt = 1: numel(methods)
     %toplot=squeeze(TPG.pow.mean(:,fx:end,:));
     toplot=squeeze(TPG.pow.mean);
     
-    image(time, 1:numel(freq), toplot,'CDataMapping','scaled');
+    %image(time, 1:numel(freq), toplot,'CDataMapping','scaled');
+    image(toplot,'CDataMapping','scaled');
     set(gca,'YDir','normal');
-    line([0 0], ylim, 'color', 'k');
+    xlim([0 size(toplot,2)]);
+    %line([0 0], ylim, 'color', 'k');
+    line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');    
     
     if strcmp(M,'normalized')
         %significance = double(squeeze(TPS.pow(:,fx:end,:)));
@@ -157,7 +173,7 @@ for mt = 1: numel(methods)
     fbandstart_idx = zeros(size(fbandstart));
     for f = fbandstart
         f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
-        line([time(1) time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+        line([xlim], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
         fbandstart_idx(fbandstart == f) = f_idx;
     end
     
@@ -165,7 +181,9 @@ for mt = 1: numel(methods)
     set(gca, 'ytick', fbandstart_idx);
     set(gca, 'yticklabel', fbandstart);
     set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
-    set(gca, 'xlim', [time(1) time(end)]);
+    %set(gca, 'xlim', [time(1) time(end)]);
+                set(gca, 'xtick', ticksx);
+                set(gca, 'xticklabel', ticklabelsx);
     ylabel('Frequency (Hz)');
     axis square
     
@@ -178,14 +196,19 @@ for mt = 1: numel(methods)
     %toplot=squeeze(TPG.itpc.mean(:,fx:end,:));
     toplot=squeeze(TPG.itpc.mean);
     
-    image(time, 1:numel(freq), toplot,'CDataMapping','scaled');
+    %image(time, 1:numel(freq), toplot,'CDataMapping','scaled');
+    image(toplot,'CDataMapping','scaled');
     set(gca,'YDir','normal');
-    line([0 0], ylim, 'color', 'k');
+    xlim([0 size(toplot,2)]);
+    %line([0 0], ylim, 'color', 'k');
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');    
     
     if strcmp(M,'normalized')
         %significance = double(squeeze(TPS.itpc(:,fx:end,:)));
         significance = double(squeeze(TPS.itpc));
-        contour(time,1:numel(freq),significance,1,'linecolor','k')
+        ecg_bna_draw_outlines(significance==1,'r')
+        ecg_bna_draw_outlines(significance==-1,'b')
+        %contour(time,1:numel(freq),significance,1,'linecolor','k')
     end
     nonnan=toplot;nonnan(isnan(nonnan))=[];
     collimI{mt}=[min(nonnan(:)) max(nonnan(:))];
@@ -195,7 +218,7 @@ for mt = 1: numel(methods)
     fbandstart_idx = zeros(size(fbandstart));
     for f = fbandstart
         f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
-        line([time(1) time(end)], [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+        line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
         fbandstart_idx(fbandstart == f) = f_idx;
     end
     
@@ -203,7 +226,9 @@ for mt = 1: numel(methods)
     set(gca, 'ytick', fbandstart_idx);
     set(gca, 'yticklabel', fbandstart);
     set(gca, 'ylim', [0.5,numel(freq) + 0.5]);
-    set(gca, 'xlim', [time(1) time(end)]);
+                set(gca, 'xtick', ticksx);
+                set(gca, 'xticklabel', ticklabelsx);
+    
     ylabel('Frequency (Hz)');
     axis square
     
@@ -225,8 +250,8 @@ for mt = 1: numel(methods)
             conf=squeeze(TPG.evoked.sterr)';
         case 'normalized'
             
-            conf=squeeze(MUA.condition(c).event(e).surrogate.evoked.sterr)'./MUA.condition(c).event(e).surrogate.evoked.std;
-            %conf=squeeze(TPG.evoked.sterr)';
+            %conf=squeeze(MUA.condition(c).event(e).surrogate.evoked.sterr)'./MUA.condition(c).event(e).surrogate.evoked.std;
+            conf=squeeze(TPG.evoked.sterr)';
     end
     meantp=squeeze(TPGM)';
     shadedErrorBar(time,meantp,conf,lineprops,1);
@@ -251,10 +276,17 @@ for mt = 1: numel(methods)
     end
     line([0 0], ylm, 'color', 'k');
     if strcmp(M,'normalized')
-        significance = double(squeeze(TPS.mua));
+        significance = double(squeeze(TPS.evoked));
         significance(significance==0)=NaN;
-        significance=significance.*ylm(1);
-        plot(time,significance','linewidth',3);
+        
+        
+        sigpos=significance;sigpos(sigpos==-1)=NaN;sigpos=sigpos.*diff(ylm)/40*c+ylm(1);
+        signeg=significance;signeg(signeg==1)=NaN;signeg=abs(signeg).*diff(ylm)/40*c+ylm(1);
+        plot(gca,time,sigpos','linewidth',2,'color',[1 0 0]);
+        plot(gca,time,signeg','linewidth',2,'color',[1 0 0]/2);
+%         
+%         significance=significance.*ylm(1);
+%         plot(time,significance','linewidth',3);
     end
     set(gca, 'xlim', [time(1) time(end)]);
     axis square
@@ -299,7 +331,7 @@ set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
 M=max(abs([min([collimP{3}]),max([collimP{3}])]));
 set(spP(3),'CLim',[-M M]);
 %results_file=['Y:\Projects\Pulv_bodysignal\Figures\' Site_ID '_' showfiltered];
-results_file=['Y:\Projects\Pulv_bodysignal\Figures\' Site_ID];
+results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig2-' Site_ID];
 wanted_size=[50 30];
 set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
 export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??

@@ -5,7 +5,7 @@ project = 'Pulv_bodysignal';
 version = 'ECG_Bacchus_complete';
 driver_path = 'Y:';%'/home/shamim/fileserver';
 withunits = 'all'; %'w_units'; % 'all'; %
-figstoplot = [7];  %[4,5,6,7];
+figstoplot = 5;%[4,5,6,7];  %[4,5,6,7];
 
 
 cfg.ecg.timestep = 1; %??
@@ -39,12 +39,20 @@ D.MUA.M=load(file,'tar');
 sr=1017.2526041; %hz
 sl=1/sr*10;
 lfp_time=[-sl*26:sl:sl*26];
+ticklabelsx=[-0.2,0,0.2];
+for tl=1:numel(ticklabelsx)
+    tt=ticklabelsx(tl);
+    tlstepsize=numel(lfp_time)/(lfp_time(end)-lfp_time(1));
+    ticksx(tl)=tt*tlstepsize-lfp_time(1)*tlstepsize;
+end
+
+
 
 E='R';
 monkeys={'B','M'};
 targets={'VPL','dPul','MD'};
 datatype={'LFP','MUA'};
-datafield={'lfp','mua'};
+datafield={'evoked','evoked'};
 
 %% colormaps
 
@@ -93,7 +101,7 @@ if ismember(4,figstoplot)
             end
         end
     end
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig4-mualfp_grandaverage' '_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig4-mualfp_grandaverage' '_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
@@ -102,16 +110,21 @@ end
 %% FIG5
 if ismember(5,figstoplot)
     h = figure('units','normalized','position',[0 0 1 1]);
-    y_lim={[0 100] [0 100] [0 100] [0 50]};
+    y_lim={[0 100] [0 100] [0 50] [0 5]};
     ylabels={'sig. LFP (% of sites)','sig. MUA (% of sites)'};
     for m=1:numel(monkeys)
         M=monkeys{m};
         for y=1:numel(datatype)
             Y=datatype{y};
             tartmp=D.(Y).(M).tar;
-            curr_ylim=y_lim{(m-1)*2+y};
             
             for t=1:numel(targets)
+                if y==2 && m==2 && t==1
+                    curr_ylim=[0 50];
+                else                    
+                    curr_ylim=y_lim{(m-1)*2+y};
+                end
+                
                 T=targets{t};
                 [~,Ti]=ismember({tartmp.target},T);
                 subplot(2,6,(m-1)*6+(y-1)*3+t)
@@ -147,7 +160,7 @@ if ismember(5,figstoplot)
             end
         end
     end
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig5-%significant' '_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig5-%significant' '_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf');
@@ -207,16 +220,21 @@ if ismember(6,figstoplot)
                 toplot=con.pow;
                 sigplot=con.pow_popsig;
                 
-                xlim([min(lfp_time) max(lfp_time)]);
+                %xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
                 axis square
                 hold on
                 
-                image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
                 
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+        
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -225,11 +243,15 @@ if ismember(6,figstoplot)
                     line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
                     fbandstart_idx(fbandstart == f) = f_idx;
                 end
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');                
                 
-                line([0 0], ylim, 'color', 'k');
                 set(ax,'TickDir','out')
                 set(ax, 'ytick', fbandstart_idx);
                 set(ax, 'yticklabel', fbandstart);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
+                
+                
                 set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
                 box on
                 
@@ -244,7 +266,8 @@ if ismember(6,figstoplot)
                 if m==numel(monkeys) && t==numel(targets)
                     xlabel('Time relative to R peak (s)');
                 end
-                toplot=con.powbp_sig;
+                toplot=abs(con.powbp_sig);
+                toplot=smoothit(toplot);
                 ylabel('Proportion of sites (%)');
                 
                 y_lim=[0 ceil(max(toplot(:))/10)*10];
@@ -277,8 +300,7 @@ if ismember(6,figstoplot)
                 xlim([min(lfp_time) max(lfp_time)]);
                 axis square
                 set(ax,'ColorOrder',colsbp);
-                smoothed=smoothit(toplot);
-                plot(lfp_time,smoothed')
+                plot(lfp_time,toplot')
                 if m==1 && t==1 && c==1
                     legend(freqb,'fontsize',3);
                 end
@@ -312,7 +334,7 @@ if ismember(6,figstoplot)
         end
     end
     
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig6-POWER_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig6-POWER_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
@@ -353,16 +375,21 @@ if ismember(6,figstoplot)
                 sigplot=con.pow_popsig;
                 
                 ax=sph(t,m,c,1);
-                xlim([min(lfp_time) max(lfp_time)]);
+                %xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
                 axis square
                 hold on
                 
-                image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-                
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+%                 
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+        
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -376,6 +403,8 @@ if ismember(6,figstoplot)
                 set(ax,'TickDir','out')
                 set(ax, 'ytick', fbandstart_idx);
                 set(ax, 'yticklabel', fbandstart);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
                 set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
                 box on
                 
@@ -388,7 +417,7 @@ if ismember(6,figstoplot)
                 if m==numel(monkeys) && t==numel(targets)
                     xlabel('Time relative to R peak (s)');
                 end
-                toplot=con.powbp_sig;
+                toplot=abs(con.powbp_sig);
                 
                 ax=sph(t,m,c,2);
                 xlim([min(lfp_time) max(lfp_time)]);
@@ -429,7 +458,7 @@ if ismember(6,figstoplot)
         end
     end
     
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig6-pvals_POWER_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig6-pvals_POWER_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
@@ -476,15 +505,22 @@ if ismember(7,figstoplot)
                 
                 sigplot=con.itpc_popsig;
                 
-                xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
+                
+                %xlim([min(lfp_time) max(lfp_time)]);
                 axis square
                 hold on
                 
-                image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                
+                
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
                 
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
@@ -495,11 +531,13 @@ if ismember(7,figstoplot)
                     fbandstart_idx(fbandstart == f) = f_idx;
                 end
                 set(sph(t,m,1,1),'clim',[min(toplot(:)), max(toplot(:))]);
-                line([0 0], ylim, 'color', 'k');
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');   
                 set(ax,'TickDir','out')
                 set(ax, 'ytick', fbandstart_idx);
                 set(ax, 'yticklabel', fbandstart);
                 set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
                 box on
                 
                 %% ITPC sig
@@ -514,7 +552,8 @@ if ismember(7,figstoplot)
                     xlabel('Time relative to R peak (s)');
                 end
                 ylabel('Proportion of sites (%)');
-                toplot=con.itpcbp_sig;
+                toplot=abs(con.itpcbp_sig);
+                toplot=smoothit(toplot);
                 y_lim=[0 ceil(max(toplot(:))/10)*10];
                 set(ax,'ylim',y_lim);
                 for bpf=1:size(toplot,1)
@@ -535,8 +574,7 @@ if ismember(7,figstoplot)
                 xlim([min(lfp_time) max(lfp_time)]);
                 axis square
                 set(ax,'ColorOrder',colsbp);
-                smoothed=smoothit(toplot);
-                plot(lfp_time,smoothed')
+                plot(lfp_time,toplot')
                 if m==1 && t==1 && c==1
                     legend(freqb,'fontsize',3);
                 end
@@ -588,7 +626,7 @@ if ismember(7,figstoplot)
         end
     end
     
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig7-ITPC_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig7-ITPC_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
@@ -629,16 +667,21 @@ if ismember(7,figstoplot)
                 sigplot=con.itpc_popsig;
                 
                 ax=sph(t,m,c,1);
-                xlim([min(lfp_time) max(lfp_time)]);
+                %xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
                 axis square
                 hold on
                 
-                image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
-                contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
                 
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+%                 
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -653,6 +696,8 @@ if ismember(7,figstoplot)
                 set(ax, 'ytick', fbandstart_idx);
                 set(ax, 'yticklabel', fbandstart);
                 set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
                 box on
                 
                 %% ITPC sig
@@ -664,7 +709,7 @@ if ismember(7,figstoplot)
                 if m==numel(monkeys) && t==numel(targets)
                     xlabel('Time (s)');
                 end
-                toplot=con.itpcbp_sig;
+                toplot=abs(con.itpcbp_sig);
                 
                 ax=sph(t,m,c,2);
                 xlim([min(lfp_time) max(lfp_time)]);
@@ -706,7 +751,7 @@ if ismember(7,figstoplot)
         end
     end
     
-    results_file=['Y:\Projects\Pulv_bodysignal\LFP\Fig7-pvals_ITPC_' withunits];
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig7-pvals_ITPC_' withunits];
     wanted_size=[50 30];
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??

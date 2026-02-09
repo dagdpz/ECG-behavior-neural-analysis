@@ -34,7 +34,7 @@ for s=s_ix
     
     
     T_pos{s} = sort(sumTpos,'descend');
-    T_neg{s} = sort(sumTneg,'descend');
+    T_neg{s} = sort(sumTneg,'ascend');
 end
 
 

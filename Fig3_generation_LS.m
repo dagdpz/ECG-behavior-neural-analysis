@@ -31,7 +31,10 @@ version = 'ECG_Bacchus_complete';
 % Site_ID = 'Bac_20220315_Site_15';%'Bac_20211007_Site_01';%'Bac_20210730_Site_03';
 % filteredornot={'unfiltered','filtered'};
 %for flt=1:numel(filteredornot)
-showfiltered='filtered';
+%showfiltered='filtered';
+
+
+
 
 sit=0;
 for s=1:numel(sessions)
@@ -154,11 +157,17 @@ for ss=1:numel(sessions)
             col=cols{c};
             TP=LFP(s).condition(c).event(e);
             TPS=TP.significance;
-            significance = double(abs(squeeze(TPS.evoked)));
+            significance = double(squeeze(TPS.evoked));
             significance(significance==0)=NaN;
-            significance=significance.*diff(ylm)/40*c+ylm(1);
             if any(~isnan(significance))
-            plot(ax,time,significance','linewidth',2,'color',col);
+                sigpos=significance;sigpos(sigpos==-1)=NaN;sigpos=sigpos.*diff(ylm)/40*c+ylm(1);
+                signeg=significance;signeg(signeg==1)=NaN;signeg=abs(signeg).*diff(ylm)/40*c+ylm(1);
+                
+%             significance=significance.*diff(ylm)/40*c+ylm(1);
+%             plot(ax,time,significance','linewidth',2,'color',col);
+            plot(ax,time,sigpos','linewidth',2,'color',col);
+            plot(ax,time,signeg','linewidth',2,'color',col/2);
+            
             end
         end
         
@@ -205,11 +214,16 @@ for ss=1:numel(sessions)
             col=cols{c};
             TP=MUA(s).condition(c).event(e);
             TPS=TP.significance;
-            significance = double(squeeze(abs(TPS.evoked)));
+            significance = double(squeeze(TPS.evoked));
             significance(significance==0)=NaN;
-            significance=significance.*diff(ylm)/40*c+ylm(1);
-            if any(diff(find(~isnan(significance)))==1 )
-            plot(ax,time,significance','linewidth',2,'color',col); 
+            if any(~isnan(significance))
+                sigpos=significance;sigpos(sigpos==-1)=NaN;sigpos=sigpos.*diff(ylm)/40*c+ylm(1);
+                signeg=significance;signeg(signeg==1)=NaN;signeg=abs(signeg).*diff(ylm)/40*c+ylm(1);
+                
+%             significance=significance.*diff(ylm)/40*c+ylm(1);
+%             plot(ax,time,significance','linewidth',2,'color',col);
+            plot(ax,time,sigpos','linewidth',2,'color',col);
+            plot(ax,time,signeg','linewidth',2,'color',col/2);
             end
         end
         

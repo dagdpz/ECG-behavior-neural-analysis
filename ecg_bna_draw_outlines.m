@@ -6,6 +6,8 @@ function ecg_bna_draw_outlines(matrix, color)
     hold on;
     x = [];
     y = [];
+    
+    
     for i = 1:rows
         for j = 1:cols
             if matrix(i,j) == 1

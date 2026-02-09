@@ -66,7 +66,7 @@ if reprocess
 %                 p=event.prevspost.p;
 %                 h=event.prevspost.h;
                 
-                evoked_sig     =squeeze(event.significance.evoked)'; %% weird dimension thing
+                evoked_sig     =squeeze(abs(event.significance.evoked))'; %% weird dimension thing
                                 
                 sites(s).condition(c).event(e).nTriggers = nTriggers;
                 sites(s).condition(c).event(e).evoked = evoked;               
