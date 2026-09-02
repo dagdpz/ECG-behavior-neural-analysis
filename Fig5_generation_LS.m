@@ -1,13 +1,11 @@
-function Fig5_generation_LS
-clc
+function Fig5_generation_LS(figstoplot, withunits, version, project, driver_path)
+if nargin < 1 || isempty(figstoplot), figstoplot = [8]; end
+if nargin < 2 || isempty(withunits), withunits = 'all'; end
+if nargin < 3 || isempty(version), version = 'ECG_Bacchus_complete'; end
+if nargin < 4 || isempty(project), project = 'Pulv_bodysignal'; end
+if nargin < 5 || isempty(driver_path), driver_path = 'Y:'; end
+
 %%
-project = 'Pulv_bodysignal';
-version = 'ECG_Bacchus_complete';
-driver_path = 'Y:';%'/home/shamim/fileserver';
-withunits = 'all'; %'w_units'; % 'all'; %
-figstoplot = 5;%[4,5,6,7];  %[4,5,6,7];
-
-
 cfg.ecg.timestep = 1; %??
 
 cfg.project = project;
@@ -121,7 +119,7 @@ if ismember(5,figstoplot)
             for t=1:numel(targets)
                 if y==2 && m==2 && t==1
                     curr_ylim=[0 50];
-                else                    
+                else
                     curr_ylim=y_lim{(m-1)*2+y};
                 end
                 
@@ -229,12 +227,12 @@ if ismember(6,figstoplot)
                 image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
                 
                 ecg_bna_draw_outlines(significance==1,'r')
                 ecg_bna_draw_outlines(significance==-1,'b')
-        
+                
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -243,7 +241,7 @@ if ismember(6,figstoplot)
                     line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
                     fbandstart_idx(fbandstart == f) = f_idx;
                 end
-                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');                
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
                 
                 set(ax,'TickDir','out')
                 set(ax, 'ytick', fbandstart_idx);
@@ -279,23 +277,23 @@ if ismember(6,figstoplot)
                     [pkv,pki]=max(Sig(lfp_time>=0));
                     pkt=lfp_time(pki+sum(lfp_time<0));
                     if pkv>(y_lim(end)-sepy)
-                    plot(pkt,pkv-sepy,'color',col,'Marker','^');
-                    text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                        plot(pkt,pkv-sepy,'color',col,'Marker','^');
+                        text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
                     else
-                    plot(pkt,pkv+sepy,'color',col,'Marker','v');
-                    text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                        plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                        text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
                     end
                 end
-%                 
-%                 for bpf=1:size(toplot,1)
-%                     col=colsbp(bpf,:);
-%                     Sig=toplot(bpf,:);
-%                     [pkv,pki]=max(Sig(lfp_time>=0));
-%                     pkt=lfp_time(pki+sum(lfp_time<0));
-%                     sepy=5;
-%                     plot(pkt,pkv+sepy,'color',col,'Marker','v');
-%                     text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');                    
-%                 end
+                %
+                %                 for bpf=1:size(toplot,1)
+                %                     col=colsbp(bpf,:);
+                %                     Sig=toplot(bpf,:);
+                %                     [pkv,pki]=max(Sig(lfp_time>=0));
+                %                     pkt=lfp_time(pki+sum(lfp_time<0));
+                %                     sepy=5;
+                %                     plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                %                     text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                %                 end
                 
                 xlim([min(lfp_time) max(lfp_time)]);
                 axis square
@@ -340,6 +338,314 @@ if ismember(6,figstoplot)
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
 end
 
+
+
+if ismember(6.5,figstoplot)
+    h = figure('units','normalized','position',[0 0 1 1]);
+    y_lim={[-15 15] [-3 3] [-3 5] [-4 3]};
+    for m=1:numel(monkeys)
+        M=monkeys{m};
+        tartmp=D.LFP.(M).tar;
+        %curr_ylim=y_lim{(m-1)*2+y};
+        for t=1:numel(targets)
+            T=targets{t};
+            [~,Ti]=ismember({tartmp.target},T);
+            for c=1:2
+                %% POWER
+                sph(t,m,c,1)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +1);
+                ax=sph(t,m,c,1);
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['POW-' cname])
+                end
+                if c==1
+                    ylabel({['Monkey ' M],[T, ',' num2str(tartmp(Ti==1).nSites) ' sites'],'Frequency (Hz)'});
+                else
+                    ylabel('Frequency (Hz)');
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time relative to R peak (s)');
+                end
+                con=tartmp(Ti==1).con(c).(E);
+                toplot=con.pow;
+                sigplot=con.pow_popsig;
+                
+                %xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
+                axis square
+                hold on
+                
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
+                set(gca,'YDir','normal');
+                significance = double(sigplot);
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+                
+                % horizontal lines to separate frequency bands
+                fbandstart = unique(frequency_bands(:))';
+                fbandstart_idx = zeros(size(fbandstart));
+                for f = fbandstart
+                    f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+                    line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                    fbandstart_idx(fbandstart == f) = f_idx;
+                end
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
+                
+                set(ax,'TickDir','out')
+                set(ax, 'ytick', fbandstart_idx);
+                set(ax, 'yticklabel', fbandstart);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
+                
+                
+                set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+                box on
+                
+                %% POWER sig
+                sph(t,m,c,2)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +2);
+                ax=sph(t,m,c,2);
+                hold on;
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['Sig. POW-' cname])
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time relative to R peak (s)');
+                end
+                toplot1=con.powbp_sig_pos;
+                toplot1=smoothit(toplot1);
+                toplot2=con.powbp_sig_neg;
+                toplot2=smoothit(toplot2);
+                ylabel('Proportion of sites (%)');
+                
+                y_lim=[floor(min(toplot2(:))/10)*10 ceil(max(toplot1(:))/10)*10];
+                sepy=diff(y_lim)/20;
+                set(ax,'ylim',y_lim);
+                for bpf=1:size(toplot1,1)
+                    col=colsbp(bpf,:);
+                    Sig=toplot1(bpf,:);
+                    [pkv,pki]=max(Sig(lfp_time>=0));
+                    pkt=lfp_time(pki+sum(lfp_time<0));
+                    if pkv>(y_lim(end)-sepy)
+                        plot(pkt,pkv-sepy,'color',col,'Marker','^');
+                        text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    else
+                        plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                        text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    end
+                end
+                %
+                %                 for bpf=1:size(toplot,1)
+                %                     col=colsbp(bpf,:);
+                %                     Sig=toplot(bpf,:);
+                %                     [pkv,pki]=max(Sig(lfp_time>=0));
+                %                     pkt=lfp_time(pki+sum(lfp_time<0));
+                %                     sepy=5;
+                %                     plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                %                     text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                %                 end
+                
+                xlim([min(lfp_time) max(lfp_time)]);
+                axis square
+                set(ax,'ColorOrder',colsbp);
+                plot(lfp_time,toplot1')
+                plot(lfp_time,toplot2')
+                if m==1 && t==1 && c==1
+                    legend(freqb,'fontsize',3);
+                end
+            end
+        end
+    end
+    
+    %% adjusting limits
+    for m=1:numel(monkeys)
+        for t=1:numel(targets)
+            y_lim=[min([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')]),max([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')])];
+            c_lim=max(abs([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]));
+            for c=1:2
+                % sig %
+                ax=sph(t,m,c,2);
+                set(ax,'ylim',y_lim);
+                subplot(ax);
+                line([0 0], y_lim, 'color', 'k');
+                % POW
+                ax=sph(t,m,c,1);
+                subplot(ax);
+                %cm=jet(128);
+                cm=customcolormap_preset('red-yellow-blue',256);
+                %cm=bluered_colormap;
+                colormap(ax,cm);
+                cb = colorbar;
+                set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
+                set(get(cb,'title'),'string', 'n. Pow', 'fontsize',8);
+                set(ax,'clim',[-c_lim c_lim]);
+            end
+        end
+    end
+    
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig6,5-POWER_' withunits];
+    wanted_size=[50 30];
+    set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
+    export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
+end
+
+
+
+if ismember(6.8,figstoplot)
+    h = figure('units','normalized','position',[0 0 1 1]);
+    y_lim={[-15 15] [-3 3] [-3 5] [-4 3]};
+    for m=1:numel(monkeys)
+        M=monkeys{m};
+        tartmp=D.LFP.(M).tar;
+        %curr_ylim=y_lim{(m-1)*2+y};
+        for t=1:numel(targets)
+            T=targets{t};
+            [~,Ti]=ismember({tartmp.target},T);
+            for c=1:2
+                %% POWER
+                sph(t,m,c,1)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +1);
+                ax=sph(t,m,c,1);
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['POW-' cname])
+                end
+                if c==1
+                    ylabel({['Monkey ' M],[T, ',' num2str(tartmp(Ti==1).nSites) ' sites'],'Frequency (Hz)'});
+                else
+                    ylabel('Frequency (Hz)');
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time relative to R peak (s)');
+                end
+                con=tartmp(Ti==1).con(c).(E);
+                toplot=con.pow;
+                sigplot=con.pow_popsig;
+                
+                %xlim([min(lfp_time) max(lfp_time)]);
+                xlim([0 size(toplot,2)]);
+                axis square
+                hold on
+                
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
+                set(gca,'YDir','normal');
+                significance = double(sigplot);
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+                
+                % horizontal lines to separate frequency bands
+                fbandstart = unique(frequency_bands(:))';
+                fbandstart_idx = zeros(size(fbandstart));
+                for f = fbandstart
+                    f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+                    line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                    fbandstart_idx(fbandstart == f) = f_idx;
+                end
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
+                
+                set(ax,'TickDir','out')
+                set(ax, 'ytick', fbandstart_idx);
+                set(ax, 'yticklabel', fbandstart);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
+                
+                
+                set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+                box on
+                
+                %% POWER sig
+                sph(t,m,c,2)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +2);
+                ax=sph(t,m,c,2);
+                hold on;
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['bandpassed POW-' cname])
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time relative to R peak (s)');
+                end
+                toplot1=con.powbp;
+                toplot1=smoothit(toplot1);
+                ylabel('Average normalized power (%)');
+                
+                y_lim=[floor(min(toplot1(:))) ceil(max(toplot1(:)))];
+                sepy=diff(y_lim)/20;
+                set(ax,'ylim',y_lim);
+                for bpf=1:size(toplot1,1)
+                    col=colsbp(bpf,:);
+                    Sig=toplot1(bpf,:);
+                    [pkv,pki]=max(Sig(lfp_time>=0));
+                    pkt=lfp_time(pki+sum(lfp_time<0));
+                    if pkv>(y_lim(end)-sepy)
+                        plot(pkt,pkv-sepy,'color',col,'Marker','^');
+                        text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    else
+                        plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                        text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    end
+                end
+                %
+                %                 for bpf=1:size(toplot,1)
+                %                     col=colsbp(bpf,:);
+                %                     Sig=toplot(bpf,:);
+                %                     [pkv,pki]=max(Sig(lfp_time>=0));
+                %                     pkt=lfp_time(pki+sum(lfp_time<0));
+                %                     sepy=5;
+                %                     plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                %                     text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                %                 end
+                
+                xlim([min(lfp_time) max(lfp_time)]);
+                axis square
+                set(ax,'ColorOrder',colsbp);
+                plot(lfp_time,toplot1')
+                if m==1 && t==1 && c==1
+                    legend(freqb,'fontsize',3);
+                end
+            end
+        end
+    end
+    
+    %% adjusting limits
+    for m=1:numel(monkeys)
+        for t=1:numel(targets)
+            y_lim=[min([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')]),max([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')])];
+            c_lim=max(abs([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]));
+            for c=1:2
+                % sig %
+                ax=sph(t,m,c,2);
+                set(ax,'ylim',y_lim);
+                subplot(ax);
+                line([0 0], y_lim, 'color', 'k');
+                % POW
+                ax=sph(t,m,c,1);
+                subplot(ax);
+                %cm=jet(128);
+                cm=customcolormap_preset('red-yellow-blue',256);
+                %cm=bluered_colormap;
+                colormap(ax,cm);
+                cb = colorbar;
+                set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
+                set(get(cb,'title'),'string', 'n. Pow', 'fontsize',8);
+                set(ax,'clim',[-c_lim c_lim]);
+            end
+        end
+    end
+    
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig6,8-POWER_' withunits];
+    wanted_size=[50 30];
+    set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
+    export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
+end
+
+
 if ismember(6,figstoplot)
     h = figure('units','normalized','position',[0 0 1 1]);
     y_lim={[-15 15] [-3 3] [-3 5] [-4 3]};
@@ -368,9 +674,9 @@ if ismember(6,figstoplot)
                 con=tartmp(Ti==1).con(c).(E);
                 toplot=con.pow_poppval';
                 
-%                toplot=abs(toplot);
-%                 toplot(toplot>0.1)=0.1;
-%                 toplot=1-toplot;
+                %                toplot=abs(toplot);
+                %                 toplot(toplot>0.1)=0.1;
+                %                 toplot=1-toplot;
                 
                 sigplot=con.pow_popsig;
                 
@@ -384,12 +690,12 @@ if ismember(6,figstoplot)
                 image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-%                 
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %
                 ecg_bna_draw_outlines(significance==1,'r')
                 ecg_bna_draw_outlines(significance==-1,'b')
-        
+                
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -452,8 +758,8 @@ if ismember(6,figstoplot)
                 colormap(ax,cm);
                 cb = colorbar;
                 set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
-%                 set(get(cb,'title'),'string', '1-p', 'fontsize',8);
-%                 set(ax,'clim',[0.9 1]);
+                %                 set(get(cb,'title'),'string', '1-p', 'fontsize',8);
+                %                 set(ax,'clim',[0.9 1]);
             end
         end
     end
@@ -491,16 +797,8 @@ if ismember(7,figstoplot)
                 if m==numel(monkeys) && t==numel(targets)
                     xlabel('Time (s)');
                 end
-                con=tartmp(Ti==1).con(c).(E);                
-                toplot=con.itpc;  
-                postoplot=toplot>1;
-                negtoplot=toplot<-1;
-
-%                 toplot(postoplot)=(log(toplot(postoplot))+1);
-%                 toplot(negtoplot)=-1*(log(abs(toplot(negtoplot)))+1);
-                
-                toplot(postoplot)=(log2(toplot(postoplot))+1);
-                toplot(negtoplot)=-1*(log2(abs(toplot(negtoplot)))+1);
+                con=tartmp(Ti==1).con(c).(E);
+                toplot=fig5_log_plot_scale(con.itpc);
                 
                 
                 sigplot=con.itpc_popsig;
@@ -515,8 +813,8 @@ if ismember(7,figstoplot)
                 image(toplot,'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 significance = double(sigplot);
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
                 
                 
                 ecg_bna_draw_outlines(significance==1,'r')
@@ -531,7 +829,7 @@ if ismember(7,figstoplot)
                     fbandstart_idx(fbandstart == f) = f_idx;
                 end
                 set(sph(t,m,1,1),'clim',[min(toplot(:)), max(toplot(:))]);
-                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');   
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
                 set(ax,'TickDir','out')
                 set(ax, 'ytick', fbandstart_idx);
                 set(ax, 'yticklabel', fbandstart);
@@ -563,11 +861,11 @@ if ismember(7,figstoplot)
                     pkt=lfp_time(pki+sum(lfp_time<0));
                     sepy=diff(y_lim)/20;
                     if pkv>(y_lim(end)-sepy)
-                    plot(pkt,pkv-sepy,'color',col,'Marker','^');
-                    text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                        plot(pkt,pkv-sepy,'color',col,'Marker','^');
+                        text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
                     else
-                    plot(pkt,pkv+sepy,'color',col,'Marker','v');
-                    text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                        plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                        text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
                     end
                 end
                 
@@ -586,7 +884,6 @@ if ismember(7,figstoplot)
     for m=1:numel(monkeys)
         for t=1:numel(targets)
             y_lim=[0,max([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')])];
-            %c_lim=max(abs([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]));
             c_lim=max([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]);
             for c=1:2
                 % sig %
@@ -598,30 +895,7 @@ if ismember(7,figstoplot)
                 ax=sph(t,m,c,1);
                 subplot(ax);
                 
-                % calculate where to start
-                offset=round(128/c_lim*(1));
-                    %cm=jet(255);
-                cm=customcolormap_preset('red-yellow-blue',256);
-                    cm=cm((128-offset):end,:);
-                colormap(ax,cm);
-                cb = colorbar;
-%                 ticksend=floor(exp(cb.Limits(2)-1)/exp(1));
-%                 tickstoadd=[-log(2) 0 log(2) log(exp(1:ticksend)+1) ];
-%                 ticklabels={'-1','0','1','e','e^2','e^3','e^4','e^5'};
-
-
-                ticksend=floor(cb.Limits(2));
-%                 tickstoadd=[-1 0 1 (log(exp(1:ticksend))+1) ];
-%                 ticklabels={'-1','0','1','e','e^2','e^3','e^4','e^5'};
-                
-                tickstoadd=[-1 0 1 (1:ticksend)+1];
-                ticklabels={'-1','0','1','2','4','8','16','32','64'};
-
-                cb.Ticks=tickstoadd;
-                cb.TickLabels=ticklabels(1:numel(tickstoadd));
-                set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
-                set(get(cb,'title'),'string', 'n. ITPC', 'fontsize',8);
-                set(ax,'clim',[-1, c_lim]);
+                apply_fig5_itpc_colorbar(ax, c_lim, 'n. ITPC');
             end
         end
     end
@@ -631,6 +905,154 @@ if ismember(7,figstoplot)
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
 end
+
+
+if ismember(7.5,figstoplot)
+    h = figure('units','normalized','position',[0 0 1 1]);
+    y_lim={[-15 15] [-3 3] [-3 5] [-4 3]};
+    for m=1:numel(monkeys)
+        M=monkeys{m};
+        tartmp=D.LFP.(M).tar;
+        %curr_ylim=y_lim{(m-1)*2+y};
+        for t=1:numel(targets)
+            T=targets{t};
+            [~,Ti]=ismember({tartmp.target},T);
+            for c=1:2
+                %% ITPC
+                sph(t,m,c,1)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +1);
+                ax=sph(t,m,c,1);
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['ITPC-' cname])
+                end
+                if c==1
+                    ylabel({['Monkey ' M],[T, ',' num2str(tartmp(Ti==1).nSites) ' sites'],'Frequency (Hz)'});
+                else
+                    ylabel('Frequency (Hz)');
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time (s)');
+                end
+                con=tartmp(Ti==1).con(c).(E);
+                toplot=fig5_log_plot_scale(con.itpc);
+                
+                
+                sigplot=con.itpc_popsig;
+                
+                xlim([0 size(toplot,2)]);
+                
+                %xlim([min(lfp_time) max(lfp_time)]);
+                axis square
+                hold on
+                
+                %image(lfp_time-sl/2,1:size(toplot,1),toplot,'CDataMapping','scaled');
+                image(toplot,'CDataMapping','scaled');
+                set(gca,'YDir','normal');
+                significance = double(sigplot);
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                
+                
+                ecg_bna_draw_outlines(significance==1,'r')
+                ecg_bna_draw_outlines(significance==-1,'b')
+                
+                % horizontal lines to separate frequency bands
+                fbandstart = unique(frequency_bands(:))';
+                fbandstart_idx = zeros(size(fbandstart));
+                for f = fbandstart
+                    f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+                    line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                    fbandstart_idx(fbandstart == f) = f_idx;
+                end
+                set(sph(t,m,1,1),'clim',[min(toplot(:)), max(toplot(:))]);
+                line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
+                set(ax,'TickDir','out')
+                set(ax, 'ytick', fbandstart_idx);
+                set(ax, 'yticklabel', fbandstart);
+                set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+                set(ax, 'xtick', ticksx);
+                set(ax, 'xticklabel', ticklabelsx);
+                box on
+                
+                %% ITPC sig
+                sph(t,m,c,2)=subplot(6,4,(t-1)*8+(m-1)*4+(c-1)*2 +2);
+                ax=sph(t,m,c,2);
+                hold on;
+                cname=tartmp(Ti==1).con(c).cond_name;
+                if m==1 && t==1
+                    title(['Sig. ITPC-' cname])
+                end
+                if m==numel(monkeys) && t==numel(targets)
+                    xlabel('Time relative to R peak (s)');
+                end
+                ylabel('Proportion of sites (%)');
+                
+                
+                toplot1=con.itpcbp_sig_pos;
+                toplot1=smoothit(toplot1);
+                toplot2=con.itpcbp_sig_neg;
+                toplot2=smoothit(toplot2);
+                ylabel('Proportion of sites (%)');
+                
+                y_lim=[floor(min(toplot2(:))/10)*10 ceil(max(toplot1(:))/10)*10];
+                set(ax,'ylim',y_lim);
+                for bpf=1:size(toplot1,1)
+                    col=colsbp(bpf,:);
+                    Sig=toplot1(bpf,:);
+                    [pkv,pki]=max(Sig(lfp_time>=0));
+                    pkt=lfp_time(pki+sum(lfp_time<0));
+                    sepy=diff(y_lim)/20;
+                    if pkv>(y_lim(end)-sepy)
+                        plot(pkt,pkv-sepy,'color',col,'Marker','^');
+                        text(pkt-0.02,pkv-sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    else
+                        plot(pkt,pkv+sepy,'color',col,'Marker','v');
+                        text(pkt-0.02,pkv+sepy,[num2str(round(pkt*100)*10) 'ms'],'color',col,'HorizontalAlignment', 'right');
+                    end
+                end
+                
+                xlim([min(lfp_time) max(lfp_time)]);
+                axis square
+                set(ax,'ColorOrder',colsbp);
+                plot(lfp_time,toplot1')
+                plot(lfp_time,toplot2')
+                if m==1 && t==1 && c==1
+                    legend(freqb,'fontsize',3);
+                end
+            end
+        end
+    end
+    
+    %% adjusting limits
+    for m=1:numel(monkeys)
+        for t=1:numel(targets)
+            y_lim=[min([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')]),max([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')])];
+            c_lim=max([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]);
+            for c=1:2
+                % sig %
+                ax=sph(t,m,c,2);
+                set(ax,'ylim',y_lim);
+                subplot(ax);
+                line([0 0], y_lim, 'color', 'k');
+                % itpc
+                ax=sph(t,m,c,1);
+                subplot(ax);
+                
+                apply_fig5_itpc_colorbar(ax, c_lim, 'n. ITPC');
+            end
+        end
+    end
+    
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig7,5-ITPC_' withunits];
+    wanted_size=[50 30];
+    set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
+    export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
+end
+
+
+
+
+
 
 if ismember(7,figstoplot)
     h = figure('units','normalized','position',[0 0 1 1]);
@@ -660,9 +1082,9 @@ if ismember(7,figstoplot)
                 con=tartmp(Ti==1).con(c).(E);
                 toplot=con.itpc_poppval';
                 
-%                toplot=abs(toplot);                
-%                 toplot(toplot>0.1)=0.1;
-%                 toplot=1-toplot;
+                %                toplot=abs(toplot);
+                %                 toplot(toplot>0.1)=0.1;
+                %                 toplot=1-toplot;
                 
                 sigplot=con.itpc_popsig;
                 
@@ -679,9 +1101,9 @@ if ismember(7,figstoplot)
                 
                 ecg_bna_draw_outlines(significance==1,'r')
                 ecg_bna_draw_outlines(significance==-1,'b')
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
-%                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
-%                 
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==-1,1,'linecolor','b')
+                %                 contour(lfp_time-sl/2,(1:size(toplot,1)),significance==1,1,'linecolor','r')
+                %
                 % horizontal lines to separate frequency bands
                 fbandstart = unique(frequency_bands(:))';
                 fbandstart_idx = zeros(size(fbandstart));
@@ -729,7 +1151,7 @@ if ismember(7,figstoplot)
     for m=1:numel(monkeys)
         for t=1:numel(targets)
             y_lim=[0,max([get(sph(t,m,1,2),'ylim') get(sph(t,m,2,2),'ylim')])];
-            c_lim=max(abs([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]));
+            c_lim=max([get(sph(t,m,1,1),'clim'), get(sph(t,m,2,1),'clim')]);
             for c=1:2
                 % sig %
                 ax=sph(t,m,c,2);
@@ -744,9 +1166,9 @@ if ismember(7,figstoplot)
                 cb = colorbar;
                 set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
                 
-%                 
-%                 set(get(cb,'title'),'string', '1-p', 'fontsize',8);
-%                 set(ax,'clim',[0.9 1]);
+                %
+                %                 set(get(cb,'title'),'string', '1-p', 'fontsize',8);
+                %                 set(ax,'clim',[0.9 1]);
             end
         end
     end
@@ -756,6 +1178,208 @@ if ismember(7,figstoplot)
     set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
     export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
 end
+
+
+if ismember(8,figstoplot)
+    
+    sr=1017.2526041; %hz
+    sl=1/sr*10;
+    lfp_time=[-sl*11:sl:sl*41];
+    ticklabelsx=[0,0.2,0.4];
+    for tl=1:numel(ticklabelsx)
+        tt=ticklabelsx(tl);
+        tlstepsize=numel(lfp_time)/(lfp_time(end)-lfp_time(1));
+        ticksx(tl)=tt*tlstepsize-lfp_time(1)*tlstepsize;
+    end
+    
+    
+    h = figure('units','normalized','position',[0 0 1 1]);
+    clear sph
+    E='Cue';
+    c=2; %% task?
+    for m=1:numel(monkeys)
+        M=monkeys{m};
+        tartmp=D.LFP.(M).tar;
+        for t=1:numel(targets)
+            T=targets{t};
+            [~,Ti]=ismember({tartmp.target},T);
+            
+            %% POWER
+            sph(t,m,1)=subplot(6,4,(t-1)*8+(m-1)*4 +1);
+            ax=sph(t,m,1);
+            cname=tartmp(Ti==1).con(c).cond_name;
+            if m==1 && t==1
+                title('POW-Cue')
+            end
+            ylabel({['Monkey ' M],[T, ',' num2str(tartmp(Ti==1).nSites) ' sites'],'Frequency (Hz)'});
+            if m==numel(monkeys) && t==numel(targets)
+                xlabel('Time relative to R peak (s)');
+            end
+            con=tartmp(Ti==1).con(c).(E);
+            toplot=con.pow;
+            sigplot=con.pow_popsig;
+            
+            xlim([0 size(toplot,2)]);
+            axis square
+            hold on
+            
+            image(toplot,'CDataMapping','scaled');
+            set(gca,'YDir','normal');
+            significance = double(sigplot);
+            ecg_bna_draw_outlines(significance==1,'r')
+            ecg_bna_draw_outlines(significance==-1,'b')
+            
+            % horizontal lines to separate frequency bands
+            fbandstart = unique(frequency_bands(:))';
+            fbandstart_idx = zeros(size(fbandstart));
+            for f = fbandstart
+                f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+                line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                fbandstart_idx(fbandstart == f) = f_idx;
+            end
+            line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
+            
+            set(ax, 'TickDir','out')
+            set(ax, 'ytick', fbandstart_idx);
+            set(ax, 'yticklabel', fbandstart);
+            set(ax, 'xtick', ticksx);
+            set(ax, 'xticklabel', ticklabelsx);
+            set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+            box on
+            
+            
+            %% ITPC
+            sph(t,m,2)=subplot(6,4,(t-1)*8+(m-1)*4 +2);
+            ax=sph(t,m,2);
+            if m==1 && t==1
+                title('ITPC-Cue')
+            end
+            ylabel('Frequency (Hz)');
+            if m==numel(monkeys) && t==numel(targets)
+                xlabel('Time relative to R peak (s)');
+            end
+            con=tartmp(Ti==1).con(c).(E);
+            toplot=fig5_log_plot_scale(con.itpc);
+            sigplot=con.itpc_popsig;
+            xlim([0 size(toplot,2)]);
+            axis square
+            hold on
+            
+            image(toplot,'CDataMapping','scaled');
+            set(gca,'YDir','normal');
+            significance = double(sigplot);
+            ecg_bna_draw_outlines(significance==1,'r')
+            ecg_bna_draw_outlines(significance==-1,'b')
+            
+            % horizontal lines to separate frequency bands
+            fbandstart = unique(frequency_bands(:))';
+            fbandstart_idx = zeros(size(fbandstart));
+            for f = fbandstart
+                f_idx = find(abs(freq - f) == min(abs(freq - f)), 1, 'first');
+                line(xlim, [f_idx f_idx], 'color', 'k', 'linestyle', '--');
+                fbandstart_idx(fbandstart == f) = f_idx;
+            end
+            line([ticksx(ticklabelsx==0) ticksx(ticklabelsx==0)], ylim, 'color', 'k');
+            
+            set(ax, 'TickDir','out')
+            set(ax, 'ytick', fbandstart_idx);
+            set(ax, 'yticklabel', fbandstart);
+            set(ax, 'xtick', ticksx);
+            set(ax, 'xticklabel', ticklabelsx);
+            
+            
+            set(ax, 'ylim', [0.5,numel(freq) + 0.5]);
+            box on
+            
+            %% evoked LFP
+            sph(t,m,3)=subplot(6,4,(t-1)*8+(m-1)*4 +3);
+            ax=sph(t,m,3);
+            if m==1 && t==1
+                title('LFP-Cue')
+            end
+            ylabel('LFP');
+            if m==numel(monkeys) && t==numel(targets)
+                xlabel('Time relative to R peak (s)');
+            end
+            con=D.LFP.(M).tar(Ti==1).con(c).(E);
+            
+            xlim([min(lfp_time) max(lfp_time)]);
+            
+            axis square
+            hold on
+            
+            col=cfg.condition(c).color;
+            mean_tp=  smoothit(con.evoked);
+            EB_tp=  smoothit(con.evoked_sterr);
+            lineProps={'color',col};
+            shadedErrorBar(lfp_time,mean_tp,EB_tp,lineProps,1);
+            box on
+            
+            %% evoked MUA
+            sph(t,m,4)=subplot(6,4,(t-1)*8+(m-1)*4 +4);
+            ax=sph(t,m,4);
+            if m==1 && t==1
+                title('MUA-Cue')
+            end
+            ylabel('MUA');
+            if m==numel(monkeys) && t==numel(targets)
+                xlabel('Time relative to R peak (s)');
+            end
+            con=D.MUA.(M).tar(Ti==1).con(c).(E);
+            xlim([min(lfp_time) max(lfp_time)]);
+            axis square
+            hold on
+            
+            col=cfg.condition(c).color;
+            mean_tp=  smoothit(con.evoked);
+            EB_tp=  smoothit(con.evoked_sterr);
+            lineProps={'color',col};
+            shadedErrorBar(lfp_time,mean_tp,EB_tp,lineProps,1);
+            box on
+        end
+    end
+    
+    
+    
+    %% adjusting limits
+    for m=1:numel(monkeys)
+        for t=1:numel(targets)
+            % LFP & MUA
+            for s=3:4
+                ax=sph(t,m,s);
+                subplot(ax);
+                y_lim=get(ax,'ylim');
+                plot(ax,[0 0], y_lim,'color','k');
+            end
+            
+            c_lim_pow=max(abs([get(sph(t,m,1),'clim'), get(sph(t,m,1),'clim')]));
+            c_lim_itpc=max([get(sph(t,m,2),'clim')]);
+            
+            % POW
+            ax=sph(t,m,1);
+            subplot(ax);
+            cm=customcolormap_preset('red-yellow-blue',256);
+            colormap(ax,cm);
+            cb = colorbar;
+            set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
+            set(get(cb,'title'),'string', 'n. Pow', 'fontsize',8);
+            set(ax,'clim',[-c_lim_pow c_lim_pow]);
+            
+            
+            
+            % ITPC
+            ax=sph(t,m,2);
+            subplot(ax);
+            apply_fig5_itpc_colorbar(ax, c_lim_itpc, 'n. ITPC');
+        end
+    end
+    
+    results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig8-CUE_' withunits];
+    wanted_size=[50 30];
+    set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
+    export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
+end
+
 close all
 end
 
@@ -777,6 +1401,44 @@ for k=1:size(concat_input,1)
     jnk(k,:)= conv(squeeze(concat_input(k,:)),gaussian_kernel,'same');
 end
 out = jnk(:,half_win+1:end-half_win);
+end
+
+function y = fig5_log_plot_scale(x)
+% |x| <= 1: unchanged; |x| > 1: sign(x) * (log2(|x|) + 1)
+y = x;
+pos = x > 1;
+neg = x < -1;
+y(pos) = log2(x(pos)) + 1;
+y(neg) = -(log2(abs(x(neg))) + 1);
+end
+
+function [tick_pos, tick_labels] = fig5_itpc_colorbar_ticks(c_lim)
+% ITPC ticks: negative side clipped at -1 in plot space; labels = pre-log integers.
+orig_ticks = [-1, 0, 1];
+if c_lim > 1
+    max_power = floor(c_lim - 1);
+    orig_ticks = [orig_ticks, 2.^(1:max_power)];
+end
+tick_pos = fig5_log_plot_scale(orig_ticks);
+valid = tick_pos >= -1 - 1e-6 & tick_pos <= c_lim + 1e-6;
+tick_pos = tick_pos(valid);
+orig_ticks = orig_ticks(valid);
+[tick_pos, sort_ix] = sort(tick_pos);
+tick_labels = arrayfun(@num2str, orig_ticks(sort_ix), 'UniformOutput', false);
+end
+
+function apply_fig5_itpc_colorbar(ax, c_lim, cb_title)
+offset = round(128/c_lim*(1));
+cm = customcolormap_preset('red-yellow-blue',256);
+cm = cm((128-offset):end,:);
+colormap(ax, cm);
+cb = colorbar;
+[tick_pos, tick_labels] = fig5_itpc_colorbar_ticks(c_lim);
+set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
+set(get(cb,'title'),'string', cb_title, 'fontsize', 8);
+set(ax,'clim',[-1, c_lim]);
+cb.Ticks = tick_pos;
+cb.TickLabels = tick_labels;
 end
 
 

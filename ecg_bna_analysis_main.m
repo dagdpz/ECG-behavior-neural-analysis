@@ -50,7 +50,7 @@ for v = 1:length(versions)
             
             % reading in actual TDT clock block starts (in seconds - inprecise, but that is irrelevant)
             blocks=unique([trials.block]);
-            blockstart=ecg_bna_get_anchor_times(monkey,sessions_info(i).Date,blocks,root_drive);
+            blockstart=ecg_bna_get_anchor_times(sessions_info(i).Monkey,sessions_info(i).Date,blocks,root_drive);
             
             cfg.event_types=cfg.analyse_states(:,2);
             cfg.events=cfg.analyse_states(:,1);
@@ -201,14 +201,26 @@ for v = 1:length(versions)
  %       cfg.site_IDS=keys.tuning_table(2:end,find_column_index(keys.tuning_table,'site_ID'));
         
         if cfg.process_MUA
-            ecg_bna_compute_grand_avg_mua(cfg,'all');
+            cfg.site_IDS = ecg_bna_get_R_peak_units(cfg);
+            %ecg_bna_compute_grand_avg_mua(cfg,'all');
+            ecg_bna_compute_grand_avg_mua(cfg,'w_units');
+            ecg_bna_compute_grand_avg_mua(cfg,'wo_units');
+            
             %             load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
             %             cfg.site_IDS=cueresponsivesites;
             %             grand_avg = ecg_bna_compute_grand_avg_mua(cfg,'w_units');
         end
         
         if cfg.process_LFP
-            ecg_bna_compute_grand_avg(cfg,'all');
+            %cfg.site_IDS = ecg_bna_get_R_peak_units(cfg);
+            %ecg_bna_compute_grand_avg(cfg,'all');
+            cfg.combine_monkeys=0;
+            ecg_bna_population_comparisons(cfg);
+            cfg.combine_monkeys=1;
+            ecg_bna_population_comparisons(cfg);
+%             ecg_bna_compute_grand_avg(cfg,'w_units');
+%             ecg_bna_compute_grand_avg(cfg,'wo_units');
+            
             %             load('Y:\Projects\Pulv_bodysignal\LFP\Figures\cueresponsivesites.mat');
             %             cfg.site_IDS=cueresponsivesites;
             %             grand_avg = ecg_bna_compute_grand_avg(cfg,'w_units');

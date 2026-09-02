@@ -18,9 +18,11 @@ end
 
 cfg.fldr.seeds         = fullfile(cfg.fldr.ECG_root,'seeds');
 cfg.fldr.LFP_sessions  = fullfile(cfg.fldr.LFP_root, 'Per_Session');
+cfg.fldr.LFP_population= fullfile(cfg.fldr.LFP_root, 'Population');
 cfg.fldr.LFP_sites     = fullfile(cfg.fldr.LFP_root, 'Per_Site');
 cfg.fldr.MUA_sessions  = fullfile(cfg.fldr.MUA_root, 'Per_Session');
 cfg.fldr.MUA_sites     = fullfile(cfg.fldr.MUA_root, 'Per_Site');
+cfg.fldr.MUA_population= fullfile(cfg.fldr.MUA_root, 'Population');
 
 
 cfg.fldr.unit_lists                 = fullfile(cfg.fldr.SPK_root, 'unit_lists'); % store unit lists before and after exclusion criteria

@@ -128,7 +128,11 @@ for s = 1: numel(w_samples)
     for f=1:numel(FN_in)
         fn=FN{f};
         fni=FN_in{f};
+        try
         AA=single(reshape(tfs.(fni)(:,t),size(tfs.(fni),1),size(t,1),size(t,2)));
+        catch eee
+           aaa=1; 
+        end
         if ismember(fn,{'evoked'})
              AA=real(AA); 
         end

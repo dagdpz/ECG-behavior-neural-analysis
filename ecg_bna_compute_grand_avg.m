@@ -1,7 +1,7 @@
 function tar = ecg_bna_compute_grand_avg(cfg,withunits)
 
-reprocess=1;
-reprocess2=1;
+reprocess=0;
+reprocess2=0;
 plotit=1;
 fileName = fullfile([cfg.fldr.LFP_root filesep cfg.monkey,'_',cfg.analyse_states{1, 2} ,'_Triggered_target_wise_Grand_grand_avg_sessions_sites',withunits,'.mat']);
 
@@ -41,7 +41,12 @@ if reprocess
         
         for c = 1:length(triggered_site_data.condition)
             con=triggered_site_data.condition(c);
-            if isempty(con.event) %|| con.event(1).observed.ntriggers<1000 %% very temporary condition
+            ntrigs=vertcat(con.event);
+            ntrigs=vertcat(ntrigs.observed);
+            ntrigs=vertcat(ntrigs.ntriggers);
+            
+            
+            if isempty(con.event) || any(ntrigs<cfg.lfp.min_triggers_per_condition) 
                 sites(s).all_conditions_present = 0;
                 continue;
             end
@@ -52,15 +57,9 @@ if reprocess
                 
                 nTriggers = event.observed.ntriggers;
                 time      = event.time;
-                tfr_time  = event.tfr_time;
-                %                 evoked       = squeeze(event.observed.evoked.mean)';
-                %                 itpc      = squeeze(event.observed.itpc.mean)-squeeze(event.surrogate.itpc.mean);
-                %                 power     = squeeze(event.normalized.pow.mean);
-                %                 itpcbp    = squeeze(event.observed.itpcbp.mean)-squeeze(event.surrogate.itpcbp.mean);
-                %                 powerbp   = squeeze(event.normalized.powbp.mean);
+                tfr_time  = event.tfr_time;                
                 
-                
-                evoked       = squeeze(event.normalized.evoked.mean)';
+                evoked    = squeeze(event.normalized.evoked.mean)';
                 itpc      = squeeze(event.normalized.itpc.mean);
                 power     = squeeze(event.normalized.pow.mean);
                 itpcbp    = squeeze(event.normalized.itpcbp.mean);
@@ -133,8 +132,6 @@ if reprocess
     end
     
     %% this part to remove sites with not all conditions
-    % out_mask = cellfun(@isempty, {sites.site_ID});
-    % sites = sites(~out_mask);
     sites = sites([sites.all_conditions_present]==1);
     save(fileName,'sites')
     
@@ -203,13 +200,17 @@ if reprocess2
                             
                     end
                     CAT=cat(3,events(:,e).(CN));
-                    CATsig=abs(cat(3,events(:,e).([CN '_sig'])));
-                    CATsigsigned=cat(3,events(:,e).([CN '_sig'])).*sign(CAT);
+                    CATsigabs=abs(cat(3,events(:,e).([CN '_sig'])));
+                    %CATsig=cat(3,events(:,e).([CN '_sig']));
+                    CATsigsigned=CATsigabs(fstart:end,:,:).*sign(CAT(fstart:end,:,:));
                     CAT_R=cat(3,events(:,e).([CN '_R']));
                     CAT_S=cat(3,events(:,e).([CN '_S']));
                     
                     E.(CN)=mean(CAT(fstart:end,:,:),3);
-                    E.([CN '_sig'])=mean(CATsig(fstart:end,:,:),3)*100;
+                    E.([CN '_sig'])=mean(CATsigabs(fstart:end,:,:),3)*100;
+                    %CATsig=CATsig(fstart:end,:,:);
+                    E.([CN '_sig_pos'])=mean(CATsigsigned==1,3)*100;
+                    E.([CN '_sig_neg'])=mean(CATsigsigned==-1,3)*-100;
                     E.([CN '_sig_signed'])=mean(CATsigsigned(fstart:end,:,:),3)*100;
                     %if ismember(CN,{'pow','itpc'})
                     %[E.([CN '_popsig']), E.([CN '_poppval'])]=ecg_bna_population_significance_nonparametric(CAT_R(fstart:end,:,:),CAT_S(fstart:end,:,:));
@@ -217,7 +218,7 @@ if reprocess2
                    
                     %end
                     if ismember(CN,{'powbp','itpcbp'})
-                        E.([CN '_p'])= ecg_bna_population_significant_n_bins(CATsig(fstart:end,:,:));
+                        E.([CN '_p'])= ecg_bna_population_significant_n_bins(CATsigabs(fstart:end,:,:));
                         tmp_max=[events(:,e).(['max_' CN])];
                         tmp_time=[events(:,e).(['max_' CN '_time'])];
                         E.(['max_' CN])=    tmp_max(fstart:end,:)  ;
@@ -226,13 +227,13 @@ if reprocess2
                 end
                 
                 E.itpcbp_p= ecg_bna_population_significant_n_bins(cat(3,events(:,e).itpcbp_sig));
-                E.powbp_p= ecg_bna_population_significant_n_bins(cat(3,events(:,e).powbp_sig));
-                E.evoked_p= ecg_bna_population_significant_n_bins(cat(3,events(:,e).evoked_sig));
+                E.powbp_p  = ecg_bna_population_significant_n_bins(cat(3,events(:,e).powbp_sig));
+                E.evoked_p = ecg_bna_population_significant_n_bins(cat(3,events(:,e).evoked_sig));
                 
                 E.nTriggers = mean(cat(3,events(:,e).nTriggers),3);
-                E.evoked_25    = prctile(cat(3,events(:,e).evoked),25,3);
-                E.evoked_75    = prctile(cat(3,events(:,e).evoked),75,3);
-                E.tfr_time    = events(1,e).tfr_time;
+                E.evoked_25      = prctile(cat(3,events(:,e).evoked),25,3);
+                E.evoked_75      = prctile(cat(3,events(:,e).evoked),75,3);
+                E.tfr_time       = events(1,e).tfr_time;
                 E.evoked_time    = events(1,e).time;
                 E.evoked_std     = std(cat(3,events(:,e).evoked),0,3);
                 E.evoked_sterr   = sterr(cat(3,events(:,e).evoked),3);
@@ -240,20 +241,20 @@ if reprocess2
                 NaNseparator=100/25;
                 concat.pow          = cat(2, concat.pow,        E.pow,        nan(size(E.pow, 1),        NaNseparator));
                 concat.itpc         = cat(2, concat.itpc,       E.itpc,       nan(size(E.itpc,1),        NaNseparator));
-                concat.evoked          = cat(2, concat.evoked,        E.evoked,        nan(size(E.evoked, 1),        NaNseparator));
+                concat.evoked       = cat(2, concat.evoked,        E.evoked,        nan(size(E.evoked, 1),        NaNseparator));
                 concat.itpcbp       = cat(2, concat.itpcbp,     E.itpcbp,     nan(size(E.itpcbp, 1),     NaNseparator));
-                concat.evoked_25       = cat(2, concat.evoked_25,     E.evoked_25,	  nan(size(E.evoked_25, 1),     NaNseparator));
-                concat.evoked_75       = cat(2, concat.evoked_75,     E.evoked_75,	  nan(size(E.evoked_75, 1),     NaNseparator));
+                concat.evoked_25    = cat(2, concat.evoked_25,     E.evoked_25,	  nan(size(E.evoked_25, 1),     NaNseparator));
+                concat.evoked_75    = cat(2, concat.evoked_75,     E.evoked_75,	  nan(size(E.evoked_75, 1),     NaNseparator));
                 
                 concat.powbp        = cat(2, concat.powbp,      E.powbp,      nan(size(E.powbp, 1),      NaNseparator));
                 concat.powsig       = cat(2, concat.powsig,     E.pow_sig,    nan(size(E.pow_sig, 1),    NaNseparator));
                 concat.itpcsig      = cat(2, concat.itpcsig,    E.itpc_sig,   nan(size(E.itpc_sig, 1),   NaNseparator));
                 concat.powbpsig     = cat(2, concat.powbpsig,   E.powbp_sig,  nan(size(E.powbp_sig, 1),  NaNseparator));
                 concat.itpcbpsig    = cat(2, concat.itpcbpsig,  E.itpcbp_sig, nan(size(E.itpcbp_sig, 1), NaNseparator));
-                concat.evokedsig       = cat(2, concat.evokedsig,     E.evoked_sig,    nan(size(E.evoked_sig, 1),    NaNseparator));
-                concat.evoked_std      = cat(2, concat.evoked_std,    E.evoked_std,	  nan(size(E.evoked_std, 1),    NaNseparator));
+                concat.evokedsig    = cat(2, concat.evokedsig,     E.evoked_sig,    nan(size(E.evoked_sig, 1),    NaNseparator));
+                concat.evoked_std   = cat(2, concat.evoked_std,    E.evoked_std,	  nan(size(E.evoked_std, 1),    NaNseparator));
                 concat.tfr_time     = [concat.tfr_time, E.tfr_time, nan(1, NaNseparator)];
-                concat.evoked_time     = [concat.evoked_time, E.evoked_time, nan(1, NaNseparator)];
+                concat.evoked_time  = [concat.evoked_time, E.evoked_time, nan(1, NaNseparator)];
                 
                 eventname=cfg.analyse_states{e,1};
                 tar(t).con(c).(eventname)=E;
@@ -305,8 +306,8 @@ if plotit
             toplot={squeeze(tar(t).con(c).concat.pow),squeeze(tar(t).con(c).concat.itpc)};
             for sp=1:2
                 % =========================== Power & ITPC ============================= %
-                sph(c,sp,t)=subplot(3,2,sp);
-                ax=sph(c,sp,t);
+                sph(c,sp)=subplot(3,2,sp);
+                ax=sph(c,sp);
                 image(toplot{sp},'CDataMapping','scaled');
                 set(ax,'YDir','normal');
                 line([0.5 0.5], ylim, 'color', 'k');
@@ -331,8 +332,8 @@ if plotit
             
             %========================== Bandpassed POWER ==================== %
             sp=3;
-            sph(c,sp,t)=subplot(3,2,sp);
-            ax=sph(c,sp,t);
+            sph(c,sp)=subplot(3,2,sp);
+            ax=sph(c,sp);
             hold on;
             set(ax,'ColorOrder',colsbp);
             smoothed=smoothit(powbp,half_win,gaussian_kernel);
@@ -344,8 +345,8 @@ if plotit
             
             %========================== Bandpassed ITPC ==================== %
             sp=4;
-            sph(c,sp,t)=subplot(3,2,sp);
-            ax=sph(c,sp,t);
+            sph(c,sp)=subplot(3,2,sp);
+            ax=sph(c,sp);
             hold on;
             set(ax,'ColorOrder',colsbp);
             smoothed=smoothit(itpcbp,half_win,gaussian_kernel);
@@ -357,8 +358,8 @@ if plotit
             
             %========================== LFP evoked Potential ==================== %
             sp=5;
-            sph(c,sp,t)=subplot(3,2,sp);
-            ax=sph(c,sp,t);
+            sph(c,sp)=subplot(3,2,sp);
+            ax=sph(c,sp);
             hold on;
             lineProps={'color',[0 0 1]};
             smoothed_mean=smoothit(evoked,half_win,gaussian_kernel);
@@ -392,8 +393,8 @@ if plotit
         for c = 1:length(cond)
             figure(h(c,t));
             for sp=1:2
-                subplot(sph(c,sp,t));
-                set(sph(c,sp,t),'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
+                subplot(sph(c,sp));
+                set(sph(c,sp),'CLim',[min([collim{:,sp}]) max([collim{:,sp}])]);
             end
             export_fig(h(c,t),[results_file{c},'.pdf']);
         end
@@ -522,9 +523,10 @@ if plotit
             
         end
         
-        for c = 1:length(cond)
-            for t=1:length(targets)
-                k=[t,t+numel(targets)]; %same scaling for conditions within target
+        for c = 1:numel(cond)
+            for t=1:length(targets)                
+                k=[t:length(targets):numel(cond)*numel(targets)]; %same scaling for conditions within target
+                
                 %k=[t+(c-1)*numel(targets)]; % individual scaling
                 figure(h(c,t));
                 for sp=1:2
@@ -596,8 +598,10 @@ if plotit
                 image(toplot{sp},'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 
-                significance = double(squeeze(sigplot{sp}));
-                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,1,'linecolor','k')
+                significance = double(squeeze(sigplot{sp})==1);
+                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,'linecolor','r')
+                significance = double(squeeze(sigplot{sp})==-1);
+                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,'linecolor','b')
                 
                 line([0.5 0.5], ylim, 'color', 'k');
                 
@@ -698,8 +702,10 @@ if plotit
                 image(toplot{sp},'CDataMapping','scaled');
                 set(gca,'YDir','normal');
                 
-                significance = double(squeeze(sigplot{sp}));
-                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,1,'linecolor','k')
+                significance = double(squeeze(sigplot{sp})==1);
+                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,'linecolor','r')
+                significance = double(squeeze(sigplot{sp})==-1);
+                contour(1:size(toplot{sp},2),1:size(toplot{sp},1),significance,'linecolor','b')
                 
                 line([0.5 0.5], ylim, 'color', 'k');
                 
@@ -1182,7 +1188,7 @@ if plotit
             for c = 1:length(cond)
                 for fb = 1: length(freqb)
                     % itpcbp
-                    subplot(2,2,2*c-1)
+                    subplot(length(cond),2,2*c-1)
                     scatter(tar(t).con(c).(E).max_itpcbp_time(fb,:),tar(t).con(c).(E).max_itpcbp(fb,:),15,colsbp(fb,:))
                     hold on
                     title([' max itpc-bp in ', strrep(cond{c},'_',' '),' for ',num2str(tar(t).nSites),...
@@ -1190,7 +1196,7 @@ if plotit
                     xlabel('time (s)','Interpreter','latex'), ylabel('Max ITPC value','Interpreter','latex');
                     
                     % powbp
-                    subplot(2,2,2*c)
+                    subplot(length(cond),2,2*c)
                     scatter(tar(t).con(c).(E).max_powbp_time(fb,:),tar(t).con(c).(E).max_powbp(fb,:),15,colsbp(fb,:))
                     hold on
                     title([' max power-bp in ', strrep(cond{c},'_',' '),' for ',num2str(tar(t).nSites),...
@@ -1199,10 +1205,10 @@ if plotit
                     
                 end
                 
-                subplot(2,2,2*c-1)
+                subplot(length(cond),2,2*c-1)
                 plot([0,0],get(gca,'ylim'),'k--')
                 
-                subplot(2,2,2*c)
+                subplot(length(cond),2,2*c)
                 plot([0,0],get(gca,'ylim'),'k--')
                 legend(freqb,'FontSize',5)
                 legend('boxoff')
@@ -1234,7 +1240,7 @@ if plotit
                 nsites=[' of ',num2str(ns),' sites,'];
                 for fb = 1: length(freqb)
                     % itpcbp
-                    sp1(c)=subplot(2,2,2*c-1);
+                    sp1(c)=subplot(length(cond),2,2*c-1);
                     
                     [nelements,centers]= hist(squeeze(tar(t).con(c).(E).max_itpcbp_time(fb,:)),bins);
                     nelements=nelements/ns;
@@ -1245,7 +1251,7 @@ if plotit
                     set(gca,'xlim',[bins(1) bins(end)])
                     
                     % powbp
-                    sp2(c)=subplot(2,2,2*c);
+                    sp2(c)=subplot(length(cond),2,2*c);
                     [nelements,centers]= hist(squeeze(tar(t).con(c).(E).max_powbp_time(fb,:)),bins);
                     nelements=nelements/ns;
                     plot(centers,nelements,'-','Color',colsbp(fb,:));

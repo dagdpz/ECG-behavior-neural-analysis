@@ -88,9 +88,15 @@ for ses = 1:length(sessions)
         linePropsR={'color',[0 0 1]};
         linePropsT={'color',[1 0 0]};
         meanR = squeeze(lfp_rest.mean)';
-        sterrR = squeeze(lfp_rest.sterr)';        
+        
+        %sterrR = squeeze(lfp_rest.sterr)';           
+        sterrR = squeeze(lfp_rest.std)';   
+        
         meanT = squeeze(lfp_task.mean)';
         sterrT = squeeze(lfp_task.sterr)';
+        sterrT = squeeze(lfp_task.std)';
+        
+        
         shadedErrorBar(time,meanR,sterrR,linePropsR,1); hold on
         shadedErrorBar(time,meanT,sterrT,linePropsT,1);
         
@@ -120,9 +126,12 @@ for ses = 1:length(sessions)
         
         meanR=squeeze(mua_rest.mean);
         meanT=squeeze(mua_task.mean);
-                
-        sterrR = squeeze(mua_rest.sterr);
-        sterrT = squeeze(mua_task.sterr);
+%                 
+%         sterrR = squeeze(mua_rest.sterr);
+%         sterrT = squeeze(mua_task.sterr);
+        
+        sterrR = squeeze(mua_rest.std);
+        sterrT = squeeze(mua_task.std);
         shadedErrorBar(time,meanR,sterrR,linePropsR,1); hold on
         shadedErrorBar(time,meanT,sterrT,linePropsT,1);
                 
@@ -136,5 +145,5 @@ for ses = 1:length(sessions)
     
 end
         
-figname = fullfile(['Y:\Projects\Pulv_bodysignal\Figures',filesep,'ecg_lfp_mua_allsites','_',PlotMode{Pm}]);
+figname = fullfile(['Y:\Projects\Pulv_bodysignal\Figures',filesep,'Fig 1D ecg_lfp_mua_allsites','_',PlotMode{Pm}]);
 export_fig(h,[figname,'.pdf']);

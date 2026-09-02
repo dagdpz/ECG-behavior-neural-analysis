@@ -4,7 +4,9 @@ clc
 Site_ID = 'Bac_20220315_Site_15';%'Bac_20211007_Site_01';%'Bac_20210730_Site_03';
 project = 'Pulv_bodysignal';
 version = 'ECG_Bacchus_complete';
+%version = 'ECG_Bacchus_complete_unfiltered';
 driver_path = 'Y:';%'/home/shamim/fileserver';
+figname='SuppFig2-';
 %showfiltered='filtered';
 
 cfg = [];
@@ -92,12 +94,17 @@ for mt = 1: numel(methods)
     lineprops={'color',cols{mt}};
     switch M
         case 'surrogate'
-            conf=squeeze([TPG.evoked.mean-TPG.evoked.conf95(1,:,:);-1*(TPG.evoked.mean-TPG.evoked.conf95(2,:,:))]);
+            %conf=squeeze([TPG.evoked.mean-TPG.evoked.conf95(1,:,:);-1*(TPG.evoked.mean-TPG.evoked.conf95(2,:,:))]);
+            conf=squeeze(TPG.evoked.std)';
         case 'observed'
             %conf=[TPG.evoked.mean-TPG.evoked.conf95(1,:,:);-1*(TPG.evoked.mean-TPG.evoked.conf95(2,:,:))];
-            conf=squeeze(TPG.evoked.sterr)';
+            
+            %conf=squeeze(TPG.evoked.sterr)';
+            conf=squeeze(TPG.evoked.std)';
         case 'normalized'
-            conf=squeeze(TPG.evoked.sterr)';
+            %conf=squeeze(TPG.evoked.sterr)';
+            conf=squeeze(TPG.evoked.std)';
+            
             %conf=squeeze(LFP.condition(c).event(e).surrogate.evoked.sterr)'./LFP.condition(c).event(e).surrogate.evoked.std;
     end
     meantp=squeeze(TPG.evoked.mean)';
@@ -244,14 +251,17 @@ for mt = 1: numel(methods)
     TPGM=TPG.evoked.mean;
     switch M
         case 'surrogate'
-            conf=squeeze([TPGM-TPG.evoked.conf95(1,:,:);-1*(TPGM-TPG.evoked.conf95(2,:,:))]);
+            %conf=squeeze([TPGM-TPG.evoked.conf95(1,:,:);-1*(TPGM-TPG.evoked.conf95(2,:,:))]);
+            conf=squeeze(TPG.evoked.std)';
         case 'observed'
             %conf=[TPGM-TPG.evoked.conf95(1,:,:);-1*(TPGM-TPG.evoked.conf95(2,:,:))];
-            conf=squeeze(TPG.evoked.sterr)';
+            %conf=squeeze(TPG.evoked.sterr)';
+            conf=squeeze(TPG.evoked.std)';
         case 'normalized'
             
             %conf=squeeze(MUA.condition(c).event(e).surrogate.evoked.sterr)'./MUA.condition(c).event(e).surrogate.evoked.std;
-            conf=squeeze(TPG.evoked.sterr)';
+            %conf=squeeze(TPG.evoked.sterr)';
+            conf=squeeze(TPG.evoked.std)';
     end
     meantp=squeeze(TPGM)';
     shadedErrorBar(time,meantp,conf,lineprops,1);
@@ -331,7 +341,7 @@ set(cb,'position',get(cb,'position')+[0.05 0 0 0]);
 M=max(abs([min([collimP{3}]),max([collimP{3}])]));
 set(spP(3),'CLim',[-M M]);
 %results_file=['Y:\Projects\Pulv_bodysignal\Figures\' Site_ID '_' showfiltered];
-results_file=['Y:\Projects\Pulv_bodysignal\Figures\Fig2-' Site_ID];
+results_file=['Y:\Projects\Pulv_bodysignal\Figures\' figname Site_ID]; 
 wanted_size=[50 30];
 set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
 export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??

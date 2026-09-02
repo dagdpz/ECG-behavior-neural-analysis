@@ -19,17 +19,17 @@ group = [ones(1, numel(Task.Magnus.(foi))), ones(1, numel(Rest.Magnus.(foi)))*2]
 violinplot(Magnus_all_HR, group, 'ViolinColor', cols);
 ylabel('Mean HR (bpm)');
 %[~,ptt] = ttest(Task.Magnus.(foi), Rest.Magnus.(foi));
-ptt = signrank(Task.Magnus.(foi), Rest.Magnus.(foi));
+[ptt, ~, stats]  = signrank(Task.Magnus.(foi), Rest.Magnus.(foi));
 %[~,ptt] = ttest(Task.Magnus.(foi), Rest.Magnus.(foi));
 if ptt<0.001
     p='<0.001';
 else
     p=num2str(round(ptt*1000)/1000);
 end
-text(1,mean(Task.Magnus.(foi)),[num2str(round(mean(Task.Magnus.(foi)))) '+/-' num2str(round(std(Task.Magnus.(foi))))]);
-text(2,mean(Rest.Magnus.(foi)),[num2str(round(mean(Rest.Magnus.(foi)))) '+/-' num2str(round(std(Rest.Magnus.(foi))))]);
-text(1.5,mean(Magnus_all_HR),[num2str(round(mean(Magnus_all_HR))) '+/-' num2str(round(std(Magnus_all_HR)))]);
-title(['Magnus, Wilcoxon signed rank p=' p]);
+text(1,median(Task.Magnus.(foi)),[num2str(round(median(Task.Magnus.(foi)))) ';' num2str(round(prctile(Task.Magnus.(foi),2.5))) '-' num2str(round(prctile(Task.Magnus.(foi),97.5)))]);
+text(2,median(Rest.Magnus.(foi)),[num2str(round(median(Rest.Magnus.(foi)))) ';' num2str(round(prctile(Rest.Magnus.(foi),2.5))) '-' num2str(round(prctile(Rest.Magnus.(foi),97.5)))]);
+text(1.5,median(Magnus_all_HR),[num2str(round(median(Magnus_all_HR))) ';' num2str(round(prctile(Magnus_all_HR,2.5))) '-' num2str(round(prctile(Magnus_all_HR,97.5)))]);
+title(['Magnus, Wilcoxon signed rank p=' p ',zval=' num2str(stats.zval)]);
 set(gca,'xticklabels',{'Task','Rest'},'ylim',y_lims);
 axis square
 [~, pLM] = lillietest(Task.Magnus.(foi) -Rest.Magnus.(foi));
@@ -41,23 +41,23 @@ Bacchus_all_HR = [Task.Bacchus.(foi), Rest.Bacchus.(foi)];
 group = [ones(1, numel(Task.Bacchus.(foi))), ones(1, numel(Rest.Bacchus.(foi)))*2];
 violinplot(Bacchus_all_HR, group, 'ViolinColor', cols);
 ylabel('Mean HR (bpm)');
-ptt = signrank(Task.Bacchus.(foi), Rest.Bacchus.(foi));
+[ptt, ~, stats] = signrank(Task.Bacchus.(foi), Rest.Bacchus.(foi));
 %[~,ptt] = ttest(Task.Magnus.(foi), Rest.Magnus.(foi));
 if ptt<0.001
     p='<0.001';
 else
     p=num2str(round(ptt*1000)/1000);
 end
-text(1,mean(Task.Bacchus.(foi)),[num2str(round(mean(Task.Bacchus.(foi)))) '+/-' num2str(round(std(Task.Bacchus.(foi))))]);
-text(2,mean(Rest.Bacchus.(foi)),[num2str(round(mean(Rest.Bacchus.(foi)))) '+/-' num2str(round(std(Rest.Bacchus.(foi))))]);
-text(1.5,mean(Bacchus_all_HR),[num2str(round(mean(Bacchus_all_HR))) '+/-' num2str(round(std(Bacchus_all_HR)))]);
-title(['Bacchus,  Wilcoxon signed rank  p=' p]);
+text(1,median(Task.Bacchus.(foi)),[num2str(round(median(Task.Bacchus.(foi)))) ';' num2str(round(prctile(Task.Bacchus.(foi),2.5))) '-' num2str(round(prctile(Task.Bacchus.(foi),97.5)))]);
+text(2,median(Rest.Bacchus.(foi)),[num2str(round(median(Rest.Bacchus.(foi)))) ';' num2str(round(prctile(Rest.Bacchus.(foi),2.5))) '-' num2str(round(prctile(Rest.Bacchus.(foi),97.5)))]);
+text(1.5,median(Bacchus_all_HR),[num2str(round(median(Bacchus_all_HR))) ';' num2str(round(prctile(Bacchus_all_HR,2.5))) '-' num2str(round(prctile(Bacchus_all_HR,97.5)))]);
+title(['Bacchus,  Wilcoxon signed rank  p=' p ',zval=' num2str(stats.zval)]);
 set(gca,'xticklabels',{'Task','Rest'},'ylim',y_lims);
 axis square
 [~, pLB] = lillietest(Task.Bacchus.(foi) -Rest.Bacchus.(foi));
-mtit(['HR over all: ' num2str(round(mean([Bacchus_all_HR, Magnus_all_HR]))) '+/-' num2str(round(std([Bacchus_all_HR, Magnus_all_HR])))])
+mtit(['HR over all: ' num2str(round(median([Bacchus_all_HR, Magnus_all_HR]))) ';' num2str(round(prctile([Bacchus_all_HR, Magnus_all_HR],2.5))) '-' num2str(round(prctile([Bacchus_all_HR, Magnus_all_HR],97.5)))]);
 
-results_file='Y:\Projects\Pulv_bodysignal\LFP\Figures\Suppfig. 3-Heartrate Violins';
+results_file='Y:\Projects\Pulv_bodysignal\Figures\Suppfig. 3-Heartrate Violins';
 wanted_size=[50 30];
 set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
 export_fig(h, results_file, '-pdf'); %% how come this does not export most plots ??
@@ -97,7 +97,7 @@ title({'Monkey B';'Heart Rate Distribution:'});
 legend({'Task', 'Rest'});
 axis square
 
-results_file='Y:\Projects\Pulv_bodysignal\LFP\Figures\Suppfig. 3-Heartrate Histograms';
+results_file='Y:\Projects\Pulv_bodysignal\Figures\Suppfig. 3-Heartrate Histograms';
 wanted_size=[50 30];
 set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    
 export_fig(h, results_file, '-pdf'); 
@@ -128,7 +128,7 @@ ylabel('Max Task & Rest ecg');
 title('Bacchus')
 axis square
 
-results_file='Y:\Projects\Pulv_bodysignal\LFP\Figures\Suppfig. 3-max ecg distribution';
+results_file='Y:\Projects\Pulv_bodysignal\Figures\Suppfig. 3-max ecg distribution';
 wanted_size=[50 30];
 set(h, 'Paperunits','centimeters','PaperSize', wanted_size,'PaperPositionMode', 'manual','PaperPosition', [0 0 wanted_size])    %
 export_fig(h, results_file, '-pdf'); 

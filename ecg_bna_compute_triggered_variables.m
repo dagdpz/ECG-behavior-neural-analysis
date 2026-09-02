@@ -79,7 +79,7 @@ for e = 1:size(cfg.analyse_states, 1)
         trig_con_s(trig_con_s<con_start_samples(1)-width_in_samples(1))=0;
         trig_con_s(trig_con_s>con_end_samples(end)-width_in_samples(2)-2)=0;
         
-        inbetween=false(size(trig_con_s));
+        inbetween=isnan(trig_con_s);
         for t=1:numel(con_end_samples)-1
             inbetween=inbetween | trig_con_s<con_start_samples(t+1) & trig_con_s>con_end_samples(t);
         end
@@ -93,7 +93,7 @@ for e = 1:size(cfg.analyse_states, 1)
         trig_con_s(trig_con_s>con_end_samples(end)-width_in_samples(2))=0;
         
         
-        inbetween=false(size(trig_con_s));
+        inbetween=isnan(trig_con_s);
         for t=1:numel(con_end_samples)-1
             inbetween=inbetween | trig_con_s<con_start_samples(t+1) & trig_con_s>con_end_samples(t);
         end
